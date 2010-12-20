@@ -1,0 +1,17 @@
+*.swp
+.DS_Store
+Makefile
+obj/
+*.make
+pm.sh
+*.asm
+vm
+test
+out
+in
+*.txt
+*.dump
+*.psd
+jquery*
+apple-touch-icon.png
+favicon.ico

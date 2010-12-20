@@ -1,0 +1,230 @@
+/* --------------------------------
+	Normalize CSS Reset v1.2
+	Firefox IE Safari Chrome Opera
+	Jonathan Neal
+	jneal@liferay.com
+	01-28-2010
+--------------------------------*/
+
+/* Global */
+
+html {
+	overflow-y: scroll;
+}
+
+article,
+aside,
+figure,
+footer,
+header,
+hgroup,
+nav,
+section {
+	display: block;
+}
+
+a {
+	cursor: pointer;
+	outline: none;
+}
+
+q:before,
+q:after {
+	content: "";
+}
+
+img {
+	border: 0;
+	vertical-align: text-bottom;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+/* Box Model */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	margin: 20px 0;
+}
+
+blockquote,
+dl,
+ol,
+menu,
+p,
+pre,
+ul {
+  margin: 16px 0;
+}
+
+body {
+	margin: 8px; 
+}
+
+ol,
+ul ol {
+	list-style: decimal outside;
+}
+
+ul,
+ol ul {
+	list-style: disc outside;
+}
+
+ul ul {
+	list-style: circle;
+}
+
+ol ol {
+	list-style: upper-roman;
+}
+
+.rule_wrapper {
+	margin: 0 0 15px 0;
+	position: relative;
+}
+
+/* Toolbox */
+
+.toolbox_container {
+	position: absolute; visibility:hidden;
+	bottom: 18px; left: 15px;
+}
+
+.rule_wrapper:hover .toolbox_container { visibility:visible; }
+
+.toolbox {
+	position: relative;
+	display: block;
+	/*
+	background: #05070e;
+	border: 1px solid #1b2448;
+	width: 100px;
+	padding: 3px;
+	height: 24px;
+	*/
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	border-radius: 3px;
+
+}
+
+.button_container {
+	position: relative;
+	float: left;
+}
+
+.copybutton {
+	width: 24px;
+	height: 24px;
+	background: url(../img/clipboard.png) no-repeat 0 0;
+	background-position: 0 0;
+	background-position-x: 0;
+	background-position-y: 0;
+}
+
+.copybutton.hover {
+	background: url(../img/clipboard.png) no-repeat 0 -24px;
+	background-position: 0 -24px;
+	background-position-x: 0;
+	background-position-y: -24px;
+}
+
+.resetbutton {
+	width: 24px;
+	height: 24px;
+	background: url(../img/reset.png) no-repeat 0 0;
+	background-position: 0 0;
+	background-position-x: 0;
+	background-position-y: 0;
+	
+	display:none;
+}
+
+.resetbutton:hover {
+	background: url(../img/reset.png) no-repeat 0 -24px;
+	background-position: 0 -24px;
+	background-position-x: 0;
+	background-position-y: -24px;
+}
+/* Color */
+
+abbr {
+	border-bottom: 1px dotted;
+	border-bottom-color: inherit;
+}
+
+body {
+	background: #FFF;
+	color: #000;
+}
+
+hr {
+	border: 0 solid #808080;
+	border-width: 0 0 1px;
+	height: 0;
+}
+
+/* Fonts */
+
+body {
+	font: 16px/20px Times, "Times New Roman", Georgia, serif;
+}
+
+code,
+h3,
+h4,
+h5,
+h6,
+kbd,
+listing,
+pre,
+samp,
+tt {
+	line-height: 20px;
+}
+
+h1 {
+	font-size: 32px;
+	line-height: 40px;
+}
+
+h2 {
+	font-size: 24px;
+	line-height: 30px;
+}
+
+h3 {
+	font-size: 18px;
+}
+
+h4,
+h5,
+h6 {
+	font-size: 16px;
+}
+
+sub,
+sup {
+	font-size: 12px;
+	line-height: 0;
+}
+
+code,
+kbd,
+listing,
+pre,
+samp,
+tt {
+	font-size: 13px;
+}
+
+dfn {
+	font-style: italic;
+}
