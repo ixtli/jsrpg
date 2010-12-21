@@ -5,6 +5,9 @@ var tileBorderDebug = false;
 const FPS = 30;
 const alphaSelectionThreshold = 127;
 const mouseMoveDelay = (1000 / FPS);
+// This should be really small, so that the OS can regulate it
+// we just don't want to be scrolling much faster than once per frame
+const keyRepeatDelay = (1000 / FPS);
 const scrollBorder = 32;
 const reclipThreshold = 16;
 const shadowStep = .1;
@@ -57,9 +60,15 @@ var mouseX = 0, mouseY = 0;
 // Viewport Scrolling
 var clipBuffer = 0;
 var allowScrolling = true;
+
+// Mouse movement event handling
 var previousMouseMove = new Date();
 var mouseScrollGranulatiry = 8;
 var mouseInside = false;
+
+// Keyboard event handling
+var previousKeyboardEvent = new Date();
+var keyboardScrollGranulatiry = 32;
 
 window.onload = init;
 
@@ -165,14 +174,73 @@ function init()
     
     // Set up keyboard handlers
     $('#display').attr('tabindex', '1');
-    $('#display').bind('keypress', keypressHandler);
+    $('#display').bind('keydown', keypressHandler);
     
     toggleAnimation();
 }
 
 function keypressHandler(evt)
 {
-    console.log(evt);
+    var time = new Date();
+    if (time - previousKeyboardEvent < keyRepeatDelay)
+        return;
+    
+    var delta = false;
+    var code = evt.keyCode ? evt.keyCode : evt.which;
+    
+    switch (code)
+    {
+        // a or left arrow
+        case 65:
+        case 37:
+        viewX -= keyboardScrollGranulatiry;
+        delta = true;
+        break;
+        
+        // w or up arrow
+        case 38:
+        case 87:
+        viewY -= keyboardScrollGranulatiry;
+        delta = true;
+        break;
+        
+        // s or down arrow
+        case 40:
+        case 83:
+        viewY += keyboardScrollGranulatiry;
+        delta = true;
+        break;
+        
+        // d or right arrow
+        case 39:
+        case 68:
+        viewX += keyboardScrollGranulatiry;
+        delta = true;
+        break;
+        
+        default:
+        console.log("Uhandled keycode: " + code);
+        break;
+    }
+    
+    if (delta == true)
+    {
+        // TODO: figure out how to update the selected sprite WHILE scrolling
+        focussed = -1;
+        
+        var t2 = new Date();
+        var recalc = recalculateMapClipping();
+        renderMap(true);
+        var t3 = new Date();
+        
+        msg = "Map redraw: " + (t3-t2) + " ms" + " ("
+        msg += viewableMap.data.length + " tiles)";
+        if (recalc == true)
+            msg += " (recalc)";
+        $('#map_redraw')[0].innerHTML = msg;
+    }
+    
+    return false;
 }
 
 function refreshMap(render)
@@ -356,56 +424,51 @@ function toggleAnimation()
     }
 }
 
+function recalculateMapClipping()
+{
+    var recalc = false;
+    
+    if (viewX - viewableMap.clipx < (clipBuffer >> 1))
+        recalc = true;
+    else if (viewableMap.clip_width - (viewX + canvas.width) < (clipBuffer >> 1))
+        recalc = true;
+    else if (viewY - viewableMap.clipy < (clipBuffer >> 1))
+        recalc = true;
+    else if (viewableMap.clip_height - (viewY + canvas.height) < (clipBuffer >> 1))
+        recalc = true;
+    
+    if (recalc == true)
+        refreshMap(false);
+    
+    return recalc;
+}
+
 function windowBorderScroll()
 {
     var delta = false;
-    var recalc = false;
     if (mouseX < scrollBorder)
     {
         viewX -= mouseScrollGranulatiry;
-        
-        if (viewX - viewableMap.clipx < (clipBuffer >> 1))
-            recalc = true;
-        
         delta = true;
     } else if (mouseX > canvas.width - scrollBorder) {
         viewX += mouseScrollGranulatiry;
-        
-        if (viewableMap.clip_width - (viewX + canvas.width) < (clipBuffer >> 1))
-            recalc = true;
-        
         delta = true;
     }
     
     if (mouseY < scrollBorder)
     {
         viewY -= mouseScrollGranulatiry;
-        
-        if (viewY - viewableMap.clipy < (clipBuffer >> 1))
-            recalc = true;
-        
         delta = true;
     } else if (mouseY > canvas.height - scrollBorder) {
         viewY += mouseScrollGranulatiry;
-        
-        if (viewableMap.clip_height - (viewY + canvas.height) < (clipBuffer >> 1))
-            recalc = true;
-        
         delta = true;
     }
     
     if (delta == true)
     {
         var t2 = new Date();
-        
-        // Do we need to recalculate the clipping area?
-        if (recalc == true)
-            refreshMap(false);
-        
-        viewableMap.selectObject(mouseX, mouseY);
-        drawFrameDelta();
+        var recalc = recalculateMapClipping();
         renderMap(true);
-        
         var t3 = new Date();
         
         msg = "Map redraw: " + (t3-t2) + " ms" + " ("
