@@ -5,6 +5,7 @@ var tileBorderDebug = false;
 const FPS = 30;
 const alphaSelectionThreshold = 127;
 const mouseMoveDelay = (1000 / FPS);
+const scrollBorder = 32;
 
 // Preload images.
 var selection = new Image();
@@ -46,8 +47,12 @@ var tileBorder = 2;
 var focussed = -1;
 var mousemoveTimeout;
 var allowSelection = true;
+
+// Viewport Scrolling
+var clipBuffer = 256;
 var allowScrolling = true;
 var previousMouseMove = new Date();
+var mouseScrollGranulatiry = 5;
 
 window.onload = init;
 
@@ -129,7 +134,7 @@ function init()
     t0 = new Date();
     viewableMap = map.clip(viewX, viewY,
         canvas.width + viewX, canvas.height + viewY);
-    var tiles_drawn = renderMap();
+    var tiles_drawn = renderMap(true);
     t1 = new Date();
     
     msg = "Map redraw: " + (t1-t0) + " ms" + " ("+tiles_drawn+" tiles drawn)";
@@ -166,7 +171,31 @@ function mouseMoveHandler(evt)
     
     if (allowScrolling == true)
     {
+        var delta = false;
+        if (x < scrollBorder)
+        {
+            viewX -= mouseScrollGranulatiry;
+            delta = true;
+        } else if (x > canvas.width - scrollBorder) {
+            viewX += mouseScrollGranulatiry;
+            delta = true;
+        }
         
+        if (y < scrollBorder)
+        {
+            viewY -= mouseScrollGranulatiry;
+            delta = true;
+        } else if (y > canvas.height - scrollBorder) {
+            viewY += mouseScrollGranulatiry;
+            delta = true;
+        }
+        
+        var t2 = new Date();
+        if (delta) renderMap(true);
+        var t3 = new Date();
+        
+        msg = "Map redraw: " + (t3-t2) + " ms" + " ("+tiles_drawn+" tiles drawn)";
+        $('#map_redraw')[0].innerHTML = msg;
     }
     
     previousMouseMove = new Date();
@@ -201,8 +230,11 @@ function initTiles()
     tiles.push(canvas);
 }
 
-function renderMap()
+function renderMap(clear)
 {
+    if (clear)
+        canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+    
     var tiles_drawn = 0;
     var d = viewableMap.data;
     for (var i = 0; i < d.length; i++)
@@ -253,7 +285,7 @@ function drawFrameDelta(new_focus, old_focus)
     canvasContext.clip();
     // This was here in spritepick, but I dont know why.
     // canvasContext.fillRect(minx, miny, maxx - minx, maxy - miny);
-    var tiles_drawn = renderMap();
+    var tiles_drawn = renderMap(false);
     canvasContext.restore();
     return tiles_drawn;
 }
