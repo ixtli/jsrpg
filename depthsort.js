@@ -48,6 +48,11 @@ function DepthSortedArray()
     this.maxx = 0;
     this.maxy = 0;
     
+    this.clipx = 0;
+    this.clipy = 0;
+    this.clip_width = 0;
+    this.clip_height = 0;
+    
     // Member functions
     this.insert = DSAInsert;
     this.clip = DSAClip;
@@ -91,6 +96,11 @@ function DSAClip(minx, miny, maxx, maxy)
             d[i].px < maxx && d[i].py < maxy )
             ret.data.push(d[i]);
     }
+    
+    this.clipx = minx;
+    this.clipy = miny;
+    this.clip_height = maxy;
+    this.clip_width = maxx;
     
     return ret;
 }

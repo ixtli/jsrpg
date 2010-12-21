@@ -6,6 +6,7 @@ const FPS = 30;
 const alphaSelectionThreshold = 127;
 const mouseMoveDelay = (1000 / FPS);
 const scrollBorder = 32;
+const reclipThreshold = 32;
 
 // Preload images.
 var selection = new Image();
@@ -49,10 +50,10 @@ var mousemoveTimeout;
 var allowSelection = true;
 
 // Viewport Scrolling
-var clipBuffer = 256;
+var clipBuffer = 0;
 var allowScrolling = true;
 var previousMouseMove = new Date();
-var mouseScrollGranulatiry = 5;
+var mouseScrollGranulatiry = 8;
 
 window.onload = init;
 
@@ -60,6 +61,9 @@ function init()
 {
     // Get the canvas element to display the game in.
     canvas = document.getElementById('display');
+    
+    // define clipping buffer based on how big our canvas is
+    clipBuffer = Math.max(canvas.width, canvas.height) >> 2;
     
     // Create a buffer to draw to and initialize it
     buffer = $('<canvas>')[0];
@@ -132,12 +136,12 @@ function init()
     $('#insert_time')[0].innerHTML = msg;
     
     t0 = new Date();
-    viewableMap = map.clip(viewX, viewY,
-        canvas.width + viewX, canvas.height + viewY);
-    var tiles_drawn = renderMap(true);
+    viewableMap = map.clip(viewX - clipBuffer, viewY - clipBuffer,
+        canvas.width + viewX + clipBuffer, canvas.height + viewY + clipBuffer);
+    renderMap(true);
     t1 = new Date();
     
-    msg = "Map redraw: " + (t1-t0) + " ms" + " ("+tiles_drawn+" tiles drawn)";
+    msg = "Map redraw: " + (t1-t0) + " ms" + " (" + viewableMap.data.length + " tiles)";
     $('#map_redraw')[0].innerHTML = msg;
     
     // Set up mouse move event listener
@@ -162,7 +166,7 @@ function mouseMoveHandler(evt)
         focussed = viewableMap.selectObject(x, y);
         
         // Draw the bounding box for the update
-        var tiles_drawn = drawFrameDelta(focussed, old_focussed);
+        drawFrameDelta(focussed, old_focussed);
         
         var t2 = new Date();
         var msg = 'Selection time: '+(t2-t0) +' ms';
@@ -172,29 +176,59 @@ function mouseMoveHandler(evt)
     if (allowScrolling == true)
     {
         var delta = false;
+        var recalc = false;
         if (x < scrollBorder)
         {
             viewX -= mouseScrollGranulatiry;
+            
+            if (viewX - viewableMap.clipx < reclipThreshold)
+                recalc = true;
+            
             delta = true;
         } else if (x > canvas.width - scrollBorder) {
             viewX += mouseScrollGranulatiry;
+            
+            if (viewX - viewableMap.clip_width < reclipThreshold)
+                recalc = true;
+            
             delta = true;
         }
         
         if (y < scrollBorder)
         {
             viewY -= mouseScrollGranulatiry;
+            
+            if (viewY - viewableMap.clipy < reclipThreshold)
+                recalc = true;
+            
             delta = true;
         } else if (y > canvas.height - scrollBorder) {
             viewY += mouseScrollGranulatiry;
+            
+            if (viewY - viewableMap.clip_height < reclipThreshold)
+                recalc = true;
+            
             delta = true;
         }
         
         var t2 = new Date();
         if (delta) renderMap(true);
+        
+        // Do we need to recalculate the clipping area?
+        if (recalc = true)
+        {
+            delete viewableMap;
+            viewableMap = map.clip(viewX - clipBuffer, viewY - clipBuffer,
+                canvas.width + viewX + clipBuffer,
+                canvas.height + viewY + clipBuffer);
+        }
+        
         var t3 = new Date();
         
-        msg = "Map redraw: " + (t3-t2) + " ms" + " ("+tiles_drawn+" tiles drawn)";
+        msg = "Map redraw: " + (t3-t2) + " ms" + " ("
+        msg += viewableMap.data.length + " tiles)";
+        if (recalc = true)
+            msg += " (recalc)";
         $('#map_redraw')[0].innerHTML = msg;
     }
     
@@ -235,7 +269,6 @@ function renderMap(clear)
     if (clear)
         canvasContext.clearRect(0, 0, canvas.width, canvas.height);
     
-    var tiles_drawn = 0;
     var d = viewableMap.data;
     for (var i = 0; i < d.length; i++)
     {
@@ -243,11 +276,8 @@ function renderMap(clear)
         if (i == focussed)
         {
             canvasContext.drawImage(selection, d[i].px - viewX, d[i].py - viewY);
-            tiles_drawn++;
         }
-        tiles_drawn++;
     }
-    return tiles_drawn;
 }
 
 function drawFrameDelta(new_focus, old_focus)
@@ -285,9 +315,8 @@ function drawFrameDelta(new_focus, old_focus)
     canvasContext.clip();
     // This was here in spritepick, but I dont know why.
     // canvasContext.fillRect(minx, miny, maxx - minx, maxy - miny);
-    var tiles_drawn = renderMap(false);
+    renderMap(false);
     canvasContext.restore();
-    return tiles_drawn;
 }
 
 function toggleAnimation()
