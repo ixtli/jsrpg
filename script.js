@@ -86,6 +86,7 @@ function init()
     
     // generate terrain
     t0 = new Date();
+    
     /*
     for (var y = 7; y >= 0; y--)
     {
@@ -99,9 +100,9 @@ function init()
     }
     */
     
-    for (var i = 50; i >= 3; i--)
+    for (var i = 100; i >= 3; i--)
     {
-        for (var j = 50; j >= 3; j--)
+        for (var j = 100; j >= 3; j--)
         {
             map.insert(tiles[0], j, 0, i);
         }
@@ -157,7 +158,29 @@ function init()
         mouseInside = false;
     });
     
+    // Set up click handlers
+    $('#display').bind('click', clickHandler);
+    
     toggleAnimation();
+}
+
+function clickHandler()
+{
+    if (focussed == -1)
+        return;
+    
+    var foc = viewableMap.data[focussed];
+    
+    var t0 = new Date();
+    map.insert(foc.tile, foc.x, foc.y + 1, foc.z);
+    var t1 = new Date();
+    
+    console.log("Insertion took " + (t1 - t0) + "ms");
+    
+    delete viewableMap;
+    viewableMap = map.clip(viewX - clipBuffer, viewY - clipBuffer,
+        canvas.width + viewX + clipBuffer, canvas.height + viewY + clipBuffer);
+    renderMap(true);
 }
 
 function mouseMoveHandler(evt)
@@ -326,7 +349,6 @@ function windowBorderScroll()
     if (delta == true)
     {
         var t2 = new Date();
-        renderMap(true)
         
         // Do we need to recalculate the clipping area?
         if (recalc == true)
@@ -336,6 +358,11 @@ function windowBorderScroll()
                 canvas.width + viewX + clipBuffer,
                 canvas.height + viewY + clipBuffer);
         }
+        
+        viewableMap.selectObject(mouseX, mouseY);
+        drawFrameDelta();
+        renderMap(true);
+        
         var t3 = new Date();
         
         msg = "Map redraw: " + (t3-t2) + " ms" + " ("
@@ -343,6 +370,8 @@ function windowBorderScroll()
         if (recalc == true)
             msg += " (recalc)";
         $('#map_redraw')[0].innerHTML = msg;
+        
+        
     }
 }
 
