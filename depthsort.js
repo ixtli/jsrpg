@@ -97,10 +97,10 @@ function DSAClip(minx, miny, maxx, maxy)
             ret.data.push(d[i]);
     }
     
-    this.clipx = minx;
-    this.clipy = miny;
-    this.clip_height = maxy;
-    this.clip_width = maxx;
+    ret.clipx = minx;
+    ret.clipy = miny;
+    ret.clip_height = maxy;
+    ret.clip_width = maxx;
     
     return ret;
 }
