@@ -55,6 +55,7 @@ var clipBuffer = 0;
 var allowScrolling = true;
 var previousMouseMove = new Date();
 var mouseScrollGranulatiry = 8;
+var mouseInside = false;
 
 window.onload = init;
 
@@ -146,7 +147,15 @@ function init()
     $('#map_redraw')[0].innerHTML = msg;
     
     // Set up mouse move event listener
-    $('#display').bind('mousemove', mouseMoveHandler);
+    $('#display').bind('mouseenter focusin', function() {
+        $('#display').bind('mousemove', mouseMoveHandler);
+        mouseInside = true;
+    });
+    
+    $('#display').bind('mouseleave focusout', function() {
+        $('#display').unbind('mousemove');
+        mouseInside = false;
+    });
     
     toggleAnimation();
 }
@@ -176,7 +185,6 @@ function mouseMoveHandler(evt)
         var msg = 'Selection time: '+(t2-t0) +' ms';
         $('#selection_time')[0].innerHTML = msg;
     }
-    
     previousMouseMove = new Date();
     return false;
 }
@@ -279,9 +287,6 @@ function toggleAnimation()
 
 function windowBorderScroll()
 {
-    if (allowScrolling == false)
-        return;
-    
     var delta = false;
     var recalc = false;
     if (mouseX < scrollBorder)
@@ -339,15 +344,14 @@ function windowBorderScroll()
             msg += " (recalc)";
         $('#map_redraw')[0].innerHTML = msg;
     }
-    
-    return false;
 }
 
 function draw()
 {
     // Scrolling by leaving the mouse on the side is the only interaction
     // that involves holding a state that we care about
-    windowBorderScroll();
+    if (allowScrolling == true && mouseInside == true)
+        windowBorderScroll();
     
     canvasContext.clearRect(0,0,canvas.width, canvas.height);
     canvasContext.drawImage(buffer, 0, 0);
