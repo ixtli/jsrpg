@@ -52,9 +52,31 @@ function DepthSortedArray()
     this.insert = DSAInsert;
     this.clip = DSAClip;
     this.cull = DSACull;
+    this.selectObject = DSASelectObject;
     
     // Always return true from constructors
     return true;
+}
+
+function DSASelectObject(x, y)
+{
+    // return the front-most tile at pixel position (x,y) in the current
+    // viewport.
+    for (var i = this.data.length - 1; i >=0; i--)
+    {
+        var obj = this.data[i];
+        if (obj.px - viewX <= x && obj.py - viewY <= y &&
+            obj.px - viewX + obj.w > x && obj.py - viewY + obj.h > y)
+        {
+            var dx = Math.floor(x - (obj.px - viewX));
+            var dy = Math.floor(y - (obj.py - viewY));
+            var pixeldata = obj.tile.getContext('2d').getImageData(dx,dy,1,1);
+            if (pixeldata.data[3] > alphaSelectionThreshold) {
+                return i;
+            }
+        }
+    }
+    return -1;
 }
 
 function DSAClip(minx, miny, maxx, maxy)

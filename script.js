@@ -4,6 +4,7 @@ var tileBorderDebug = false;
 // Engine settings
 const FPS = 30;
 const alphaSelectionThreshold = 127;
+const mouseMoveDelay = (1000 / FPS);
 
 // Preload images.
 var selection = new Image();
@@ -34,7 +35,7 @@ var animationOn = false;
 // Map
 var map = null;
 var viewableMap = null;
-var viewX = 40, viewY = 5;
+var viewX = 0, viewY = 0;
 
 // Tile settings
 var tileWidth = 64;
@@ -44,6 +45,9 @@ var tileBorder = 2;
 // Sprite selection
 var focussed = -1;
 var mousemoveTimeout;
+var allowSelection = true;
+var allowScrolling = true;
+var previousMouseMove = new Date();
 
 window.onload = init;
 
@@ -137,47 +141,36 @@ function init()
 
 function mouseMoveHandler(evt)
 {
+    var time = new Date();
+    if (time - previousMouseMove < mouseMoveDelay)
+        return;
+    
     var x = evt.pageX, y = evt.pageY;
     x -= canvas.offsetLeft;
     y -= canvas.offsetTop;
     
-    if (mousemoveTimeout)
-        clearTimeout(mousemoveTimeout);
-    
-    mousemoveTimeout = setTimeout(function () {
-        var old_focussed = focussed;
-        var t0 = new Date();
-        // Handle mouse movement
-        mouseMove(x, y);
+    var old_focussed = focussed;
+    var t0 = new Date();
+    // Handle mouse movement
+    if (allowSelection == true)
+    {
+        focussed = viewableMap.selectObject(x, y);
         
         // Draw the bounding box for the update
         var tiles_drawn = drawFrameDelta(focussed, old_focussed);
         
         var t2 = new Date();
-        var msg = 'Selection time: '+(t2-t0) +' ms ('+tiles_drawn+' tiles drawn)';
+        var msg = 'Selection time: '+(t2-t0) +' ms';
         $('#selection_time')[0].innerHTML = msg;
-    });
-    
-    return false;
-}
-
-function mouseMove(x, y)
-{
-    for (var i = viewableMap.data.length - 1; i >=0; i--)
-    {
-        var obj = viewableMap.data[i];
-        if (obj.px - viewX <= x && obj.py - viewY <= y &&
-            obj.px - viewX + obj.w > x && obj.py - viewY + obj.h > y)
-        {
-            var dx = Math.floor(x - (obj.px - viewX));
-            var dy = Math.floor(y - (obj.py - viewY));
-            var pixeldata = obj.tile.getContext('2d').getImageData(dx,dy,1,1);
-            if (pixeldata.data[3] > alphaSelectionThreshold) {
-                focussed = i;
-                return;
-            }
-        }
     }
+    
+    if (allowScrolling == true)
+    {
+        
+    }
+    
+    previousMouseMove = new Date();
+    return false;
 }
 
 function initTiles()
