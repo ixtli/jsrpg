@@ -34,7 +34,7 @@ var animationOn = false;
 // Map
 var map = null;
 var viewableMap = null;
-var viewX = 0, viewY = 0;
+var viewX = 40, viewY = 5;
 
 // Tile settings
 var tileWidth = 64;
@@ -166,11 +166,11 @@ function mouseMove(x, y)
     for (var i = viewableMap.data.length - 1; i >=0; i--)
     {
         var obj = viewableMap.data[i];
-        if (obj.px <= x && obj.py <= y &&
-            obj.px + obj.w > x && obj.py + obj.h > y)
+        if (obj.px - viewX <= x && obj.py - viewY <= y &&
+            obj.px - viewX + obj.w > x && obj.py - viewY + obj.h > y)
         {
-            var dx = Math.floor(x - obj.px);
-            var dy = Math.floor(y - obj.py);
+            var dx = Math.floor(x - (obj.px - viewX));
+            var dy = Math.floor(y - (obj.py - viewY));
             var pixeldata = obj.tile.getContext('2d').getImageData(dx,dy,1,1);
             if (pixeldata.data[3] > alphaSelectionThreshold) {
                 focussed = i;
@@ -240,25 +240,26 @@ function drawFrameDelta(new_focus, old_focus)
     var obj = viewableMap.data[old_focus];
     if (obj)
     {
-        canvasContext.rect(obj.px, obj.py, obj.w, obj.h);
-        minx = Math.min(minx, obj.px);
-        miny = Math.min(miny, obj.py);
-        maxx = Math.max(maxx, obj.px + obj.w);
-        maxy = Math.max(maxy, obj.py + obj.h);
+        canvasContext.rect(obj.px - viewX, obj.py - viewY, obj.w, obj.h);
+        minx = Math.min(minx, obj.px - viewX);
+        miny = Math.min(miny, obj.py - viewY);
+        maxx = Math.max(maxx, obj.px - viewX + obj.w);
+        maxy = Math.max(maxy, obj.py - viewY + obj.h);
     }
     
     obj = viewableMap.data[new_focus];
     if (obj)
     {
-        canvasContext.rect(obj.px, obj.py, obj.w, obj.h);
-        minx = Math.min(minx, obj.px);
-        miny = Math.min(miny, obj.py);
-        maxx = Math.max(maxx, obj.px + obj.w);
-        maxy = Math.max(maxy, obj.py + obj.h);
+        canvasContext.rect(obj.px - viewX, obj.py - viewY, obj.w, obj.h);
+        minx = Math.min(minx, obj.px - viewX);
+        miny = Math.min(miny, obj.py - viewY);
+        maxx = Math.max(maxx, obj.px - viewX + obj.w);
+        maxy = Math.max(maxy, obj.py - viewY + obj.h);
     }
     
     canvasContext.clip();
-    canvasContext.fillRect(minx, miny, maxx - minx, maxy - miny);
+    // This was here in spritepick, but I dont know why.
+    // canvasContext.fillRect(minx, miny, maxx - minx, maxy - miny);
     var tiles_drawn = renderMap();
     canvasContext.restore();
     return tiles_drawn;

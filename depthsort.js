@@ -67,9 +67,7 @@ function DSAClip(minx, miny, maxx, maxy)
         // Omit everything not in our bounding box
         if (d[i].px + d[i].w > minx && d[i].py + d[i].h > miny &&
             d[i].px < maxx && d[i].py < maxy )
-        {
             ret.data.push(d[i]);
-        }
     }
     
     return ret;
