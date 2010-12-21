@@ -7,6 +7,7 @@ const alphaSelectionThreshold = 127;
 const mouseMoveDelay = (1000 / FPS);
 const scrollBorder = 32;
 const reclipThreshold = 16;
+const shadowStep = .1;
 
 // Preload images.
 var selection = new Image();
@@ -17,6 +18,8 @@ var dark_wall = new Image();
 dark_wall.src = "img/wall.png";
 var dark_wall_right = new Image();
 dark_wall_right.src = "img/wall-right.png";
+var shadow = new Image();
+shadow.src = "img/shadow.png";
 
 // Sprites
 var tiles = [];
@@ -180,11 +183,11 @@ function clickHandler(ev)
     if (ev.shiftKey)
     {
         viewableMap.deleteIndex(focussed);
-        refreshMap(true);
     } else {
         viewableMap.insertAbove(focussed, viewableMap.data[focussed].tile);
-        refreshMap(false);
     }
+    
+    refreshMap(true);
 }
 
 function mouseMoveHandler(evt)
@@ -256,6 +259,14 @@ function renderMap(clear)
         if (i == focussed)
         {
             bufferCtx.drawImage(selection, d[i].px - viewX, d[i].py - viewY);
+        }
+        
+        if (d[i].shadow != 0)
+        {
+            bufferCtx.save();
+            bufferCtx.globalAlpha = d[i].shadow;
+            bufferCtx.drawImage(shadow, d[i].px - viewX, d[i].py - viewY);
+            bufferCtx.restore();
         }
     }
 }

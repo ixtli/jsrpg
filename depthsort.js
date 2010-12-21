@@ -2,7 +2,7 @@ function DSAObject(tile, x, y, z)
 {
     // Member values
     this.tile = tile;
-    this.shadow = null;
+    this.shadow = 0;
     this.w = this.tile.width;
     this.h = this.tile.height;
     this.x = x;
@@ -70,11 +70,27 @@ function DepthSortedArray()
     return true;
 }
 
-function DSACastShadow(index, shadow)
+function DSACastShadow(index)
 {
     if (this.super_array != null)
         return;
     
+    if (index == 0)
+        return;
+    
+    var below = this.data[index - 1];
+    
+    if (below.x != this.data[index].x || below.z != this.data[index].z )
+        return;
+    
+    // Don't cast a shadow on something directly below.
+    if (below.y == this.data[index].y - 1)
+        return;
+    
+    below.shadow = 1 - ((this.data[index].y - below.y) * shadowStep);
+    
+    if (below.shadow < 0)
+        below.shadow = 0;
 }
 
 function DSADeleteObjectAtIndex(ind)
@@ -94,7 +110,7 @@ function DSADeleteObjectAtIndex(ind)
     
     a.data.splice(index, 1);
     
-    // TODO: remove shadow
+    // TODO: re-cast shadow from next object up or remove shadow from below
 }
 
 function DSAInsertAbove(ind, tile)
@@ -112,18 +128,56 @@ function DSAInsertAbove(ind, tile)
     var obj = a.data[index];
     
     // Make sure there's nothing above us already
-    if (a.data.length > obj.abs_index + 1)
+    if (a.data.length > index + 1)
     {
-        if (a.data[obj.abs_index+1].z == obj.z &&
-            a.data[obj.abs_index+1].x == obj.x &&
-            a.data[obj.abs_index+1].y == obj.y + 1)
+        if (a.data[index+1].z == obj.z &&
+            a.data[index+1].x == obj.x &&
+            a.data[index+1].y == obj.y + 1)
             return;
     }
     
     var n = new DSAObject(tile, obj.x, obj.y + 1, obj.z);
     
-    a.data.splice(obj.abs_index + 1, 0, n);
-    a.castShadow(obj.abs_index+1);
+    if (obj.shadow == 1)
+    {
+        obj.shadow = 0;
+    } else if (obj.shadow != 0) {
+        n.shadow = obj.shadow + shadowStep;
+        obj.shadow = 0;
+    }
+    
+    a.data.splice(index + 1, 0, n);
+    
+    a.castShadow(index);
+}
+
+function DSAInsertBelow(ind, tile)
+{
+    // We should not insert into an array that is a clipped region of a
+    // superset, because it would invalidate all the abs_index values
+    
+    var a = this, index = ind;
+    if (this.super_array != null)
+    {
+        a = this.super_array;
+        index = this.data[ind].abs_index;
+    }
+    
+    var obj = a.data[index];
+    
+    // Make sure there's nothing below us already
+    if (index - 1 >= 0)
+    {
+        if (a.data[index-1].z == obj.z &&
+            a.data[index-1].x == obj.x &&
+            a.data[index-1].y == obj.y - 1)
+            return;
+    }
+    
+    var n = new DSAObject(tile, obj.x, obj.y - 1, obj.z);
+    a.data.splice(index, 0, n);
+    
+    a.castShadow(index - 1);
 }
 
 function DSASelectObject(x, y)
