@@ -7,7 +7,7 @@ const alphaSelectionThreshold = 127;
 const mouseMoveDelay = (1000 / FPS);
 const scrollBorder = 32;
 const reclipThreshold = 16;
-const shadowStep = .1;
+const shadowStep = .2;
 
 // Preload images.
 var selection = new Image();

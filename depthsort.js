@@ -95,22 +95,36 @@ function DSACastShadow(index)
 
 function DSADeleteObjectAtIndex(ind)
 {
-    if (this.data.length <= ind)
-        return;
-    
     var a = this, index = ind;
     if (this.super_array != null)
     {
         a = this.super_array;
         index = this.data[ind].abs_index;
-        
-        if (a.data.length <= index)
-            return;
     }
     
-    a.data.splice(index, 1);
+    var above = null;
+    if (index + 1 < a.data.length)
+    {
+        if (a.data[index + 1].x == a.data[index].x &&
+            a.data[index + 1].z == a.data[index].z)
+            above = a.data[index+1];
+    }
     
-    // TODO: re-cast shadow from next object up or remove shadow from below
+    var deleted = a.data.splice(index, 1);
+    
+    // Handle shadow
+    if (above != null)
+    {
+        a.castShadow(index);
+    } else {
+        // If nothing is above us, remove shadow
+        if (index - 1 >= 0 && deleted.length > 0)
+        {
+            if (a.data[index - 1].x == deleted[0].x &&
+                a.data[index - 1].z == deleted[0].z)
+                a.data[index - 1].shadow = 0;
+        }
+    }
 }
 
 function DSAInsertAbove(ind, tile)
