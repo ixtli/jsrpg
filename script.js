@@ -69,6 +69,8 @@ var mouseInside = false;
 // Keyboard event handling
 var previousKeyboardEvent = new Date();
 var keyboardScrollGranulatiry = 32;
+const key_w = 87, key_a = 65, key_s = 83, key_d = 68, key_e = 69, key_f = 70;
+var keyMap = {up: key_w, down: key_s, left: key_a, right: key_d};
 
 window.onload = init;
 
@@ -176,7 +178,26 @@ function init()
     $('#display').attr('tabindex', '1');
     $('#display').bind('keydown', keypressHandler);
     
+    // handle ericb mode
+    $('#ebmode').bind('click', ericBHandler);
+    
     toggleAnimation();
+}
+
+function ericBHandler()
+{
+    if (keyMap.right == key_d)
+    {
+        keyMap.left = key_s;
+        keyMap.down = key_d;
+        keyMap.right = key_f;
+        keyMap.up = key_e;
+    } else {
+        keyMap.left = key_a;
+        keyMap.up = key_w;
+        keyMap.down = key_s;
+        keyMap.right = key_d;
+    }
 }
 
 function keypressHandler(evt)
@@ -191,7 +212,7 @@ function keypressHandler(evt)
     switch (code)
     {
         // a or left arrow
-        case 65:
+        case keyMap.left:
         case 37:
         viewX -= keyboardScrollGranulatiry;
         delta = true;
@@ -199,21 +220,21 @@ function keypressHandler(evt)
         
         // w or up arrow
         case 38:
-        case 87:
+        case keyMap.up:
         viewY -= keyboardScrollGranulatiry;
         delta = true;
         break;
         
         // s or down arrow
         case 40:
-        case 83:
+        case keyMap.down:
         viewY += keyboardScrollGranulatiry;
         delta = true;
         break;
         
         // d or right arrow
         case 39:
-        case 68:
+        case keyMap.right:
         viewX += keyboardScrollGranulatiry;
         delta = true;
         break;
