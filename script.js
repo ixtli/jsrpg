@@ -7,7 +7,7 @@ const alphaSelectionThreshold = 127;
 const mouseMoveDelay = (1000 / FPS);
 const scrollBorder = 32;
 const reclipThreshold = 16;
-const shadowStep = .2;
+const shadowStep = .1;
 
 // Preload images.
 var selection = new Image();
@@ -163,7 +163,16 @@ function init()
     // Set up click handlers
     $('#display').bind('click', clickHandler);
     
+    // Set up keyboard handlers
+    $('#display').attr('tabindex', '1');
+    $('#display').bind('keypress', keypressHandler);
+    
     toggleAnimation();
+}
+
+function keypressHandler(evt)
+{
+    console.log(evt);
 }
 
 function refreshMap(render)
