@@ -2,6 +2,7 @@ function DSAObject(tile, x, y, z)
 {
     // Member values
     this.tile = tile;
+    this.shadow = null;
     this.w = this.tile.width;
     this.h = this.tile.height;
     this.x = x;
@@ -10,6 +11,8 @@ function DSAObject(tile, x, y, z)
     
     this.px = 0;
     this.py = 0;
+    
+    this.abs_index;
     
     // Member functions
     this.genPixelValues = genPixelValues;
@@ -52,15 +55,75 @@ function DepthSortedArray()
     this.clipy = 0;
     this.clip_width = 0;
     this.clip_height = 0;
+    this.super_array = null;
     
     // Member functions
     this.insert = DSAInsert;
     this.clip = DSAClip;
     this.cull = DSACull;
     this.selectObject = DSASelectObject;
+    this.insertAbove = DSAInsertAbove;
+    this.castShadow = DSACastShadow;
+    this.deleteIndex = DSADeleteObjectAtIndex;
     
     // Always return true from constructors
     return true;
+}
+
+function DSACastShadow(index, shadow)
+{
+    if (this.super_array != null)
+        return;
+    
+}
+
+function DSADeleteObjectAtIndex(ind)
+{
+    if (this.data.length <= ind)
+        return;
+    
+    var a = this, index = ind;
+    if (this.super_array != null)
+    {
+        a = this.super_array;
+        index = this.data[ind].abs_index;
+        
+        if (a.data.length <= index)
+            return;
+    }
+    
+    a.data.splice(index, 1);
+    
+    // TODO: remove shadow
+}
+
+function DSAInsertAbove(ind, tile)
+{
+    // We should not insert into an array that is a clipped region of a
+    // superset, because it would invalidate all the abs_index values
+    
+    var a = this, index = ind;
+    if (this.super_array != null)
+    {
+        a = this.super_array;
+        index = this.data[ind].abs_index;
+    }
+    
+    var obj = a.data[index];
+    
+    // Make sure there's nothing above us already
+    if (a.data.length > obj.abs_index + 1)
+    {
+        if (a.data[obj.abs_index+1].z == obj.z &&
+            a.data[obj.abs_index+1].x == obj.x &&
+            a.data[obj.abs_index+1].y == obj.y + 1)
+            return;
+    }
+    
+    var n = new DSAObject(tile, obj.x, obj.y + 1, obj.z);
+    
+    a.data.splice(obj.abs_index + 1, 0, n);
+    a.castShadow(obj.abs_index+1);
 }
 
 function DSASelectObject(x, y)
@@ -94,13 +157,18 @@ function DSAClip(minx, miny, maxx, maxy)
         // Omit everything not in our bounding box
         if (d[i].px + d[i].w > minx && d[i].py + d[i].h > miny &&
             d[i].px < maxx && d[i].py < maxy )
+        {
             ret.data.push(d[i]);
+            ret.data[ret.data.length - 1].abs_index = i;
+        }
     }
     
     ret.clipx = minx;
     ret.clipy = miny;
     ret.clip_height = maxy;
     ret.clip_width = maxx;
+    
+    ret.super_array = this;
     
     return ret;
 }

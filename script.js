@@ -139,9 +139,7 @@ function init()
     $('#insert_time')[0].innerHTML = msg;
     
     t0 = new Date();
-    viewableMap = map.clip(viewX - clipBuffer, viewY - clipBuffer,
-        canvas.width + viewX + clipBuffer, canvas.height + viewY + clipBuffer);
-    renderMap(true);
+    refreshMap(true);
     t1 = new Date();
     
     msg = "Map redraw: " + (t1-t0) + " ms" + " (" + viewableMap.data.length + " tiles)";
@@ -164,23 +162,29 @@ function init()
     toggleAnimation();
 }
 
-function clickHandler()
+function refreshMap(render)
+{
+    if (viewableMap != null) delete viewableMap;
+    
+    viewableMap = map.clip(viewX - clipBuffer, viewY - clipBuffer,
+        canvas.width + viewX + clipBuffer, canvas.height + viewY + clipBuffer);
+    
+    if (render == true) renderMap(true);
+}
+
+function clickHandler(ev)
 {
     if (focussed == -1)
         return;
     
-    var foc = viewableMap.data[focussed];
-    
-    var t0 = new Date();
-    map.insert(foc.tile, foc.x, foc.y + 1, foc.z);
-    var t1 = new Date();
-    
-    console.log("Insertion took " + (t1 - t0) + "ms");
-    
-    delete viewableMap;
-    viewableMap = map.clip(viewX - clipBuffer, viewY - clipBuffer,
-        canvas.width + viewX + clipBuffer, canvas.height + viewY + clipBuffer);
-    renderMap(true);
+    if (ev.shiftKey)
+    {
+        viewableMap.deleteIndex(focussed);
+        refreshMap(true);
+    } else {
+        viewableMap.insertAbove(focussed, viewableMap.data[focussed].tile);
+        refreshMap(false);
+    }
 }
 
 function mouseMoveHandler(evt)
@@ -256,6 +260,29 @@ function renderMap(clear)
     }
 }
 
+function refreshObject(index, clear)
+{
+    bufferCtx.save();
+    bufferCtx.beginPath();
+    
+    var minx = 0, miny = 0;
+    var maxx = canvasContext.width, maxy = canvasContext.height;
+    
+    var obj = viewableMap.data[index];
+    if (obj)
+    {
+        bufferCtx.rect(obj.px - viewX, obj.py - viewY, obj.w, obj.h);
+        minx = Math.min(minx, obj.px - viewX);
+        miny = Math.min(miny, obj.py - viewY);
+        maxx = Math.max(maxx, obj.px - viewX + obj.w);
+        maxy = Math.max(maxy, obj.py - viewY + obj.h);
+    }
+    
+    bufferCtx.clip();
+    renderMap(refresh);
+    bufferCtx.restore();
+}
+
 function drawFrameDelta(new_focus, old_focus)
 {
     // This function tell the canvas to be drawn to to restrict updating
@@ -289,8 +316,6 @@ function drawFrameDelta(new_focus, old_focus)
     }
     
     bufferCtx.clip();
-    // This was here in spritepick, but I dont know why.
-    // canvasContext.fillRect(minx, miny, maxx - minx, maxy - miny);
     renderMap(false);
     bufferCtx.restore();
 }
@@ -352,12 +377,7 @@ function windowBorderScroll()
         
         // Do we need to recalculate the clipping area?
         if (recalc == true)
-        {
-            delete viewableMap;
-            viewableMap = map.clip(viewX - clipBuffer, viewY - clipBuffer,
-                canvas.width + viewX + clipBuffer,
-                canvas.height + viewY + clipBuffer);
-        }
+            refreshMap(false);
         
         viewableMap.selectObject(mouseX, mouseY);
         drawFrameDelta();
@@ -370,8 +390,6 @@ function windowBorderScroll()
         if (recalc == true)
             msg += " (recalc)";
         $('#map_redraw')[0].innerHTML = msg;
-        
-        
     }
 }
 
