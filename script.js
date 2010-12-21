@@ -36,6 +36,7 @@ var bufferCtx = null;
 // Animation variables
 var interval = null;
 var animationOn = false;
+var bufferDirty = false;
 
 // Map
 var map = null;
@@ -269,6 +270,8 @@ function renderMap(clear)
             bufferCtx.restore();
         }
     }
+    
+    bufferDirty = true;
 }
 
 function refreshObject(index, clear)
@@ -411,6 +414,10 @@ function draw()
     if (allowScrolling == true && mouseInside == true)
         windowBorderScroll();
     
-    canvasContext.clearRect(0,0,canvas.width, canvas.height);
-    canvasContext.drawImage(buffer, 0, 0);
+    if (bufferDirty == true)
+    {
+        canvasContext.clearRect(0,0,canvas.width, canvas.height);
+        canvasContext.drawImage(buffer, 0, 0);
+        bufferDirty = false;
+    }
 }
