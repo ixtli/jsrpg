@@ -1,18 +1,23 @@
 function DSAObject(tile, x, y, z)
 {
     // Member values
-    this.tile = tile;
-    this.shadow = 0;
-    this.w = this.tile.width;
-    this.h = this.tile.height;
     this.x = x;
     this.y = y;
     this.z = z;
     
+    // Drawing-related members
     this.px = 0;
     this.py = 0;
     
+    // depth sort array helper members
     this.abs_index;
+    
+    // graphics related members
+    this.tile = tile;
+    this.w = this.tile.width;
+    this.h = this.tile.height;
+    this.shadow = 0;
+    this.selected = false;
     
     // Member functions
     this.genPixelValues = genPixelValues;

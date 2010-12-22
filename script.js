@@ -40,11 +40,13 @@ var bufferCtx = null;
 var interval = null;
 var animationOn = false;
 var bufferDirty = false;
+var previousFrameTime = 0;
 
 // Map
 var map = null;
 var viewableMap = null;
 var viewX = 0, viewY = 0;
+var clipStack = [];
 
 // Tile settings
 var tileWidth = 64;
@@ -69,7 +71,8 @@ var mouseInside = false;
 // Keyboard event handling
 var previousKeyboardEvent = new Date();
 var keyboardScrollGranulatiry = 32;
-const key_w = 87, key_a = 65, key_s = 83, key_d = 68, key_e = 69, key_f = 70;
+const key_w = 87, key_a = 65, key_s = 83, key_d = 68, key_e = 69, key_f = 70,
+    key_up = 38, key_down = 40, key_left = 37, key_right = 39;
 var keyMap = {up: key_w, down: key_s, left: key_a, right: key_d};
 
 window.onload = init;
@@ -213,27 +216,27 @@ function keypressHandler(evt)
     {
         // a or left arrow
         case keyMap.left:
-        case 37:
+        case key_left:
         viewX -= keyboardScrollGranulatiry;
         delta = true;
         break;
         
         // w or up arrow
-        case 38:
+        case key_up:
         case keyMap.up:
         viewY -= keyboardScrollGranulatiry;
         delta = true;
         break;
         
         // s or down arrow
-        case 40:
+        case key_down:
         case keyMap.down:
         viewY += keyboardScrollGranulatiry;
         delta = true;
         break;
         
         // d or right arrow
-        case 39:
+        case key_right:
         case keyMap.right:
         viewX += keyboardScrollGranulatiry;
         delta = true;
@@ -251,7 +254,7 @@ function keypressHandler(evt)
         
         var t2 = new Date();
         var recalc = recalculateMapClipping();
-        renderMap(true);
+        redrawMap(true);
         var t3 = new Date();
         
         msg = "Map redraw: " + (t3-t2) + " ms" + " ("
@@ -271,7 +274,7 @@ function refreshMap(render)
     viewableMap = map.clip(viewX - clipBuffer, viewY - clipBuffer,
         canvas.width + viewX + clipBuffer, canvas.height + viewY + clipBuffer);
     
-    if (render == true) renderMap(true);
+    if (render == true) redrawMap(true);
 }
 
 function clickHandler(ev)
@@ -300,20 +303,6 @@ function mouseMoveHandler(evt)
     mouseX -= canvas.offsetLeft;
     mouseY -= canvas.offsetTop;
     
-    var old_focussed = focussed;
-    var t0 = new Date();
-    // Handle mouse movement
-    if (allowSelection == true)
-    {
-        focussed = viewableMap.selectObject(mouseX, mouseY);
-        
-        // Draw the bounding box for the update
-        drawFrameDelta(focussed, old_focussed);
-        
-        var t2 = new Date();
-        var msg = 'Selection time: '+(t2-t0) +' ms';
-        $('#selection_time')[0].innerHTML = msg;
-    }
     previousMouseMove = new Date();
     return false;
 }
@@ -346,8 +335,22 @@ function initTiles()
     tiles.push(canvas);
 }
 
-function renderMap(clear)
+function redrawMap(clear)
 {
+    // Push context
+    bufferCtx.save();
+    // Bigin definition of new clipping path
+    bufferCtx.beginPath();
+    
+    while (clipStack.length != 0)
+    {
+        var obj = clipStack.pop();
+        bufferCtx.rect(obj[0], obj[1], obj[2], obj[3]);
+    }
+    
+    // Clip the area of relevant changes
+    bufferCtx.clip();
+    
     if (clear)
         bufferCtx.clearRect(0, 0, canvas.width, canvas.height);
     
@@ -369,67 +372,17 @@ function renderMap(clear)
         }
     }
     
+    // Get rid of the previous clipping path
+    bufferCtx.restore();
+    
     bufferDirty = true;
 }
 
-function refreshObject(index, clear)
+function redrawObject(index)
 {
-    bufferCtx.save();
-    bufferCtx.beginPath();
-    
-    var minx = 0, miny = 0;
-    var maxx = canvasContext.width, maxy = canvasContext.height;
-    
     var obj = viewableMap.data[index];
     if (obj)
-    {
-        bufferCtx.rect(obj.px - viewX, obj.py - viewY, obj.w, obj.h);
-        minx = Math.min(minx, obj.px - viewX);
-        miny = Math.min(miny, obj.py - viewY);
-        maxx = Math.max(maxx, obj.px - viewX + obj.w);
-        maxy = Math.max(maxy, obj.py - viewY + obj.h);
-    }
-    
-    bufferCtx.clip();
-    renderMap(refresh);
-    bufferCtx.restore();
-}
-
-function drawFrameDelta(new_focus, old_focus)
-{
-    // This function tell the canvas to be drawn to to restrict updating
-    // to a bounding box that only includes the sprite that USED to be
-    // in focus, and the one that is in focus now.
-    
-    bufferCtx.save();
-    bufferCtx.beginPath();
-    
-    var minx = 0, miny = 0;
-    var maxx = canvasContext.width, maxy = canvasContext.height;
-    
-    var obj = viewableMap.data[old_focus];
-    if (obj)
-    {
-        bufferCtx.rect(obj.px - viewX, obj.py - viewY, obj.w, obj.h);
-        minx = Math.min(minx, obj.px - viewX);
-        miny = Math.min(miny, obj.py - viewY);
-        maxx = Math.max(maxx, obj.px - viewX + obj.w);
-        maxy = Math.max(maxy, obj.py - viewY + obj.h);
-    }
-    
-    obj = viewableMap.data[new_focus];
-    if (obj)
-    {
-        bufferCtx.rect(obj.px - viewX, obj.py - viewY, obj.w, obj.h);
-        minx = Math.min(minx, obj.px - viewX);
-        miny = Math.min(miny, obj.py - viewY);
-        maxx = Math.max(maxx, obj.px - viewX + obj.w);
-        maxy = Math.max(maxy, obj.py - viewY + obj.h);
-    }
-    
-    bufferCtx.clip();
-    renderMap(false);
-    bufferCtx.restore();
+        clipStack.push( [obj.px - viewX, obj.py - viewY, obj.w, obj.h]);
 }
 
 function toggleAnimation()
@@ -489,7 +442,7 @@ function windowBorderScroll()
     {
         var t2 = new Date();
         var recalc = recalculateMapClipping();
-        renderMap(true);
+        redrawMap(true);
         var t3 = new Date();
         
         msg = "Map redraw: " + (t3-t2) + " ms" + " ("
@@ -498,14 +451,37 @@ function windowBorderScroll()
             msg += " (recalc)";
         $('#map_redraw')[0].innerHTML = msg;
     }
+    
+    return delta;
 }
 
 function draw()
 {
     // Scrolling by leaving the mouse on the side is the only interaction
     // that involves holding a state that we care about
+    
+    var delta = false;
     if (allowScrolling == true && mouseInside == true)
-        windowBorderScroll();
+        delta = windowBorderScroll();
+    
+    // Handle mouse movement
+    if (allowSelection == true &&
+        (previousMouseMove > previousFrameTime) || delta == true)
+    {
+        var old_focussed = focussed;
+        var t0 = new Date();
+        
+        focussed = viewableMap.selectObject(mouseX, mouseY);
+        
+        // Draw the bounding box for the update
+        redrawObject(focussed);
+        redrawObject(old_focussed);
+        redrawMap(true);
+        
+        var t2 = new Date();
+        var msg = 'Selection time: '+(t2-t0) +' ms';
+        $('#selection_time')[0].innerHTML = msg;
+    }
     
     if (bufferDirty == true)
     {
@@ -513,4 +489,6 @@ function draw()
         canvasContext.drawImage(buffer, 0, 0);
         bufferDirty = false;
     }
+    
+    previousFrameTime = new Date();
 }
