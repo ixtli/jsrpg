@@ -62,6 +62,8 @@ function DepthSortedArray()
     this.clip_height = 0;
     this.super_array = null;
     
+    this.z_sets = [];
+    
     // Member functions
     this.insert = DSAInsert;
     this.clip = DSAClip;
@@ -70,9 +72,62 @@ function DepthSortedArray()
     this.insertAbove = DSAInsertAbove;
     this.castShadow = DSACastShadow;
     this.deleteIndex = DSADeleteObjectAtIndex;
+    this.findObject = DSAFindObject;
     
     // Always return true from constructors
     return true;
+}
+
+function DSAFindObject(obj)
+{
+    // This method returns the the index of the object in the SUPER ARRAY only
+    // returns null of not present
+    
+    var a = this;
+    if (a.super_array)
+        a = this.super_array;
+    
+    // Get the end of the current zset
+    var max;
+    if (obj.z == a.maxz)
+        max = a.data.length;
+    else
+        max = a.z_sets[obj.z + 1];
+    
+    var index = a.z_sets[obj.z];
+    if (obj === a.data[index])
+        return index;
+    
+    while(max != index)
+    {
+        var temp = index + ((max - index) >> 1);
+        
+        if (a.data[temp] === obj)
+            return temp;
+        
+        if (a.data[temp].x > obj.x)
+        {
+            max = temp;
+            continue;
+        } else if (a.data[temp].x < obj.x) {
+            index = temp;
+            continue;
+        }
+        
+        if (a.data[temp].y > obj.y)
+        {
+            max = temp;
+            continue;
+        } else if (a.data[temp].y < obj.y) {
+            index = temp;
+            continue;
+        }
+        
+        console.log("search error");
+        return null;
+    }
+    
+    return null;
 }
 
 function DSACastShadow(index)
@@ -107,6 +162,7 @@ function DSADeleteObjectAtIndex(ind)
         index = this.data[ind].abs_index;
     }
     
+    // Figure out if there is a block spacially above us or not
     var above = null;
     if (index + 1 < a.data.length)
     {
@@ -128,6 +184,48 @@ function DSADeleteObjectAtIndex(ind)
             if (a.data[index - 1].x == deleted[0].x &&
                 a.data[index - 1].z == deleted[0].z)
                 a.data[index - 1].shadow = 0;
+        }
+    }
+    
+    // Maintain zsets The zset of this object has decreased in size
+    // Reduce the size of all zsets above us
+    for (var i = deleted.z + 1; i < a.z_sets.length; i++)
+        a.z_sets[i] -= 1;
+    
+    // is deleted in the largest zset?
+    if (deleted.z == a.z_sets.length - 1)
+    {
+        // Did we just delete the last element of this zset?
+        if (a.z_sets[deleted.z] == a.data.length)
+        {
+            a.z_sets[deleted.z] = -1;
+            // trim the array
+            do
+            {
+                if (a.z_sets[a.z_sets.length - 1] != -1)
+                    break;
+                    
+                a.z_sets.pop();
+            } while (a.z_sets.length > 0);
+            
+            // Keep track of maxz value
+            a.maxz = a.z_sets.length - 1;
+        }
+    } else {
+        if (a.data[index].z != deleted.z)
+        {
+            if (a.data[index + 1].z != deleted.z)
+            {
+                if (index == 0)
+                {
+                    a.z_sets[deleted.z] = -1;
+                } else if (a.data[index - 1].z != deleted.z) {
+                    a.z_sets[deleted.z] = -1;
+                }
+            } else {
+                // we removed the first item in the set
+                a.z_sets[deleted.z] += 1;
+            }
         }
     }
 }
@@ -257,30 +355,47 @@ function DSAInsert(tile, x, y, z) {
     // Initial case
     if (this.data.length == 0)
     {
+        this.maxz = z;
+        this.maxy = y;
+        this.maxx = x;
+        
+        for (var i = 0; i < z - 1; i++)
+            this.z_sets.push(-1);
+        
+        // Push the index of the new set
+        this.z_sets.push(0);
+        
+        // Push the actual object
         this.data.push(object);
+        
+        return;
+    }
+    
+    // We want to keep track of the start indexes of z sets, so treat
+    // the following as a special condition
+    if (z > this.maxz)
+    {
+        // Make blank zsets until we get to the new one
+        for (var i = this.maxz; i < z - 1; i++)
+            this.z_sets.push(-1);
+        
+        // Push the index of the new set
+        this.z_sets.push(this.data.push(object) - 1);
+        
+        // Update maxz value
+        this.maxz = z;
+        
         return;
     }
     
     // Insert it into the map array where it needs to go.
     // lowest z value first, lowest x, then lowest y
     var index = 0;
-    var zstart = 0;
-    // sort z values
-    for (; index < this.data.length; index++)
-    {
-        if (this.data[index].z > object.z)
-            break;
-        
-        // If this z is <= than object.z and it's different from the preivous
-        // z value, it's a new zset
-        if (this.data[zstart].z != this.data[index].z)
-            zstart = index;
-    }
     
     // Does this z value exist in this.data?  If it does, sort by x
-    if (this.data[zstart].z == object.z)
+    if (this.z_sets[object.z] > -1)
     {
-        index = zstart;
+        index = this.z_sets[object.z];
         var xstart = index;
         for (; index < this.data.length; index++)
         {
@@ -314,12 +429,28 @@ function DSAInsert(tile, x, y, z) {
             
         } else {
             // This is a new xval for this zset
+            // this xset has increased in length
         }
         
-        // zset has increased in length
+        // zset has increased in length, so increase all following zset indicies
+        for (var i = z + 1; i < this.z_sets.length ; i++)
+            this.z_sets[i] += 1;
         
     } else {
-        // This is a new zval
+        // First element in a zset
+        if (z == this.maxz)
+            // We're the first to insert into the biggest zset
+            index = this.data.push(object) - 1;
+        else
+            // We want to insert before the beginning of the next-biggest zset
+            index = this.z_sets[z+1];
+        
+        // This is a new zval, so note its index in the z_sets[]
+        this.z_sets[z] = index;
+        
+        // zset has increased in length, so increase all following zset indicies
+        for (var i = z + 1; i < this.z_sets.length; i++)
+            this.z_sets[i] += 1;
     }
     
     // Alert on duplicates
@@ -328,9 +459,8 @@ function DSAInsert(tile, x, y, z) {
     this.data.splice(index, 0, object);
     
     // keep track of maximum x, y, z values
-    if (x > self.maxx) self.maxx = x;
-    if (y > self.maxy) self.maxy = y;
-    if (z > self.maxz) self.maxz = z;
+    if (x > this.maxx) this.maxx = x;
+    if (y > this.maxy) this.maxy = y;
     
     return index;
 }

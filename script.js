@@ -1,6 +1,10 @@
 // debugging
 var tileBorderDebug = false;
 
+// Convenience
+const key_w = 87, key_a = 65, key_s = 83, key_d = 68, key_e = 69, key_f = 70,
+    key_up = 38, key_down = 40, key_left = 37, key_right = 39;
+
 // Engine settings
 const FPS = 30;
 const alphaSelectionThreshold = 127;
@@ -71,8 +75,6 @@ var mouseInside = false;
 // Keyboard event handling
 var previousKeyboardEvent = new Date();
 var keyboardScrollGranulatiry = 32;
-const key_w = 87, key_a = 65, key_s = 83, key_d = 68, key_e = 69, key_f = 70,
-    key_up = 38, key_down = 40, key_left = 37, key_right = 39;
 var keyMap = {up: key_w, down: key_s, left: key_a, right: key_d};
 
 window.onload = init;
@@ -116,8 +118,8 @@ function init()
             }
         }
     }
-    */
     
+    */
     for (var i = 100; i >= 3; i--)
     {
         for (var j = 100; j >= 3; j--)
@@ -130,6 +132,7 @@ function init()
     map.insert(tiles[0], 7, 1, 7);
     map.insert(tiles[0], 8, 1, 6);
     map.insert(tiles[0], 6, 1, 8);
+    
     
     for (var i = 2; i >= 1; i--)
         map.insert(tiles[0], 6, i, 7);
@@ -149,6 +152,9 @@ function init()
     for (var i = 5; i >= 1; i--)
         map.insert(tiles[0], 6, i, 5);
     
+    map.insert(tiles[0], 10, 0, 10);
+    map.insert(tiles[0], 9, 0, 10);
+    
     
     t1 = new Date();
     
@@ -157,6 +163,7 @@ function init()
     $('#insert_time')[0].innerHTML = msg;
     
     t0 = new Date();
+    clipStack.push([0, 0, canvas.width, canvas.height]);
     refreshMap(true);
     t1 = new Date();
     
@@ -249,13 +256,20 @@ function keypressHandler(evt)
     
     if (delta == true)
     {
-        // TODO: figure out how to update the selected sprite WHILE scrolling
-        focussed = -1;
-        
+        var old_object = viewableMap.data[focussed];
         var t2 = new Date();
         var recalc = recalculateMapClipping();
+        clipStack.push([0, 0, canvas.width, canvas.height]);
         redrawMap(true);
         var t3 = new Date();
+        
+        if (recalc)
+        {
+            // This should find the previously selected tile in the newly
+            // viewable area, otherwise drop it
+            focussed = viewableMap.find
+            focussed = -1;
+        }
         
         msg = "Map redraw: " + (t3-t2) + " ms" + " ("
         msg += viewableMap.data.length + " tiles)";
@@ -285,6 +299,7 @@ function clickHandler(ev)
     if (ev.shiftKey)
     {
         viewableMap.deleteIndex(focussed);
+        focussed = -1;
     } else {
         viewableMap.insertAbove(focussed, viewableMap.data[focussed].tile);
     }
@@ -322,7 +337,7 @@ function initTiles()
     if (tileBorderDebug)
     {
         ctx.fillStyle = "rgba(255,0,0,0.25)";
-        ctx.fillRect(0,0,100, 100);
+        ctx.fillRect(0,0,canvas.width, canvas.height);
     }
     // Left wall
     ctx.drawImage(dark_wall, 0, (tileHeight >> 1) + 1);
@@ -402,6 +417,10 @@ function recalculateMapClipping()
 {
     var recalc = false;
     
+    // A quick optimization for smallish maps
+    if (map.data.length == viewableMap.data.length)
+        return recalc;
+        
     if (viewX - viewableMap.clipx < (clipBuffer >> 1))
         recalc = true;
     else if (viewableMap.clip_width - (viewX + canvas.width) < (clipBuffer >> 1))
@@ -442,6 +461,7 @@ function windowBorderScroll()
     {
         var t2 = new Date();
         var recalc = recalculateMapClipping();
+        clipStack.push([0, 0, canvas.width, canvas.height]);
         redrawMap(true);
         var t3 = new Date();
         
