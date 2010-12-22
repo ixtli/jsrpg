@@ -11,6 +11,7 @@ function DSAObject(tile, x, y, z)
     
     // depth sort array helper members
     this.abs_index;
+    this.container_array;
     
     // graphics related members
     this.tile = tile;
@@ -351,6 +352,7 @@ function DSACull() {
 function DSAInsert(tile, x, y, z) {
     
     var object = new DSAObject(tile, x, y, z);
+    object.container_array = this;
     
     // Initial case
     if (this.data.length == 0)
