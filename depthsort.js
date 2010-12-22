@@ -311,11 +311,11 @@ function DSASelectObject(x, y)
             var dy = Math.floor(y - (obj.py - viewY));
             var pixeldata = obj.tile.getContext('2d').getImageData(dx,dy,1,1);
             if (pixeldata.data[3] > alphaSelectionThreshold) {
-                return i;
+                return obj;
             }
         }
     }
-    return -1;
+    return null;
 }
 
 function DSAClip(minx, miny, maxx, maxy)

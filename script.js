@@ -58,7 +58,7 @@ var tileHeight = 32;
 var tileBorder = 2;
 
 // Sprite selection
-var focussed = -1;
+var focussed = null;
 var mousemoveTimeout;
 var allowSelection = true;
 var mouseX = 0, mouseY = 0;
@@ -120,6 +120,7 @@ function init()
     }
     
     */
+    
     for (var i = 100; i >= 3; i--)
     {
         for (var j = 100; j >= 3; j--)
@@ -256,20 +257,11 @@ function keypressHandler(evt)
     
     if (delta == true)
     {
-        var old_object = viewableMap.data[focussed];
         var t2 = new Date();
         var recalc = recalculateMapClipping();
         clipStack.push([0, 0, canvas.width, canvas.height]);
         redrawMap(true);
         var t3 = new Date();
-        
-        if (recalc)
-        {
-            // This should find the previously selected tile in the newly
-            // viewable area, otherwise drop it
-            focussed = viewableMap.find
-            focussed = -1;
-        }
         
         msg = "Map redraw: " + (t3-t2) + " ms" + " ("
         msg += viewableMap.data.length + " tiles)";
@@ -293,15 +285,15 @@ function refreshMap(render)
 
 function clickHandler(ev)
 {
-    if (focussed == -1)
+    if (focussed == null)
         return;
     
     if (ev.shiftKey)
     {
-        viewableMap.deleteIndex(focussed);
-        focussed = -1;
+        map.deleteIndex(focussed.abs_index);
+        focussed = null;
     } else {
-        viewableMap.insertAbove(focussed, viewableMap.data[focussed].tile);
+        map.insertAbove(focussed.abs_index, focussed.tile);
     }
     
     refreshMap(true);
@@ -373,7 +365,7 @@ function redrawMap(clear)
     for (var i = 0; i < d.length; i++)
     {
         bufferCtx.drawImage(d[i].tile, d[i].px - viewX, d[i].py - viewY);
-        if (i == focussed)
+        if (d[i].selected == true)
         {
             bufferCtx.drawImage(selection, d[i].px - viewX, d[i].py - viewY);
         }
@@ -393,11 +385,9 @@ function redrawMap(clear)
     bufferDirty = true;
 }
 
-function redrawObject(index)
+function redrawObject(obj)
 {
-    var obj = viewableMap.data[index];
-    if (obj)
-        clipStack.push( [obj.px - viewX, obj.py - viewY, obj.w, obj.h]);
+    clipStack.push([obj.px - viewX, obj.py - viewY, obj.w, obj.h]);
 }
 
 function toggleAnimation()
@@ -486,21 +476,36 @@ function draw()
     
     // Handle mouse movement
     if (allowSelection == true &&
-        (previousMouseMove > previousFrameTime) || delta == true)
+        (previousMouseMove > previousFrameTime || delta == true))
     {
-        var old_focussed = focussed;
         var t0 = new Date();
+        var obj = viewableMap.selectObject(mouseX, mouseY);
         
-        focussed = viewableMap.selectObject(mouseX, mouseY);
-        
-        // Draw the bounding box for the update
-        redrawObject(focussed);
-        redrawObject(old_focussed);
-        redrawMap(true);
-        
-        var t2 = new Date();
-        var msg = 'Selection time: '+(t2-t0) +' ms';
-        $('#selection_time')[0].innerHTML = msg;
+        if (obj == null)
+        {
+            if (focussed != null)
+            {
+                redrawObject(focussed);
+                focussed.selected = false;
+                redrawMap(false);
+            }
+        } else if (obj != focussed) {
+            
+            if (focussed != null)
+            {
+                redrawObject(focussed);
+                focussed.selected = false;
+            }
+            
+            redrawObject(obj);
+            obj.selected = true;
+            focussed = obj;
+            redrawMap(true);
+            
+            var t2 = new Date();
+            var msg = 'Selection time: '+(t2-t0) +' ms';
+            $('#selection_time')[0].innerHTML = msg;
+        }
     }
     
     if (bufferDirty == true)
