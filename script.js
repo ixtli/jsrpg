@@ -67,6 +67,7 @@ var mouseX = 0, mouseY = 0;
 // Viewport Scrolling
 var clipBuffer = 0;
 var allowScrolling = true;
+var cameraFollowsSelection = true;
 
 // Mouse movement event handling
 var previousMouseMove = new Date();
@@ -306,6 +307,8 @@ function keypressHandler(evt)
         {
             var index = map.lowestObject(focussed.z, focussed.x);
             
+            if (index == null)
+                break;
             if (map.data[index] != focussed)
             {
                 while(index < map.data.length)
