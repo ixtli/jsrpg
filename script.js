@@ -209,12 +209,49 @@ function ericBHandler()
     }
 }
 
-function setSelection(object)
+function setSelection(object, keepInViewport)
 {
-    if (focussed)
+    if (focussed != null)
     {
         redrawObject(focussed);
         focussed.selected = false;
+    }
+    
+    var delta = false;
+    if (cameraFollowsSelection == true && keepInViewport == true)
+    {
+        if (object.px < viewX + scrollBorder)
+        {
+            viewX = object.px - scrollBorder;
+            delta = true;
+        } else if (object.px + object.w > viewX + canvas.width - scrollBorder) {
+            viewX = (object.px + object.w + scrollBorder) - canvas.width;
+            delta = true;
+        }
+        
+        if (object.py < viewY + scrollBorder)
+        {
+            viewY = object.py - scrollBorder;
+            delta = true;
+        } else if (object.py + object.h > viewY + canvas.height - scrollBorder){
+            viewY = (object.py + object.h + scrollBorder) - canvas.height;
+            delta = true;
+        }
+    }
+    
+    if (delta == true)
+    {
+        var t2 = new Date();
+        var recalc = recalculateMapClipping();
+        clipStack.push([0, 0, canvas.width, canvas.height]);
+        redrawMap(true);
+        var t3 = new Date();
+        
+        msg = "Map redraw: " + (t3-t2) + " ms" + " ("
+        msg += viewableMap.data.length + " tiles)";
+        if (recalc == true)
+            msg += " (recalc)";
+        $('#map_redraw')[0].innerHTML = msg;
     }
     
     object.selected = true;
@@ -259,7 +296,7 @@ function keypressHandler(evt)
             var found = objectFurther(focussed);
             if (found != null)
             {
-                setSelection(found);
+                setSelection(found, true);
                 redrawMap(false);
             }
         }
@@ -271,7 +308,7 @@ function keypressHandler(evt)
             var found = objectLeft(focussed);
             if (found != null)
             {
-                setSelection(found);
+                setSelection(found, true);
                 redrawMap(false);
             }
         }
@@ -283,7 +320,7 @@ function keypressHandler(evt)
             var found = objectRight(focussed);
             if (found != null)
             {
-                setSelection(found);
+                setSelection(found, true);
                 redrawMap(false);
             }
         }
@@ -295,7 +332,7 @@ function keypressHandler(evt)
             var found = objectCloser(focussed);
             if (found != null)
             {
-                setSelection(found);
+                setSelection(found, true);
                 redrawMap(false);
             }
         }
@@ -309,6 +346,7 @@ function keypressHandler(evt)
             
             if (index == null)
                 break;
+            
             if (map.data[index] != focussed)
             {
                 while(index < map.data.length)
@@ -323,7 +361,7 @@ function keypressHandler(evt)
             }
             
             map.deleteObject(focussed);
-            if (index) setSelection(map.data[index - 1]);
+            if (index) setSelection(map.data[index - 1], true);
             clipStack.push(0,0,canvas.width, canvas.height);
             refreshMap(true);
         }
@@ -336,7 +374,7 @@ function keypressHandler(evt)
             obj = map.insertAbove(focussed, focussed.tile);
             if (obj)
             {
-                setSelection(obj);
+                setSelection(obj, true);
                 refreshMap(true);
             }
         }
