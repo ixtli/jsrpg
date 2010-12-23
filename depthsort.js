@@ -247,15 +247,18 @@ function DSADeleteObjectAtIndex(ind)
             a.maxz = a.z_sets.length - 1;
         }
     } else {
+        // Did we delete the first element of this zset?
         if (a.data[index].z != deleted.z)
         {
+            // Is there anything left in this zset?
             if (a.data[index + 1].z != deleted.z)
             {
                 if (index == 0)
                 {
                     a.z_sets[deleted.z] = -1;
-                } else if (a.data[index - 1].z != deleted.z) {
-                    a.z_sets[deleted.z] = -1;
+                } else {
+                    if (a.data[index - 1].z != deleted.z)
+                        a.z_sets[deleted.z] = -1;
                 }
             } else {
                 // we removed the first item in the set
@@ -302,7 +305,7 @@ function DSAInsertAbove(ind, tile)
     a.data[index + 1].container_array = a;
     
     // zset has increased in length, so increase all following zset indicies
-    for (var i = n.z; i < a.z_sets.length ; i++)
+    for (var i = n.z + 1; i < a.z_sets.length ; i++)
         a.z_sets[i] += 1;
     
     a.castShadow(index);
@@ -336,7 +339,7 @@ function DSAInsertBelow(ind, tile)
     a.data[index].container_array = a;
     
     // zset has increased in length, so increase all following zset indicies
-    for (var i = n.z; i < a.z_sets.length ; i++)
+    for (var i = n.z + 1; i < a.z_sets.length ; i++)
         a.z_sets[i] += 1;
     
     a.castShadow(index - 1);
