@@ -10,8 +10,8 @@ function DSAObject(tile, x, y, z)
     this.py = 0;
     
     // depth sort array helper members
-    this.abs_index;
-    this.container_array;
+    this.abs_index = -1;
+    this.container_array = null;
     
     // graphics related members
     this.tile = tile;
@@ -74,9 +74,56 @@ function DepthSortedArray()
     this.castShadow = DSACastShadow;
     this.deleteIndex = DSADeleteObjectAtIndex;
     this.findObject = DSAFindObject;
+    this.lowestObject = DSAFindLowestObject;
     
     // Always return true from constructors
     return true;
+}
+
+function DSAFindLowestObject(z, x)
+{
+    // This method returns the index of the object with the
+    // lowest y value at (x, z)
+    var a = this;
+    if (a.super_array)
+        a = this.super_array;
+    
+    if (a.z_sets[z] == -1)
+        return null;
+    
+    // Get the end of the current zset
+    var max;
+    if (z == a.maxz)
+        max = a.data.length;
+    else
+        max = a.z_sets[z + 1] - 1;
+        
+    // Binary search
+    var min = a.z_sets[z];
+    var mid;
+    do {
+        mid = min + ((max - min) >> 1);
+        if (x > a.data[mid].x )
+            min = mid + 1;
+        else
+            max = mid - 1;
+    } while (a.data[mid].x != x && min <= max);
+    
+    // Success
+    // Find the lowest block in this xset
+    if (a.data[mid].x == x)
+    {
+        while (mid > 0)
+        {
+            if (a.data[mid - 1].z != z || a.data[mid - 1].x != x)
+                break;
+            mid--;
+        }
+        return mid;
+    }
+    
+    // Failure
+    return null;
 }
 
 function DSAFindObject(obj)
@@ -95,38 +142,25 @@ function DSAFindObject(obj)
     else
         max = a.z_sets[obj.z + 1];
     
-    var index = a.z_sets[obj.z];
-    if (obj === a.data[index])
-        return index;
+    // The beginning of the zset we're looking in
+    var min = a.z_sets[obj.z];
     
-    while(max != index)
-    {
-        var temp = index + ((max - index) >> 1);
-        
-        if (a.data[temp] === obj)
-            return temp;
-        
-        if (a.data[temp].x > obj.x)
-        {
-            max = temp;
-            continue;
-        } else if (a.data[temp].x < obj.x) {
-            index = temp;
-            continue;
-        }
-        
-        if (a.data[temp].y > obj.y)
-        {
-            max = temp;
-            continue;
-        } else if (a.data[temp].y < obj.y) {
-            index = temp;
-            continue;
-        }
-        
-        console.log("search error");
-        return null;
-    }
+    // Binary search
+    var mid;
+    do {
+        mid = min + ((max - min) >> 1);
+        if (obj.x > a.data[mid].x )
+            min = mid + 1;
+        else if (obj.x < a.data[mid].x)
+            max = mid - 1;
+        if (obj.y > a.data[mid].y )
+            min = mid + 1;
+        else if (obj.y < a.data[mid].y)
+            max = mid - 1;
+    } while ( a.data[mid] === obj || min > max);
+    
+    if (a.data[mid] === obj)
+        return mid;
     
     return null;
 }
@@ -265,6 +299,11 @@ function DSAInsertAbove(ind, tile)
     }
     
     a.data.splice(index + 1, 0, n);
+    a.data[index + 1].container_array = a;
+    
+    // zset has increased in length, so increase all following zset indicies
+    for (var i = n.z; i < a.z_sets.length ; i++)
+        a.z_sets[i] += 1;
     
     a.castShadow(index);
 }
@@ -294,6 +333,11 @@ function DSAInsertBelow(ind, tile)
     
     var n = new DSAObject(tile, obj.x, obj.y - 1, obj.z);
     a.data.splice(index, 0, n);
+    a.data[index].container_array = a;
+    
+    // zset has increased in length, so increase all following zset indicies
+    for (var i = n.z; i < a.z_sets.length ; i++)
+        a.z_sets[i] += 1;
     
     a.castShadow(index - 1);
 }
@@ -330,11 +374,12 @@ function DSAClip(minx, miny, maxx, maxy)
         if (d[i].px + d[i].w > minx && d[i].py + d[i].h > miny &&
             d[i].px < maxx && d[i].py < maxy )
         {
-            ret.data.push(d[i]);
+            ret.data.splice(ret.data.length,0,d[i]);
             ret.data[ret.data.length - 1].abs_index = i;
         }
     }
     
+    // Save a bit of information
     ret.clipx = minx;
     ret.clipy = miny;
     ret.clip_height = maxy;
@@ -352,7 +397,6 @@ function DSACull() {
 function DSAInsert(tile, x, y, z) {
     
     var object = new DSAObject(tile, x, y, z);
-    object.container_array = this;
     
     // Initial case
     if (this.data.length == 0)
@@ -459,6 +503,7 @@ function DSAInsert(tile, x, y, z) {
     
     // Insert into data array
     this.data.splice(index, 0, object);
+    this.data[index].container_array = this;
     
     // keep track of maximum x, y, z values
     if (x > this.maxx) this.maxx = x;

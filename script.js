@@ -222,32 +222,42 @@ function keypressHandler(evt)
     
     switch (code)
     {
-        // a or left arrow
         case keyMap.left:
         case key_left:
         viewX -= keyboardScrollGranulatiry;
         delta = true;
         break;
         
-        // w or up arrow
         case key_up:
         case keyMap.up:
         viewY -= keyboardScrollGranulatiry;
         delta = true;
         break;
         
-        // s or down arrow
-        case key_down:
         case keyMap.down:
         viewY += keyboardScrollGranulatiry;
         delta = true;
         break;
         
-        // d or right arrow
         case key_right:
         case keyMap.right:
         viewX += keyboardScrollGranulatiry;
         delta = true;
+        break;
+        
+        case key_down:
+        if (focussed != null)
+        {
+            var t0 = new Date();
+            var found = objectCloser(focussed);
+            var t1 = new Date();
+            if (found != null)
+            {
+                found.selected = true;
+                redrawObject(found);
+            }
+            delta = true;
+        }
         break;
         
         default:
