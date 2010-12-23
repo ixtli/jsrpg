@@ -120,9 +120,9 @@ function init()
     }
     */
     
-    for (var i = 10; i >= 3; i--)
+    for (var i = 100; i >= 3; i--)
     {
-        for (var j = 10; j >= 3; j--)
+        for (var j = 100; j >= 3; j--)
         {
             map.insert(tiles[0], j, 0, i);
         }
@@ -132,7 +132,6 @@ function init()
     map.insert(tiles[0], 7, 1, 7);
     map.insert(tiles[0], 8, 1, 6);
     map.insert(tiles[0], 6, 1, 8);
-    
     
     for (var i = 2; i >= 1; i--)
         map.insert(tiles[0], 6, i, 7);
@@ -208,6 +207,19 @@ function ericBHandler()
     }
 }
 
+function setSelection(object)
+{
+    if (focussed)
+    {
+        redrawObject(focussed);
+        focussed.selected = false;
+    }
+    
+    object.selected = true;
+    redrawObject(object);
+    focussed = object;
+}
+
 function keypressHandler(evt)
 {
     var time = new Date();
@@ -220,12 +232,10 @@ function keypressHandler(evt)
     switch (code)
     {
         case keyMap.left:
-        case key_left:
         viewX -= keyboardScrollGranulatiry;
         delta = true;
         break;
         
-        case key_up:
         case keyMap.up:
         viewY -= keyboardScrollGranulatiry;
         delta = true;
@@ -236,24 +246,56 @@ function keypressHandler(evt)
         delta = true;
         break;
         
-        case key_right:
         case keyMap.right:
         viewX += keyboardScrollGranulatiry;
         delta = true;
         break;
         
+        case key_up:
+        if (focussed != null)
+        {
+            var found = objectFurther(focussed);
+            if (found != null)
+            {
+                setSelection(found);
+                delta = true;
+            }
+        }
+        break;
+        
+        case key_left:
+        if (focussed != null)
+        {
+            var found = objectLeft(focussed);
+            if (found != null)
+            {
+                setSelection(found);
+                delta = true;
+            }
+        }
+        break;
+        
+        case key_right:
+        if (focussed != null)
+        {
+            var found = objectRight(focussed);
+            if (found != null)
+            {
+                setSelection(found);
+                delta = true;
+            }
+        }
+        break;
+        
         case key_down:
         if (focussed != null)
         {
-            var t0 = new Date();
             var found = objectCloser(focussed);
-            var t1 = new Date();
             if (found != null)
             {
-                found.selected = true;
-                redrawObject(found);
+                setSelection(found);
+                delta = true;
             }
-            delta = true;
         }
         break;
         
@@ -299,16 +341,17 @@ function clickHandler(ev)
     if (ev.shiftKey)
     {
         obj = map.deleteIndex(focussed.abs_index);
-        focussed = null;
+        if (obj)
+        {
+            clipStack.push(0,0,canvas.width, canvas.height);
+            focussed = null;
+        }
     } else {
         obj = map.insertAbove(focussed.abs_index, focussed.tile);
+        if (obj) redrawObject(obj);
     }
     
-    if (obj)
-    {
-        redrawObject(obj);
-        refreshMap(true);
-    }
+    if (obj) refreshMap(true);
 }
 
 function mouseMoveHandler(evt)

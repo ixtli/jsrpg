@@ -75,9 +75,35 @@ function DepthSortedArray()
     this.deleteIndex = DSADeleteObjectAtIndex;
     this.findObject = DSAFindObject;
     this.lowestObject = DSAFindLowestObject;
+    this.correctHeight = DSACorrectHeight;
     
     // Always return true from constructors
     return true;
+}
+
+function DSACorrectHeight(ind, height)
+{
+    a = this;
+    if (this.super_array)
+        a = this.super_array;
+    
+    // Find the object with the lowest Y value that is closest to obj.y
+    var index = ind;
+    while (index + 1 < a.data.length)
+    {
+        // Stay in this x, z set
+        if (a.data[index+1].x != a.data[index].x ||
+            a.data[index+1].z != a.data[index].z)
+            break;
+        
+        if (a.data[index].y >= height &&
+            a.data[index + 1].y > a.data[index].y + 1)
+            break;
+        
+        index++;
+    }
+    
+    return index;
 }
 
 function DSAFindLowestObject(z, x)
