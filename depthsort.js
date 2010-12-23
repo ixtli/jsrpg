@@ -228,7 +228,7 @@ function DSADeleteObjectAtIndex(ind)
         a.z_sets[i] -= 1;
     
     // is deleted in the largest zset?
-    if (deleted.z == a.z_sets.length - 1)
+    if (deleted.z == a.z_sets.length)
     {
         // Did we just delete the last element of this zset?
         if (a.z_sets[deleted.z] == a.data.length)
@@ -247,24 +247,8 @@ function DSADeleteObjectAtIndex(ind)
             a.maxz = a.z_sets.length - 1;
         }
     } else {
-        // Did we delete the first element of this zset?
-        if (a.data[index].z != deleted.z)
-        {
-            // Is there anything left in this zset?
-            if (a.data[index + 1].z != deleted.z)
-            {
-                if (index == 0)
-                {
-                    a.z_sets[deleted.z] = -1;
-                } else {
-                    if (a.data[index - 1].z != deleted.z)
-                        a.z_sets[deleted.z] = -1;
-                }
-            } else {
-                // we removed the first item in the set
-                a.z_sets[deleted.z] += 1;
-            }
-        }
+        if (a.z_sets[deleted.z] == a.z_sets[deleted.z + 1])
+            a.z_sets[deleted.z] = -1;
     }
 }
 
