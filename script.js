@@ -18,7 +18,7 @@ const shadowStep = .1;
 
 // Preload images.
 var selection = new Image();
-selection.src = "img/dark-selection.png"
+selection.src = "img/dark-selection.png";
 var grass = new Image();
 grass.src = "img/grass.png";
 var dark_wall = new Image();
