@@ -178,7 +178,7 @@ function init()
     });
     
     // Set up click handlers
-    $(window).bind('mousedown mouseup', mouseHandler);
+    $(window).bind('mousedown mouseup', mouseClickHandler);
     
     // Set up keyboard handlers
     // @TODO handle keyup with this too
@@ -359,6 +359,10 @@ function keypressHandler(evt)
         $('#map_redraw')[0].innerHTML = msg;
     }
     
+    var t1 = new Date();
+    var msg = 'Keypress processing time: '+(t1-time) +' ms';
+    $('#selection_time')[0].innerHTML = msg;
+    
     return false;
 }
 
@@ -372,7 +376,7 @@ function refreshMap(render)
     if (render == true) redrawMap(true);
 }
 
-function mouseHandler(ev)
+function mouseClickHandler(ev)
 {
     if (focussed == null)
         return;
