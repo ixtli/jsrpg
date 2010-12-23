@@ -344,6 +344,7 @@ function keypressHandler(evt)
         
         default:
         console.log("Unhandled keycode: " + code);
+        return true;
         break;
     }
     
