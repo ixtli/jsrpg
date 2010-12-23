@@ -4,7 +4,7 @@ var tileBorderDebug = false;
 // Convenience
 const key_w = 87, key_a = 65, key_s = 83, key_d = 68, key_e = 69, key_f = 70,
     key_up = 38, key_down = 40, key_left = 37, key_right = 39, key_plus = 187,
-    key_minus = 189, key_delete = 8, key_space = 32;
+    key_minus = 189, key_delete = 8, key_space = 32, key_shift = 16;
 
 // Engine settings
 const FPS = 30;
@@ -16,6 +16,7 @@ const keyRepeatDelay = (1000 / FPS);
 const scrollBorder = 32;
 const reclipThreshold = 16;
 const shadowStep = .1;
+const secondarySelectionAlpha = .35;
 
 // Preload images.
 var selection = new Image();
@@ -63,6 +64,7 @@ var focussed = null;
 var mousemoveTimeout;
 var allowSelection = true;
 var mouseX = 0, mouseY = 0;
+var extendedSelection = [];
 
 // Viewport Scrolling
 var clipBuffer = 0;
@@ -259,6 +261,64 @@ function setSelection(object, keepInViewport)
     focussed = object;
 }
 
+function addToExtendedSelection(obj)
+{
+    // Don't add duplicates
+    for (var i = 0; i < extendedSelection.length; i++)
+        if (obj === extendedSelection[i])
+            return null;
+    
+    // Add it by reference
+    extendedSelection.splice(extendedSelection.length, 0, obj);
+    extendedSelection[extendedSelection.length - 1].secondary_selection = true;
+    
+    // We rely on the caller to decide to update the map or not,
+    // since this could be called many times in a loop
+    redrawObject(extendedSelection[extendedSelection.length -1]);
+    
+    // Return it's index
+    return extendedSelection.length - 1;
+}
+
+function clearExtendedSelection()
+{
+    for (var i = 0; i < extendedSelection.length; i++)
+    {
+        extendedSelection[i].secondary_selection = false;
+        redrawObject(extendedSelection[i]);
+    }
+    
+    redrawMap(true);
+    extendedSelection = [];
+}
+
+function insertAboveExtendedSelection()
+{
+    if (extendedSelection.length == 0)
+        return;
+    
+    var newSelection = [];
+    var tmp;
+    
+    for (var i = 0; i < extendedSelection.length; i++)
+    {
+        tmp = map.insertAboveObject(extendedSelection[i],
+            extendedSelection[i].tile);
+        if (tmp != null)
+        {
+            newSelection.splice(newSelection.length, 0, tmp);
+            tmp.secondary_selection = true;
+            extendedSelection[i].secondary_selection = false;
+            redrawObject(tmp);
+            redrawObject(extendedSelection[i]);
+        }
+    }
+    
+    refreshMap(false);
+    clearExtendedSelection(); // This calls redraw map
+    extendedSelection = newSelection;
+}
+
 function keypressHandler(evt)
 {
     var time = new Date();
@@ -267,6 +327,11 @@ function keypressHandler(evt)
     
     var delta = false;
     var code = evt.keyCode ? evt.keyCode : evt.which;
+    
+    // Ignore when the user intially presses the shift key: we only care
+    // if it's down when something else happens
+    if (code == key_shift)
+        return true;
     
     switch (code)
     {
@@ -293,6 +358,12 @@ function keypressHandler(evt)
         case key_up:
         if (focussed != null)
         {
+            // Handle selecting multiple objects
+            if (evt.shiftKey)
+                addToExtendedSelection(focussed);
+            else if (extendedSelection.length > 0)
+                clearExtendedSelection();
+            
             var found = objectFurther(focussed);
             if (found != null)
             {
@@ -305,6 +376,12 @@ function keypressHandler(evt)
         case key_left:
         if (focussed != null)
         {
+            // Handle selecting multiple objects
+            if (evt.shiftKey)
+                addToExtendedSelection(focussed);
+            else if (extendedSelection.length > 0)
+                clearExtendedSelection();
+            
             var found = objectLeft(focussed);
             if (found != null)
             {
@@ -317,6 +394,12 @@ function keypressHandler(evt)
         case key_right:
         if (focussed != null)
         {
+            // Handle selecting multiple objects
+            if (evt.shiftKey)
+                addToExtendedSelection(focussed);
+            else if (extendedSelection.length > 0)
+                clearExtendedSelection();
+            
             var found = objectRight(focussed);
             if (found != null)
             {
@@ -329,6 +412,12 @@ function keypressHandler(evt)
         case key_down:
         if (focussed != null)
         {
+            // Handle selecting multiple objects
+            if (evt.shiftKey)
+                addToExtendedSelection(focussed);
+            else if (extendedSelection.length > 0)
+                clearExtendedSelection();
+            
             var found = objectCloser(focussed);
             if (found != null)
             {
@@ -371,7 +460,11 @@ function keypressHandler(evt)
         case key_space:
         if (focussed)
         {
-            obj = map.insertAbove(focussed, focussed.tile);
+            // handle multiple selections
+            if (extendedSelection.length > 0)
+                insertAboveExtendedSelection();
+            
+            obj = map.insertAboveObject(focussed, focussed.tile);
             if (obj)
             {
                 setSelection(obj, true);
@@ -436,7 +529,7 @@ function mouseClickHandler(ev)
             focussed = null;
         }
     } else {
-        obj = map.insertAbove(focussed, focussed.tile);
+        obj = map.insertAboveObject(focussed, focussed.tile);
         if (obj) redrawObject(obj);
     }
     
@@ -513,14 +606,19 @@ function redrawMap(clear)
         if (d[i].selected == true)
         {
             bufferCtx.drawImage(selection, d[i].px - viewX, d[i].py - viewY);
+        } else if (d[i].secondary_selection == true) {
+            var s = bufferCtx.globalAlpha;
+            bufferCtx.globalAlpha = secondarySelectionAlpha;
+            bufferCtx.drawImage(selection, d[i].px - viewX, d[i].py - viewY);
+            bufferCtx.globalAlpha = s;
         }
         
         if (d[i].shadow != 0)
         {
-            bufferCtx.save();
+            var s = bufferCtx.globalAlpha;
             bufferCtx.globalAlpha = d[i].shadow;
             bufferCtx.drawImage(shadow, d[i].px - viewX, d[i].py - viewY);
-            bufferCtx.restore();
+            bufferCtx.globalAlpha = s;
         }
     }
     

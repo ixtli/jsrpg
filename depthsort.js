@@ -10,7 +10,6 @@ function DSAObject(tile, x, y, z)
     this.py = 0;
     
     // depth sort array helper members
-    this.abs_index = null;
     this.container_array = null;
     
     // graphics related members
@@ -19,6 +18,7 @@ function DSAObject(tile, x, y, z)
     this.h = this.tile.height;
     this.shadow = 0;
     this.selected = false;
+    this.secondary_selection = false;
     
     // Member functions
     this.genPixelValues = genPixelValues;
@@ -65,15 +65,21 @@ function DepthSortedArray()
     
     this.z_sets = [];
     
+    this.abs_indicies = [];
+    
     // Member functions
     this.insert = DSAInsert;
     this.clip = DSAClip;
     this.cull = DSACull;
     this.selectObject = DSASelectObject;
-    this.insertAbove = DSAInsertAbove;
+    this.insertAboveObject = DSAInsertAboveObject;
+    this.insertAboveIndex = DSAInsertAboveIndex;
+    this.insertBelowObject = DSAInsertBelowObject;
+    this.insertBelowIndex = DSAInsertBelowIndex;
     this.castShadow = DSACastShadow;
     this.deleteObject = DSADeleteObject;
-    this.findObject = DSAFindObject;
+    this.deleteIndex = DSADeleteIndex;
+    this.findIndexForObject = DSAFindIndexForObject;
     this.lowestObject = DSAFindLowestObject;
     this.correctHeight = DSACorrectHeight;
     
@@ -152,7 +158,7 @@ function DSAFindLowestObject(z, x)
     return null;
 }
 
-function DSAFindObject(obj)
+function DSAFindIndexForObject(obj)
 {
     // This method returns the the index of the object in the SUPER ARRAY only
     // returns null of not present
@@ -242,18 +248,17 @@ function DSACastShadow(index)
         below.shadow = 0;
 }
 
-function DSADeleteObject(ind)
+function DSADeleteObject(obj)
+{
+    var index = this.findIndexForObject(obj);
+    return this.deleteIndex(index);
+}
+
+function DSADeleteIndex(index)
 {
     var a = this;
     if (this.super_array != null)
         a = this.super_array;
-    
-    var index;
-    
-    if (ind.abs_index != null)
-        index = ind.abs_index;
-    else
-        index = a.findObject(ind);
     
     // Figure out if there is a block spacially above us or not
     var above = null;
@@ -307,21 +312,20 @@ function DSADeleteObject(ind)
     return deleted;
 }
 
-function DSAInsertAbove(ind, tile)
+function DSAInsertAboveObject(object, tile)
+{
+    var index = this.findIndexForObject(object);
+    return this.insertAboveIndex(index, tile);
+}
+
+function DSAInsertAboveIndex(index, tile)
 {
     // We should not insert into an array that is a clipped region of a
-    // superset, because it would invalidate all the abs_index values
+    // superset, because it would invalidate all the abs_indicies values
     
     var a = this;
     if (this.super_array != null)
         a = this.super_array;
-    
-    var index;
-    
-    if (ind.abs_index != null)
-        index = ind.abs_index;
-    else
-        index = a.findObject(ind);
     
     var obj = a.data[index];
     
@@ -356,21 +360,20 @@ function DSAInsertAbove(ind, tile)
     return n;
 }
 
-function DSAInsertBelow(ind, tile)
+function DSAInsertBelowObject(object, tile)
+{
+    var index = this.findIndexForObject(object);
+    return this.insertBelowIndex(index, tile);
+}
+
+function DSAInsertBelowIndex(index, tile)
 {
     // We should not insert into an array that is a clipped region of a
-    // superset, because it would invalidate all the abs_index values
+    // superset, because it would invalidate all the abs_indicies
     
     var a = this;
     if (this.super_array != null)
         a = this.super_array;
-    
-    var index;
-    
-    if (ind.abs_index != null)
-        index = ind.abs_index;
-    else
-        index = a.findObject(ind);
     
     var obj = a.data[index];
     
@@ -437,7 +440,7 @@ function DSAClip(minx, miny, maxx, maxy)
             d[i].px < maxx && d[i].py < maxy )
         {
             ret.data.splice(ret.data.length,0,d[i]);
-            ret.data[ret.data.length - 1].abs_index = i;
+            ret.abs_indicies.push(i);
         }
     }
     
