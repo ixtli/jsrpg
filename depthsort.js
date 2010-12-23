@@ -390,8 +390,8 @@ function DSACull() {
     
 }
 
-function DSAInsert(tile, x, y, z) {
-    
+function DSAInsert(tile, x, y, z)
+{
     var object = new DSAObject(tile, x, y, z);
     
     // Initial case

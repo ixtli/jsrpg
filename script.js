@@ -118,7 +118,6 @@ function init()
             }
         }
     }
-    
     */
     
     for (var i = 10; i >= 3; i--)
@@ -193,6 +192,8 @@ function init()
 
 function ericBHandler()
 {
+    // Remap wasd to esdf because EricB complained in #offtopic one day,
+    // about how his pinky feels left out when he plays quake that way.
     if (keyMap.right == key_d)
     {
         keyMap.left = key_s;
