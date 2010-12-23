@@ -10,7 +10,7 @@ function DSAObject(tile, x, y, z)
     this.py = 0;
     
     // depth sort array helper members
-    this.abs_index = -1;
+    this.abs_index = null;
     this.container_array = null;
     
     // graphics related members
@@ -72,7 +72,7 @@ function DepthSortedArray()
     this.selectObject = DSASelectObject;
     this.insertAbove = DSAInsertAbove;
     this.castShadow = DSACastShadow;
-    this.deleteIndex = DSADeleteObjectAtIndex;
+    this.deleteObject = DSADeleteObject;
     this.findObject = DSAFindObject;
     this.lowestObject = DSAFindLowestObject;
     this.correctHeight = DSACorrectHeight;
@@ -214,14 +214,18 @@ function DSACastShadow(index)
         below.shadow = 0;
 }
 
-function DSADeleteObjectAtIndex(ind)
+function DSADeleteObject(ind)
 {
-    var a = this, index = ind;
+    var a = this;
     if (this.super_array != null)
-    {
         a = this.super_array;
-        index = this.data[ind].abs_index;
-    }
+    
+    var index;
+    
+    if (ind.abs_index != null)
+        index = ind.abs_index;
+    else
+        index = a.findObject(ind);
     
     // Figure out if there is a block spacially above us or not
     var above = null;
@@ -280,12 +284,16 @@ function DSAInsertAbove(ind, tile)
     // We should not insert into an array that is a clipped region of a
     // superset, because it would invalidate all the abs_index values
     
-    var a = this, index = ind;
+    var a = this;
     if (this.super_array != null)
-    {
         a = this.super_array;
-        index = this.data[ind].abs_index;
-    }
+    
+    var index;
+    
+    if (ind.abs_index != null)
+        index = ind.abs_index;
+    else
+        index = a.findObject(ind);
     
     var obj = a.data[index];
     
@@ -325,12 +333,16 @@ function DSAInsertBelow(ind, tile)
     // We should not insert into an array that is a clipped region of a
     // superset, because it would invalidate all the abs_index values
     
-    var a = this, index = ind;
+    var a = this;
     if (this.super_array != null)
-    {
         a = this.super_array;
-        index = this.data[ind].abs_index;
-    }
+    
+    var index;
+    
+    if (ind.abs_index != null)
+        index = ind.abs_index;
+    else
+        index = a.findObject(ind);
     
     var obj = a.data[index];
     

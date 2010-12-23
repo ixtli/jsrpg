@@ -3,7 +3,8 @@ var tileBorderDebug = false;
 
 // Convenience
 const key_w = 87, key_a = 65, key_s = 83, key_d = 68, key_e = 69, key_f = 70,
-    key_up = 38, key_down = 40, key_left = 37, key_right = 39;
+    key_up = 38, key_down = 40, key_left = 37, key_right = 39, key_plus = 187,
+    key_minus = 189, key_delete = 8, key_space = 32;
 
 // Engine settings
 const FPS = 30;
@@ -258,7 +259,7 @@ function keypressHandler(evt)
             if (found != null)
             {
                 setSelection(found);
-                delta = true;
+                redrawMap(false);
             }
         }
         break;
@@ -270,7 +271,7 @@ function keypressHandler(evt)
             if (found != null)
             {
                 setSelection(found);
-                delta = true;
+                redrawMap(false);
             }
         }
         break;
@@ -282,7 +283,7 @@ function keypressHandler(evt)
             if (found != null)
             {
                 setSelection(found);
-                delta = true;
+                redrawMap(false);
             }
         }
         break;
@@ -294,7 +295,46 @@ function keypressHandler(evt)
             if (found != null)
             {
                 setSelection(found);
-                delta = true;
+                redrawMap(false);
+            }
+        }
+        break;
+        
+        case key_minus:
+        case key_delete:
+        if (focussed)
+        {
+            var index = map.lowestObject(focussed.z, focussed.x);
+            
+            if (map.data[index] != focussed)
+            {
+                while(index < map.data.length)
+                {
+                    if (map.data[index].y >= focussed.y)
+                        break;
+                    
+                    index++;
+                }
+            } else {
+                index = null;
+            }
+            
+            map.deleteObject(focussed);
+            if (index) setSelection(map.data[index - 1]);
+            clipStack.push(0,0,canvas.width, canvas.height);
+            refreshMap(true);
+        }
+        break;
+        
+        case key_plus:
+        case key_space:
+        if (focussed)
+        {
+            obj = map.insertAbove(focussed, focussed.tile);
+            if (obj)
+            {
+                setSelection(obj);
+                refreshMap(true);
             }
         }
         break;
@@ -340,14 +380,14 @@ function clickHandler(ev)
     var obj = null;
     if (ev.shiftKey)
     {
-        obj = map.deleteIndex(focussed.abs_index);
+        obj = map.deleteObject(focussed);
         if (obj)
         {
             clipStack.push(0,0,canvas.width, canvas.height);
             focussed = null;
         }
     } else {
-        obj = map.insertAbove(focussed.abs_index, focussed.tile);
+        obj = map.insertAbove(focussed, focussed.tile);
         if (obj) redrawObject(obj);
     }
     
