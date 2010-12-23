@@ -587,26 +587,11 @@ function draw()
         var t0 = new Date();
         var obj = viewableMap.selectObject(mouseX, mouseY);
         
-        if (obj == null)
+        if (obj)
         {
-            if (focussed != null)
-            {
-                redrawObject(focussed);
-                focussed.selected = false;
-                redrawMap(false);
-            }
-        } else if (obj != focussed) {
-            
-            if (focussed != null)
-            {
-                redrawObject(focussed);
-                focussed.selected = false;
-            }
-            
+            setSelection(obj);
             redrawObject(obj);
-            obj.selected = true;
-            focussed = obj;
-            redrawMap(true);
+            redrawMap(false);
             
             var t2 = new Date();
             var msg = 'Selection time: '+(t2-t0) +' ms';
