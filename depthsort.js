@@ -166,29 +166,57 @@ function DSAFindObject(obj)
     if (obj.z == a.maxz)
         max = a.data.length;
     else
-        max = a.z_sets[obj.z + 1];
+        max = a.z_sets[obj.z + 1] - 1;
     
-    // The beginning of the zset we're looking in
+    // Binary search for x
     var min = a.z_sets[obj.z];
-    
-    // Binary search
     var mid;
     do {
         mid = min + ((max - min) >> 1);
         if (obj.x > a.data[mid].x )
             min = mid + 1;
-        else if (obj.x < a.data[mid].x)
+        else
             max = mid - 1;
-        if (obj.y > a.data[mid].y )
-            min = mid + 1;
-        else if (obj.y < a.data[mid].y)
-            max = mid - 1;
-    } while ( a.data[mid] === obj || min > max);
+    } while (a.data[mid].x != obj.x && min <= max);
     
-    if (a.data[mid] === obj)
-        return mid;
+    // is the x value present?
+    if (a.data[mid].x != obj.x)
+        return null;
     
-    return null;
+    // Search linearly on y for the value
+    if (a.data[mid].y > obj.y)
+    {
+        // go down
+        while (mid >= 0)
+        {
+            if (a.data[mid].x != obj.x || a.data[mid].z != obj.z)
+                return null;
+            
+            if (a.data[mid].y == obj.y)
+                break;
+            
+            mid--;
+        }
+    } else {
+        // go up
+        while (mid < a.data.length)
+        {
+            if (a.data[mid].x != obj.x || a.data[mid].z != obj.z)
+                return null;
+            
+            if (a.data[mid].y == obj.y)
+                break;
+            
+            mid++;
+        }
+    }
+    
+    // Is the y val correct?
+    if (a.data[mid].y != obj.y)
+        return null;
+    
+    // Success!
+    return mid;
 }
 
 function DSACastShadow(index)
