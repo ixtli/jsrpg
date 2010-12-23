@@ -121,9 +121,9 @@ function init()
     
     */
     
-    for (var i = 100; i >= 3; i--)
+    for (var i = 10; i >= 3; i--)
     {
-        for (var j = 100; j >= 3; j--)
+        for (var j = 10; j >= 3; j--)
         {
             map.insert(tiles[0], j, 0, i);
         }
@@ -152,10 +152,6 @@ function init()
     
     for (var i = 5; i >= 1; i--)
         map.insert(tiles[0], 6, i, 5);
-    
-    map.insert(tiles[0], 10, 0, 10);
-    map.insert(tiles[0], 9, 0, 10);
-    
     
     t1 = new Date();
     
@@ -298,15 +294,20 @@ function clickHandler(ev)
     if (focussed == null)
         return;
     
+    var obj = null;
     if (ev.shiftKey)
     {
-        map.deleteIndex(focussed.abs_index);
+        obj = map.deleteIndex(focussed.abs_index);
         focussed = null;
     } else {
-        map.insertAbove(focussed.abs_index, focussed.tile);
+        obj = map.insertAbove(focussed.abs_index, focussed.tile);
     }
     
-    refreshMap(true);
+    if (obj)
+    {
+        redrawObject(obj);
+        refreshMap(true);
+    }
 }
 
 function mouseMoveHandler(evt)

@@ -206,7 +206,7 @@ function DSADeleteObjectAtIndex(ind)
             above = a.data[index+1];
     }
     
-    var deleted = a.data.splice(index, 1);
+    var deleted = a.data.splice(index, 1)[0];
     
     // Handle shadow
     if (above != null)
@@ -214,10 +214,10 @@ function DSADeleteObjectAtIndex(ind)
         a.castShadow(index);
     } else {
         // If nothing is above us, remove shadow
-        if (index - 1 >= 0 && deleted.length > 0)
+        if (index - 1 >= 0)
         {
-            if (a.data[index - 1].x == deleted[0].x &&
-                a.data[index - 1].z == deleted[0].z)
+            if (a.data[index - 1].x == deleted.x &&
+                a.data[index - 1].z == deleted.z)
                 a.data[index - 1].shadow = 0;
         }
     }
@@ -227,29 +227,26 @@ function DSADeleteObjectAtIndex(ind)
     for (var i = deleted.z + 1; i < a.z_sets.length; i++)
         a.z_sets[i] -= 1;
     
-    // is deleted in the largest zset?
-    if (deleted.z == a.z_sets.length)
+    // Were we the last object in this zset?
+    if (a.z_sets[deleted.z] == a.z_sets[deleted.z + 1])
+        a.z_sets[deleted.z] = -1;
+     
+    // If the last set is empty, trim all empty tail sets
+    if (a.z_sets[a.maxz] == -1)
     {
-        // Did we just delete the last element of this zset?
-        if (a.z_sets[deleted.z] == a.data.length)
+        do
         {
-            a.z_sets[deleted.z] = -1;
-            // trim the array
-            do
-            {
-                if (a.z_sets[a.z_sets.length - 1] != -1)
-                    break;
-                    
-                a.z_sets.pop();
-            } while (a.z_sets.length > 0);
-            
-            // Keep track of maxz value
-            a.maxz = a.z_sets.length - 1;
-        }
-    } else {
-        if (a.z_sets[deleted.z] == a.z_sets[deleted.z + 1])
-            a.z_sets[deleted.z] = -1;
+            if (a.z_sets[a.z_sets.length - 1] != -1)
+                break;
+                
+            a.z_sets.pop();
+        } while (a.z_sets.length > 0);
+        
+        // Keep track of maxz value
+        a.maxz = a.z_sets.length - 1;
     }
+    
+    return deleted;
 }
 
 function DSAInsertAbove(ind, tile)
@@ -272,7 +269,7 @@ function DSAInsertAbove(ind, tile)
         if (a.data[index+1].z == obj.z &&
             a.data[index+1].x == obj.x &&
             a.data[index+1].y == obj.y + 1)
-            return;
+            return null;
     }
     
     var n = new DSAObject(tile, obj.x, obj.y + 1, obj.z);
@@ -293,6 +290,8 @@ function DSAInsertAbove(ind, tile)
         a.z_sets[i] += 1;
     
     a.castShadow(index);
+    
+    return n;
 }
 
 function DSAInsertBelow(ind, tile)
@@ -315,7 +314,7 @@ function DSAInsertBelow(ind, tile)
         if (a.data[index-1].z == obj.z &&
             a.data[index-1].x == obj.x &&
             a.data[index-1].y == obj.y - 1)
-            return;
+            return null;
     }
     
     var n = new DSAObject(tile, obj.x, obj.y - 1, obj.z);
@@ -326,7 +325,17 @@ function DSAInsertBelow(ind, tile)
     for (var i = n.z + 1; i < a.z_sets.length ; i++)
         a.z_sets[i] += 1;
     
+    // We might be the new first block in the zset
+    if (index > 0)
+    {
+        if (a.data[index - 1].z != a.data[index].z )
+            // we're the new first index in the zset
+            a.z_sets[a.data[index].z] = index;
+    }
+    
     a.castShadow(index - 1);
+    
+    return n;
 }
 
 function DSASelectObject(x, y)
@@ -392,15 +401,14 @@ function DSAInsert(tile, x, y, z) {
         this.maxy = y;
         this.maxx = x;
         
-        for (var i = 0; i < z - 1; i++)
+        for (var i = 0; i < z; i++)
             this.z_sets.push(-1);
         
         // Push the index of the new set
         this.z_sets.push(0);
         
         // Push the actual object
-        this.data.push(object);
-        
+        this.data.splice(0, 0, object);
         return;
     }
     
@@ -413,7 +421,8 @@ function DSAInsert(tile, x, y, z) {
             this.z_sets.push(-1);
         
         // Push the index of the new set
-        this.z_sets.push(this.data.push(object) - 1);
+        this.data.splice(this.data.length, 0, object);
+        this.z_sets.push(this.data.length - 1);
         
         // Update maxz value
         this.maxz = z;
@@ -464,27 +473,24 @@ function DSAInsert(tile, x, y, z) {
             // This is a new xval for this zset
             // this xset has increased in length
         }
-        
-        // zset has increased in length, so increase all following zset indicies
-        for (var i = z + 1; i < this.z_sets.length ; i++)
-            this.z_sets[i] += 1;
-        
     } else {
         // First element in a zset
         if (z == this.maxz)
+        {
             // We're the first to insert into the biggest zset
-            index = this.data.push(object) - 1;
-        else
+            index = this.data.length;
+        } else {
             // We want to insert before the beginning of the next-biggest zset
             index = this.z_sets[z+1];
+        }
         
         // This is a new zval, so note its index in the z_sets[]
         this.z_sets[z] = index;
-        
-        // zset has increased in length, so increase all following zset indicies
-        for (var i = z + 1; i < this.z_sets.length; i++)
-            this.z_sets[i] += 1;
     }
+    
+    // zset has increased in length, so increase all following zset indicies
+    for (var i = z + 1; i < this.z_sets.length; i++)
+        this.z_sets[i] += 1;
     
     // Alert on duplicates
     
