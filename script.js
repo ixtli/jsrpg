@@ -178,11 +178,11 @@ function init()
     });
     
     // Set up click handlers
-    $('#display').bind('click', clickHandler);
+    $(window).bind('mousedown mouseup', mouseHandler);
     
     // Set up keyboard handlers
-    $('#display').attr('tabindex', '1');
-    $('#display').bind('keydown', keypressHandler);
+    // @TODO handle keyup with this too
+    $(window).bind('keydown', keypressHandler);
     
     // handle ericb mode
     $('#ebmode').bind('click', ericBHandler);
@@ -340,7 +340,7 @@ function keypressHandler(evt)
         break;
         
         default:
-        console.log("Uhandled keycode: " + code);
+        console.log("Unhandled keycode: " + code);
         break;
     }
     
@@ -372,10 +372,13 @@ function refreshMap(render)
     if (render == true) redrawMap(true);
 }
 
-function clickHandler(ev)
+function mouseHandler(ev)
 {
     if (focussed == null)
         return;
+    else if (ev.type === 'mousedown') ev.preventDefault();
+    else if (ev.type === 'mouseup') return true; // for now
+    
     
     var obj = null;
     if (ev.shiftKey)
@@ -392,6 +395,7 @@ function clickHandler(ev)
     }
     
     if (obj) refreshMap(true);
+    
 }
 
 function mouseMoveHandler(evt)
