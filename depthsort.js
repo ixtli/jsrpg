@@ -89,6 +89,7 @@ function DepthSortedArray()
     
     // Debugging
     this.duplicateDetection = true;
+    this.allowDuplicates = false;
     
     // Always return true from constructors
     return true;
@@ -550,6 +551,38 @@ function DSAInsert(tile, x, y, z)
             // This is a new xval for this zset
             // this xset has increased in length
         }
+        
+        // Alert on duplicates
+        if (this.duplicateDetection == true)
+        {
+            var dup = false;
+            
+            if (index != 0)
+            {
+                if (this.data[index - 1].x == x &&
+                    this.data[index - 1].y == y &&
+                    this.data[index - 1].z == z)
+                    dup = true;
+            }
+            
+            if (this.data[index].x == x &&
+                this.data[index].y == y &&
+                this.data[index].z == z)
+                dup = true;
+            
+            if (dup == true)
+            {
+                var msg = "Warning: Duplicate insertion of ("+x+","+y+","+z+")";
+                if (this.allowDuplicates == false)
+                {
+                    msg += "  Ignoring.";
+                    console.log(msg);
+                    return null;
+                }
+                console.log(msg);
+            }
+        }
+        
     } else {
         // First element in a zset
         if (z == this.maxz)
@@ -568,28 +601,6 @@ function DSAInsert(tile, x, y, z)
     // zset has increased in length, so increase all following zset indicies
     for (var i = z + 1; i < this.z_sets.length; i++)
         this.z_sets[i] += 1;
-    
-    // Alert on duplicates
-    if (this.duplicateDetection == true)
-    {
-        var dup = false;
-        
-        if (index != 0)
-        {
-            if (this.data[index - 1].x == x &&
-                this.data[index - 1].y == y &&
-                this.data[index - 1].z == z)
-                dup = true;
-        }
-        
-        if (this.data[index].x == x &&
-            this.data[index].y == y &&
-            this.data[index].z == z)
-            dup = true;
-        
-        if (dup == true)
-            console.log("Warning: Duplicate insertion of ("+x+","+y+","+z+")");
-    }
     
     // Insert into data array
     this.data.splice(index, 0, object);
