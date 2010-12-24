@@ -169,6 +169,13 @@ function init()
     msg = "Map redraw: " + (t1-t0) + " ms" + " (" + viewableMap.data.length + " tiles)";
     $('#map_redraw')[0].innerHTML = msg;
     
+    configureEventBindings();
+    
+    toggleAnimation();
+}
+
+function configureEventBindings()
+{
     // Set up mouse move event listener
     $('#display').bind('mouseenter focusin', function() {
         $('#display').bind('mousemove', mouseMoveHandler);
@@ -189,8 +196,6 @@ function init()
     
     // handle ericb mode
     $('#ebmode').bind('click', ericBHandler);
-    
-    toggleAnimation();
 }
 
 function ericBHandler()
@@ -380,9 +385,10 @@ function keypressHandler(evt)
     var code = evt.keyCode ? evt.keyCode : evt.which;
     
     // Ignore when the user intially presses the shift key: we only care
-    // if it's down when something else happens
+    // if it's down when something else happens.  If we don't return false
+    // safari sends a mousemove event which screws up selection.  Weird.
     if (code == key_shift)
-        return true;
+        return false;
     
     switch (code)
     {
@@ -605,10 +611,8 @@ function mouseMoveHandler(evt)
     if (time - previousMouseMove < mouseMoveDelay)
         return;
     
-    mouseX = evt.pageX;
-    mouseY = evt.pageY;
-    mouseX -= canvas.offsetLeft;
-    mouseY -= canvas.offsetTop;
+    mouseX = evt.pageX - canvas.offsetLeft;
+    mouseY = evt.pageY - canvas.offsetTop;
     
     previousMouseMove = new Date();
     return false;
