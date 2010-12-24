@@ -83,6 +83,7 @@ function DepthSortedArray()
     this.castShadow = DSACastShadow;
     this.deleteObject = DSADeleteObject;
     this.deleteIndex = DSADeleteIndex;
+    this.findIndexForObjectAt = DSAFindIndexForObjectAt(x, y, z);
     this.findIndexForObject = DSAFindIndexForObject;
     this.lowestObject = DSAFindLowestObject;
     this.correctHeight = DSACorrectHeight;
@@ -231,6 +232,12 @@ function DSAFindIndexForObject(obj)
     
     // Success!
     return mid;
+}
+
+function DSAFindIndexForObjectAt(x, y, z)
+{
+    var temp = new DSAObject(null, x, y, z);
+    return this.findIndexForObject(temp);
 }
 
 function DSACastShadow(index)
