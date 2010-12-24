@@ -588,10 +588,7 @@ function DSAInsert(tile, x, y, z)
             dup = true;
         
         if (dup == true)
-        {
-            console.log("Attempt to insert duplicate ("+x+","+y+","+z+")");
-            return null;
-        }
+            console.log("Warning: Duplicate insertion of ("+x+","+y+","+z+")");
     }
     
     // Insert into data array
