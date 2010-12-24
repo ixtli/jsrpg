@@ -319,6 +319,57 @@ function insertAboveExtendedSelection()
     extendedSelection = newSelection;
 }
 
+function deleteExtendedSelection()
+{
+    if (extendedSelection.length == 0)
+        return null;
+    
+    var newSelection = [];
+    
+    for (var i = 0; i < extendedSelection.length; i++)
+    {
+        var index = map.lowestObject(extendedSelection[i].z,
+            extendedSelection[i].x);
+        
+        if (index != null)
+        {
+            if (map.data[index] != extendedSelection[i])
+            {
+                while(index++ < map.data.length)
+                {
+                    if (map.data[index].x != extendedSelection[i].x ||
+                        map.data[index].z != extendedSelection[i].z)
+                    {
+                        index--;
+                        break;
+                    }
+                    
+                    if (map.data[index].y >= extendedSelection[i].y)
+                    {
+                        index--;
+                        break;
+                    }
+                }
+            } else {
+                index = null;
+            }
+        }
+        
+        if (index != null)
+        {
+            newSelection.splice(newSelection.length, 0, map.data[index]);
+            map.data[index].secondary_selection = true;
+        }
+        
+        map.deleteObject(extendedSelection[i]);
+    }
+    
+    delete extendedSelection;
+    extendedSelection = newSelection;
+    
+    refreshMap(true);
+}
+
 function keypressHandler(evt)
 {
     var time = new Date();
@@ -431,6 +482,10 @@ function keypressHandler(evt)
         case key_delete:
         if (focussed)
         {
+            // handle multiple selections
+            if (extendedSelection.length > 0)
+                deleteExtendedSelection();
+            
             var index = map.lowestObject(focussed.z, focussed.x);
             
             if (index == null)
@@ -440,6 +495,13 @@ function keypressHandler(evt)
             {
                 while(index < map.data.length)
                 {
+                    if (map.data[index].x != focussed.x ||
+                        map.data[index].z != focussed.z)
+                    {
+                        index--;
+                        break;
+                    }
+                    
                     if (map.data[index].y >= focussed.y)
                         break;
                     
@@ -451,8 +513,8 @@ function keypressHandler(evt)
             
             map.deleteObject(focussed);
             if (index) setSelection(map.data[index - 1], true);
-            clipStack.push(0,0,canvas.width, canvas.height);
             refreshMap(true);
+            delta = true;
         }
         break;
         
@@ -604,9 +666,10 @@ function redrawMap(clear)
     {
         bufferCtx.drawImage(d[i].tile, d[i].px - viewX, d[i].py - viewY);
         if (d[i].selected == true)
-        {
             bufferCtx.drawImage(selection, d[i].px - viewX, d[i].py - viewY);
-        } else if (d[i].secondary_selection == true) {
+        
+        if (d[i].secondary_selection == true)
+        {
             var s = bufferCtx.globalAlpha;
             bufferCtx.globalAlpha = secondarySelectionAlpha;
             bufferCtx.drawImage(selection, d[i].px - viewX, d[i].py - viewY);

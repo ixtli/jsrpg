@@ -20,6 +20,10 @@ function DSAObject(tile, x, y, z)
     this.selected = false;
     this.secondary_selection = false;
     
+    // this needs to be set to see if we can count this object as a 'wall'
+    // when doing our modified backface culling
+    this.transparent = false;
+    
     // Member functions
     this.genPixelValues = genPixelValues;
     
@@ -82,6 +86,9 @@ function DepthSortedArray()
     this.findIndexForObject = DSAFindIndexForObject;
     this.lowestObject = DSAFindLowestObject;
     this.correctHeight = DSACorrectHeight;
+    
+    // Debugging
+    this.duplicateDetection = true;
     
     // Always return true from constructors
     return true;
@@ -262,6 +269,7 @@ function DSADeleteIndex(index)
     
     // Figure out if there is a block spacially above us or not
     var above = null;
+    
     if (index + 1 < a.data.length)
     {
         if (a.data[index + 1].x == a.data[index].x &&
@@ -562,6 +570,29 @@ function DSAInsert(tile, x, y, z)
         this.z_sets[i] += 1;
     
     // Alert on duplicates
+    if (this.duplicateDetection == true)
+    {
+        var dup = false;
+        
+        if (index != 0)
+        {
+            if (this.data[index - 1].x == x &&
+                this.data[index - 1].y == y &&
+                this.data[index - 1].z == z)
+                dup = true;
+        }
+        
+        if (this.data[index].x == x &&
+            this.data[index].y == y &&
+            this.data[index].z == z)
+            dup = true;
+        
+        if (dup == true)
+        {
+            console.log("Attempt to insert duplicate ("+x+","+y+","+z+")");
+            return null;
+        }
+    }
     
     // Insert into data array
     this.data.splice(index, 0, object);
