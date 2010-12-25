@@ -1,3 +1,54 @@
+function pixelProjection(x, y, z)
+{
+    var px, py;
+    
+    px = (canvas.width >> 1) - (tileWidth >> 1);
+    py = 0;
+    
+    px += x * tileHeight;
+    py += x * (tileHeight >> 1);
+    
+    px -= z * tileHeight;
+    py += z * (tileHeight >> 1);
+    
+    py -= y * 17;
+    
+    return {px: px, py: py};
+}
+
+function DSAZGeometryObject(z)
+{
+    this.minx = null;
+    this.maxx = null;
+    this.miny = null;
+    this.maxy = null;
+    this.z = z;
+    
+    this.points = [];
+    
+    this.updatePixelProjection = DSAZGOProject;
+    
+    return true;
+}
+
+function DSAZGOProject()
+{
+    
+    this.points = [];
+    
+    var r = pixelProjection(this.minx, this.miny, this.z);
+    this.points.push({x: r.px, y: r.py});
+    
+    r = pixelProjection(this.maxx, this.miny, this.z);
+    this.points.push({x: r.px, y: r.py});
+    
+    r = pixelProjection(this.maxx, this.maxy, this.z);
+    this.points.push({x: r.px, y: r.py - tileHeight});
+    
+    r = pixelProjection(this.minx, this.maxy, this.z);
+    this.points.push({x: r.px, y: r.py - tileHeight});
+}
+
 function DSAObject(tile, x, y, z)
 {
     // Member values
@@ -25,7 +76,11 @@ function DSAObject(tile, x, y, z)
     this.transparent = false;
     
     // Member functions
-    this.genPixelValues = genPixelValues;
+    this.genPixelValues = function () {
+        var r = pixelProjection(this.x, this.y, this.z);
+        this.px = r.px;
+        this.py = r.py;
+    };
     
     // Initial setup of object
     // Generate absolute pixel locations
@@ -35,31 +90,11 @@ function DSAObject(tile, x, y, z)
     return true;
 }
 
-function genPixelValues()
-{
-    // generate the px and py values for an object based on x, y, and z
-    var x = (canvas.width >> 1) - (tileWidth >> 1);
-    var y = 0;
-    
-    x += this.x * tileHeight;
-    y += this.x * (tileHeight >> 1);
-    
-    x -= this.z * tileHeight;
-    y += this.z * (tileHeight >> 1);
-    
-    y -= this.y * 17;
-    
-    this.px = x;
-    this.py = y;
-}
-
 function DepthSortedArray()
 {
     // Member values
     this.data = [];
     this.maxz = 0;
-    this.maxx = 0;
-    this.maxy = 0;
     
     this.clipx = 0;
     this.clipy = 0;
@@ -68,7 +103,7 @@ function DepthSortedArray()
     this.super_array = null;
     
     this.z_sets = [];
-    
+    this.z_geom = [];  // keep track of max and min x and y
     this.abs_indicies = [];
     
     // Member functions
@@ -83,10 +118,11 @@ function DepthSortedArray()
     this.castShadow = DSACastShadow;
     this.deleteObject = DSADeleteObject;
     this.deleteIndex = DSADeleteIndex;
-    this.findIndexForObjectAt = DSAFindIndexForObjectAt(x, y, z);
+    this.findIndexForObjectAt = DSAFindIndexForObjectAt;
     this.findIndexForObject = DSAFindIndexForObject;
     this.lowestObject = DSAFindLowestObject;
     this.correctHeight = DSACorrectHeight;
+    this.updatePlaneGeometry = DSAUpdatePlaneGeometry;
     
     // Debugging
     this.duplicateDetection = true;
@@ -98,6 +134,8 @@ function DepthSortedArray()
 
 function DSACorrectHeight(ind, height)
 {
+    // This method takes a height and the index of the tile with the lowest
+    // height at this (z, x) value
     a = this;
     if (this.super_array)
         a = this.super_array;
@@ -111,6 +149,10 @@ function DSACorrectHeight(ind, height)
             a.data[index+1].z != a.data[index].z)
             break;
         
+        // Basically this will find EITHER the nearest tile below height
+        // OR the nearest tile with a space above it IF there is a tile
+        // at height.  This should be used to determine which way an object
+        // goes if entering this (z,x) value at height
         if (a.data[index].y >= height &&
             a.data[index + 1].y > a.data[index].y + 1)
             break;
@@ -308,21 +350,47 @@ function DSADeleteIndex(index)
     
     // Were we the last object in this zset?
     if (a.z_sets[deleted.z] == a.z_sets[deleted.z + 1])
-        a.z_sets[deleted.z] = -1;
-     
-    // If the last set is empty, trim all empty tail sets
-    if (a.z_sets[a.maxz] == -1)
     {
+        a.z_sets[deleted.z] = -1;
+        
+        // Since the last set is empty, trim all empty tail sets
         do
         {
             if (a.z_sets[a.z_sets.length - 1] != -1)
                 break;
                 
             a.z_sets.pop();
+            a.z_geom.pop();
         } while (a.z_sets.length > 0);
         
         // Keep track of maxz value
         a.maxz = a.z_sets.length - 1;
+    } else {
+        // Since the set isn't empty any more, update the geom values
+        // The x values are the easy part since z-planes are sorted by x val
+        var max;
+        if (deleted.z == this.maxz)
+            max = a.data.length-1;
+        else
+            max = a.z_sets[deleted.z+1] - 1;
+        
+        a.z_geom[deleted.z].maxx = a.data[max].x;
+        a.z_geom[deleted.z].minx = a.data[a.z_sets[deleted.z]].x;
+        
+        // Finding the highest yvalue requires scanning the entire zset
+        if (deleted.y == a.z_geom[deleted.z].miny || 
+            deleted.y == a.z_geom[deleted.z].maxy)
+        {
+            for (var i = a.z_sets[deleted.z]; i < max; i++)
+            {
+                if (a.data[i].y > a.z_geom[deleted.z].maxy)
+                    a.z_geom[deleted.z].maxy = a.data[i].y;
+                else if (a.data[i].y < a.z_geom[deleted.z].miny)
+                    a.z_geom[deleted.z].miny = a.data[i].y;
+            }
+        }
+        
+        a.z_geom[deleted.z].genPixelValues();
     }
     
     return deleted;
@@ -371,6 +439,8 @@ function DSAInsertAboveIndex(index, tile)
     for (var i = n.z + 1; i < a.z_sets.length ; i++)
         a.z_sets[i] += 1;
     
+    this.updatePlaneGeometry(n);
+    
     a.castShadow(index);
     
     return n;
@@ -410,6 +480,8 @@ function DSAInsertBelowIndex(index, tile)
     for (var i = n.z + 1; i < a.z_sets.length ; i++)
         a.z_sets[i] += 1;
     
+    this.updatePlaneGeometry(n);
+    
     // We might be the new first block in the zset
     if (index > 0)
     {
@@ -448,17 +520,58 @@ function DSAClip(minx, miny, maxx, maxy)
 {
     var ret = new DepthSortedArray();
     var d = this.data;
+    var p = 0;
     
-    for (var i = 0; i < this.data.length; i++)
+    // Construct the rectangle representing our viewport
+    var rect = {x:minx,y:miny,w:maxx,h:maxy};
+    
+    for (var z = 0; z < this.z_sets.length - 1; z++)
     {
-        // Omit everything not in our bounding box
-        if (d[i].px + d[i].w > minx && d[i].py + d[i].h > miny &&
-            d[i].px < maxx && d[i].py < maxy )
+        if (this.z_sets[z] == -1)
+            continue;
+        
+        // Split the view polygon into two rectangles and test them
+        var pts = this.z_geom[z].points;
+        var col = triangleTest(rect, pts[0], pts[1], pts[2]);
+        if (col == false)
         {
-            ret.data.splice(ret.data.length,0,d[i]);
-            ret.abs_indicies.push(i);
+            col = triangleTest(rect, pts[0], pts[2], pts[3]);
+            if (col == false) continue;
+        }
+        
+        for (var i = this.z_sets[z]; i < this.z_sets[z+1]; i++)
+        {
+            p++;
+            // Omit everything not in our bounding box
+            if (d[i].px + d[i].w > minx && d[i].py + d[i].h > miny &&
+                d[i].px < maxx      && d[i].py < maxy )
+            {
+                ret.data.splice(ret.data.length,0,d[i]);
+                ret.abs_indicies.push(i);
+            }
         }
     }
+    
+    var pts = this.z_geom[this.maxz].points;
+    var col1 = triangleTest(rect, pts[0], pts[1], pts[2]);
+    var col2 = triangleTest(rect, pts[0], pts[2], pts[3]);
+    if (col1 == true && col2 == true)
+    {
+        // Process the last zset
+        for (var i = this.z_sets[this.maxz]; i < d.length; i++)
+        {
+            p++;
+            // Omit everything not in our bounding box
+            if (d[i].px + d[i].w > minx && d[i].py + d[i].h > miny &&
+                d[i].px < maxx      && d[i].py < maxy )
+            {
+                ret.data.splice(ret.data.length,0,d[i]);
+                ret.abs_indicies.push(i);
+            }
+        }
+    }
+    
+    $('#insert_time')[0].innerHTML = "Map clipping: ("+p+"/"+this.data.length+")";
     
     // Save a bit of information
     ret.clipx = minx;
@@ -467,12 +580,53 @@ function DSAClip(minx, miny, maxx, maxy)
     ret.clip_width = maxx;
     
     ret.super_array = this;
+    ret.processed = p;
     
     return ret;
 }
 
 function DSACull() {
     
+}
+
+function DSAUpdatePlaneGeometry(obj)
+{
+    // Is this the biggest xval?
+    var plane = this.z_geom[obj.z];
+    var delta = false;
+    
+    // Test for null values, which would mean the ZPlaneObject has not been used
+    if (plane.maxx == null)
+    {
+        plane.maxx = obj.x;
+        plane.minx = obj.x;
+        plane.miny = obj.y;
+        plane.maxy = obj.y;
+        plane.updatePixelProjection();
+        return;
+    }
+    
+    if (obj.x > plane.maxx)
+    {
+        plane.maxx = obj.x;
+        delta = true;
+    } else if (obj.x < plane.minx) {
+        plane.minx = obj.x;
+        delta = true;
+    }
+    
+    // Is this the biggest or smallest yval?
+    if (obj.y > plane.maxy)
+    {
+        plane.maxy = obj.y;
+        delta = true;
+    } else if (obj.y < plane.miny) {
+        plane.miny = obj.y;
+        delta = true;
+    }
+    
+    if (delta == true )
+        plane.updatePixelProjection();
 }
 
 function DSAInsert(tile, x, y, z)
@@ -483,14 +637,16 @@ function DSAInsert(tile, x, y, z)
     if (this.data.length == 0)
     {
         this.maxz = z;
-        this.maxy = y;
-        this.maxx = x;
-        
         for (var i = 0; i < z; i++)
+        {
             this.z_sets.push(-1);
+            this.z_geom.push(new DSAZGeometryObject(i));
+        }
         
         // Push the index of the new set
         this.z_sets.push(0);
+        this.z_geom.push(new DSAZGeometryObject(z));
+        this.updatePlaneGeometry(object);
         
         // Push the actual object
         this.data.splice(0, 0, object);
@@ -503,11 +659,18 @@ function DSAInsert(tile, x, y, z)
     {
         // Make blank zsets until we get to the new one
         for (var i = this.maxz; i < z - 1; i++)
+        {
             this.z_sets.push(-1);
+            this.z_geom.push(new DSAZGeometryObject(i));
+        }
+        
+        // Push object
+        this.data.splice(this.data.length, 0, object);
         
         // Push the index of the new set
-        this.data.splice(this.data.length, 0, object);
         this.z_sets.push(this.data.length - 1);
+        this.z_geom.push(new DSAZGeometryObject(z));
+        this.updatePlaneGeometry(object);
         
         // Update maxz value
         this.maxz = z;
@@ -551,12 +714,6 @@ function DSAInsert(tile, x, y, z)
                 if (this.data[index].y > object.y)
                     break;
             }
-            
-            // this xset has increased in length
-            
-        } else {
-            // This is a new xval for this zset
-            // this xset has increased in length
         }
         
         // Alert on duplicates
@@ -609,13 +766,86 @@ function DSAInsert(tile, x, y, z)
     for (var i = z + 1; i < this.z_sets.length; i++)
         this.z_sets[i] += 1;
     
+    // Keep z-geometry up to date
+    this.updatePlaneGeometry(object);
+    
     // Insert into data array
     this.data.splice(index, 0, object);
     this.data[index].container_array = this;
     
-    // keep track of maximum x, y, z values
-    if (x > this.maxx) this.maxx = x;
-    if (y > this.maxy) this.maxy = y;
-    
     return index;
 }
+
+function triangleTest(rect, vertex0, vertex1, vertex2)
+{
+    /*
+    This function borrowed faithfully from a wonderfl (:3) discussion on
+    calculating triangle collision with AABBs on the following blog:
+    http://sebleedelisle.com/2009/05/super-fast-trianglerectangle-intersection-test/
+    
+    This particular optimization best suits my purposes and was contributed
+    to the discussion by Bertrand Larrieu from http://lab9.fr/
+    */
+    
+    var l = rect.x;
+    var r = rect.w; 
+    var t = rect.y; 
+    var b = rect.h;
+    
+    var x0 = vertex0.x; 
+    var y0 = vertex0.y; 
+    var x1 = vertex1.x; 
+    var y1 = vertex1.y; 
+    var x2 = vertex2.x; 
+    var y2 = vertex2.y; 
+    
+    var c, m, s;
+    
+    var b0 = ((x0 > l) ? 1 : 0) | (((y0 > t) ? 1 : 0) << 1) |
+        (((x0 > r) ? 1 : 0) << 2) | (((y0 > b) ? 1 : 0) << 3);
+    if (b0 == 3) return true;
+    
+    var b1 = ((x1 > l) ? 1 : 0) | (((y1 > t) ? 1 : 0) << 1) |
+        (((x1 > r) ? 1 : 0) << 2) | (((y1 > b) ? 1 : 0) << 3);
+    if (b1 == 3) return true;
+    
+    var b2 = ((x2 > l) ? 1 : 0) | (((y2 > t) ? 1 : 0) << 1) |
+        (((x2 > r) ? 1 : 0) << 2) | (((y2 > b) ? 1 : 0) << 3);
+    if (b2 == 3) return true;
+    
+    var i0 = b0 ^ b1;
+    if (i0 != 0)
+    {
+        m = (y1-y0) / (x1-x0); 
+        c = y0 -(m * x0);
+        if (i0 & 1) { s = m * l + c; if ( s > t && s < b) return true; }
+        if (i0 & 2) { s = (t - c) / m; if ( s > l && s < r) return true; }
+        if (i0 & 4) { s = m * r + c; if ( s > t && s < b) return true; }
+        if (i0 & 8) { s = (b - c) / m; if ( s > l && s < r) return true; }
+    }
+    
+    var i1 = b1 ^ b2;
+    if (i1 != 0)
+    {
+        m = (y2-y1) / (x2-x1); 
+        c = y1 -(m * x1);
+        if (i1 & 1) { s = m * l + c; if ( s > t && s < b) return true; }
+        if (i1 & 2) { s = (t - c) / m; if ( s > l && s < r) return true; }
+        if (i1 & 4) { s = m * r + c; if ( s > t && s < b) return true; }
+        if (i1 & 8) { s = (b - c) / m; if ( s > l && s < r) return true; }
+    }
+    
+    var i2 = b0 ^ b2;
+    if (i2 != 0)
+    {
+        m = (y2-y0) / (x2-x0); 
+        c = y0 -(m * x0);
+        if (i2 & 1) { s = m * l + c; if ( s > t && s < b) return true; }
+        if (i2 & 2) { s = (t - c) / m; if ( s > l && s < r) return true; }
+        if (i2 & 4) { s = m * r + c; if ( s > t && s < b) return true; }
+        if (i2 & 8) { s = (b - c) / m; if ( s > l && s < r) return true; }
+    }
+    
+    return false;
+}
+

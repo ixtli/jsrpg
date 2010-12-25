@@ -14,7 +14,7 @@ const mouseMoveDelay = (1000 / FPS);
 // we just don't want to be scrolling much faster than once per frame
 const keyRepeatDelay = (1000 / FPS);
 const scrollBorder = 32;
-const reclipThreshold = 16;
+const reclipThreshold = 0;
 const shadowStep = .1;
 const secondarySelectionAlpha = .35;
 
