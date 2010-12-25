@@ -366,7 +366,7 @@ function DSADeleteIndex(index)
         // Keep track of maxz value
         a.maxz = a.z_sets.length - 1;
     } else {
-        // Since the set isn't empty any more, update the geom values
+        // Since the set isn't empty, update the geom values
         // The x values are the easy part since z-planes are sorted by x val
         var max;
         if (deleted.z == this.maxz)
@@ -388,9 +388,9 @@ function DSADeleteIndex(index)
                 else if (a.data[i].y < a.z_geom[deleted.z].miny)
                     a.z_geom[deleted.z].miny = a.data[i].y;
             }
+            
+            a.z_geom[deleted.z].updatePixelProjection();
         }
-        
-        a.z_geom[deleted.z].genPixelValues();
     }
     
     return deleted;
@@ -555,7 +555,7 @@ function DSAClip(minx, miny, maxx, maxy)
     var pts = this.z_geom[this.maxz].points;
     var col1 = triangleTest(rect, pts[0], pts[1], pts[2]);
     var col2 = triangleTest(rect, pts[0], pts[2], pts[3]);
-    if (col1 == true && col2 == true)
+    if (col1 == true || col2 == true)
     {
         // Process the last zset
         for (var i = this.z_sets[this.maxz]; i < d.length; i++)
