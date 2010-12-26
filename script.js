@@ -140,6 +140,8 @@ function init()
     
     configureEventBindings();
     
+    setMessage("Hello World!");
+    
     toggleAnimation();
 }
 

@@ -4,6 +4,8 @@ var tileBorderDebug = false;
 // Graphical Constants
 const shadowStep = .1;
 const alphaSelectionThreshold = 127;
+const msgTypeSize = 24;
+const msgBorder = 2;
 
 // Preload images.
 var selection = new Image();
@@ -156,3 +158,17 @@ function redrawMap(clear)
     bufferDirty = true;
 }
 
+function setMessage(string)
+{
+    var msgCtx = $('#msg')[0].getContext("2d");
+    msgCtx.fillStyle = 'rgba(0,0,0,1)';
+    msgCtx.globalAlpha = .5;
+    msgCtx.fillRect(0,0,viewWidth, viewHeight);
+    msgCtx.globalAlpha = 1;
+    msgCtx.font = "bold " + msgTypeSize + "px sans-serif";
+    msgCtx.textBaseline = "ideographic";
+    msgCtx.fillStyle = 'rgba(255,255,255,.9)';
+    msgCtx.strokeStyle = 'rgba(0,0,0,.5)';
+    msgCtx.fillText(string, 4, msgTypeSize + 4);
+    msgCtx.strokeText(string, 4, msgTypeSize + 4);
+}
