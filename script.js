@@ -96,7 +96,13 @@ function setBackgroundLinearVerticalGradient()
 
 function setOverlay()
 {
-    
+    var fgCtx = $('#fg')[0].getContext("2d");
+    var grad = fgCtx.createLinearGradient(0,0,0,canvas.height);
+    grad.addColorStop(0, "rgba(255,255,255,0)");
+    grad.addColorStop(.15, "rgba(255,255,255,.25)");
+    grad.addColorStop(1, "rgba(0,0,0,0)");
+    fgCtx.fillStyle = grad;
+    fgCtx.fillRect(0,0,canvas.width, canvas.height);
 }
 
 function init()
@@ -125,6 +131,7 @@ function init()
     
     // Init forground and background canvas
     setBackgroundLinearVerticalGradient();
+    setOverlay();
     
     // Initialize the tiles based on the map
     var t0 = new Date();
