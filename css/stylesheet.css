@@ -228,3 +228,25 @@ tt {
 dfn {
 	font-style: italic;
 }
+
+/* Custom stuff for JSRPG */
+
+canvas {
+    position: absolute;
+}
+
+.gameview {
+    width: 800px; height: 400px;
+}
+
+#bg {
+    z-index: 0;
+}
+
+#display {
+    z-index: 1;
+}
+
+#fg {
+    z-index: 2;
+}

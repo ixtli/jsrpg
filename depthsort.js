@@ -518,60 +518,63 @@ function DSASelectObject(x, y)
 
 function DSAClip(minx, miny, maxx, maxy)
 {
+    var t0 = new Date();
     var ret = new DepthSortedArray();
     var d = this.data;
-    var p = 0;
+    var pr = 0;
     
     // Construct the rectangle representing our viewport
     var rect = {x:minx,y:miny,w:maxx,h:maxy};
-    
-    for (var z = 0; z < this.z_sets.length - 1; z++)
+    for (var z = 0; z < this.z_sets.length; z++)
     {
         if (this.z_sets[z] == -1)
             continue;
         
-        // Split the view polygon into two rectangles and test them
-        var pts = this.z_geom[z].points;
-        var col = triangleTest(rect, pts[0], pts[1], pts[2]);
+        var p = this.z_geom[z];
+        
+        // Broad phase clipping by treating the plane as a box
+        if (p.points[3].y > rect.h || p.points[1].y < rect.y)
+            continue;
+        
+        if (p.points[3].x > rect.w || p.points[1].x < rect.x)
+            continue;
+        
+        
+        // Do more detailed plane collision test by splitting the zplane
+        // in to two triangles and testing whether or not they intersect
+        // the viewport, represented as an AABB
+        var col = triangleTest(rect, p.points[0], p.points[1], p.points[2]);
         if (col == false)
         {
-            col = triangleTest(rect, pts[0], pts[2], pts[3]);
+            col = triangleTest(rect, p.points[0], p.points[2], p.points[3]);
             if (col == false) continue;
         }
         
-        for (var i = this.z_sets[z]; i < this.z_sets[z+1]; i++)
+        // TODO: we can actually find where the minimum viewable x value on
+        // the current plane is, and test from there, never going further
+        // than the maximum possible viewable x
+        
+        var max = (z == this.z_sets.length - 1) ? this.data.length : 
+            this.z_sets[z+1];
+        
+        for (var i = this.z_sets[z]; i < max; i++)
         {
-            p++;
-            // Omit everything not in our bounding box
+            // Narrow phase collision detection, which tests per pixel
             if (d[i].px + d[i].w > minx && d[i].py + d[i].h > miny &&
                 d[i].px < maxx      && d[i].py < maxy )
             {
                 ret.data.splice(ret.data.length,0,d[i]);
                 ret.abs_indicies.push(i);
             }
+            
+            // Keep track of how many tiles were processed:
+            pr++;
         }
     }
     
-    var pts = this.z_geom[this.maxz].points;
-    var col1 = triangleTest(rect, pts[0], pts[1], pts[2]);
-    var col2 = triangleTest(rect, pts[0], pts[2], pts[3]);
-    if (col1 == true || col2 == true)
-    {
-        // Process the last zset
-        for (var i = this.z_sets[this.maxz]; i < d.length; i++)
-        {
-            p++;
-            // Omit everything not in our bounding box
-            if (d[i].px + d[i].w > minx && d[i].py + d[i].h > miny &&
-                d[i].px < maxx      && d[i].py < maxy )
-            {
-                ret.data.splice(ret.data.length,0,d[i]);
-                ret.abs_indicies.push(i);
-            }
-        }
-    }
-    
-    $('#insert_time')[0].innerHTML = "Map clipping: ("+p+"/"+this.data.length+")";
+    var t1 = new Date();
+    msg = "Clipping: "+(t1-t0)+"ms ("+pr+"/"+this.data.length+")";
+    $('#insert_time')[0].innerHTML = msg;
     
     // Save a bit of information
     ret.clipx = minx;
@@ -580,7 +583,7 @@ function DSAClip(minx, miny, maxx, maxy)
     ret.clip_width = maxx;
     
     ret.super_array = this;
-    ret.processed = p;
+    ret.processed = pr;
     
     return ret;
 }

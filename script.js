@@ -7,7 +7,7 @@ const key_w = 87, key_a = 65, key_s = 83, key_d = 68, key_e = 69, key_f = 70,
     key_minus = 189, key_delete = 8, key_space = 32, key_shift = 16;
 
 // Engine settings
-const FPS = 30;
+const FPS = 32;
 const alphaSelectionThreshold = 127;
 const mouseMoveDelay = (1000 / FPS);
 // This should be really small, so that the OS can regulate it
@@ -36,11 +36,13 @@ var tiles = [];
 // Controls
 var canvas = null;
 var buffer = null;
+var fgOverlayCanvas = null;
 var button = null;
 
 // Drawing contexts
 var canvasContext = null;
 var bufferCtx = null;
+var fgOverlayContext = null;
 
 // Animation variables
 var interval = null;
@@ -61,7 +63,6 @@ var tileBorder = 2;
 
 // Sprite selection
 var focussed = null;
-var mousemoveTimeout;
 var allowSelection = true;
 var mouseX = 0, mouseY = 0;
 var extendedSelection = [];
@@ -83,6 +84,21 @@ var keyMap = {up: key_w, down: key_s, left: key_a, right: key_d};
 
 window.onload = init;
 
+function setBackgroundLinearVerticalGradient()
+{
+    var bgCtx = $('#bg')[0].getContext('2d');
+    var grad = bgCtx.createLinearGradient(0,0,0,canvas.height);
+    grad.addColorStop(0, "#bbdcf5");
+    grad.addColorStop(1, "#84a69e");
+    bgCtx.fillStyle = grad;
+    bgCtx.fillRect(0,0,canvas.width, canvas.height);
+}
+
+function setOverlay()
+{
+    
+}
+
 function init()
 {
     // Get the canvas element to display the game in.
@@ -96,9 +112,19 @@ function init()
     buffer.height = canvas.height;
     buffer.width = canvas.width;
     
+    // Create a forground and background buffer and init them
+    // Create a buffer to draw to and initialize it
+    fgOverlayCanvas = $('<canvas>')[0];
+    fgOverlayCanvas.height = canvas.height;
+    fgOverlayCanvas.width = canvas.width;
+    
     // Get graphics contexts for the canvas elements
     canvasContext = canvas.getContext("2d");
     bufferCtx = buffer.getContext("2d");
+    fgOverlayCanvas = fgOverlayCanvas.getContext("2d");
+    
+    // Init forground and background canvas
+    setBackgroundLinearVerticalGradient();
     
     // Initialize the tiles based on the map
     var t0 = new Date();
@@ -124,9 +150,9 @@ function init()
     }
     */
     
-    for (var i = 100; i >= 3; i--)
+    for (var i = 50; i >= 3; i--)
     {
-        for (var j = 100; j >= 3; j--)
+        for (var j = 50; j >= 3; j--)
         {
             map.insert(tiles[0], j, 0, i);
         }
@@ -177,13 +203,13 @@ function init()
 function configureEventBindings()
 {
     // Set up mouse move event listener
-    $('#display').bind('mouseenter focusin', function() {
-        $('#display').bind('mousemove', mouseMoveHandler);
+    $('#fg').bind('mouseenter focusin', function() {
+        $('#fg').bind('mousemove', mouseMoveHandler);
         mouseInside = true;
     });
     
-    $('#display').bind('mouseleave focusout', function() {
-        $('#display').unbind('mousemove');
+    $('#fg').bind('mouseleave focusout', function() {
+        $('#fg').unbind('mousemove');
         mouseInside = false;
     });
     
@@ -249,15 +275,13 @@ function setSelection(object, keepInViewport)
     if (delta == true)
     {
         var t2 = new Date();
-        var recalc = recalculateMapClipping();
+        recalculateMapClipping();
         clipStack.push([0, 0, canvas.width, canvas.height]);
         redrawMap(true);
         var t3 = new Date();
         
         msg = "Map redraw: " + (t3-t2) + " ms" + " ("
         msg += viewableMap.data.length + " tiles)";
-        if (recalc == true)
-            msg += " (recalc)";
         $('#map_redraw')[0].innerHTML = msg;
     }
     
@@ -534,7 +558,7 @@ function keypressHandler(evt)
             
             obj = map.insertAboveObject(focussed, focussed.tile);
             if (obj)
-            {
+            {3
                 setSelection(obj, true);
                 refreshMap(true);
             }
@@ -550,15 +574,13 @@ function keypressHandler(evt)
     if (delta == true)
     {
         var t2 = new Date();
-        var recalc = recalculateMapClipping();
+        recalculateMapClipping();
         clipStack.push([0, 0, canvas.width, canvas.height]);
         redrawMap(true);
         var t3 = new Date();
         
         msg = "Map redraw: " + (t3-t2) + " ms" + " ("
         msg += viewableMap.data.length + " tiles)";
-        if (recalc == true)
-            msg += " (recalc)";
         $('#map_redraw')[0].innerHTML = msg;
     }
     
@@ -662,8 +684,7 @@ function redrawMap(clear)
     // Clip the area of relevant changes
     bufferCtx.clip();
     
-    if (clear)
-        bufferCtx.clearRect(0, 0, canvas.width, canvas.height);
+    if (clear) bufferCtx.clearRect(0, 0, canvas.width, canvas.height);
     
     var d = viewableMap.data;
     for (var i = 0; i < d.length; i++)
@@ -760,15 +781,13 @@ function windowBorderScroll()
     if (delta == true)
     {
         var t2 = new Date();
-        var recalc = recalculateMapClipping();
+        recalculateMapClipping();
         clipStack.push([0, 0, canvas.width, canvas.height]);
         redrawMap(true);
         var t3 = new Date();
         
         msg = "Map redraw: " + (t3-t2) + " ms" + " ("
         msg += viewableMap.data.length + " tiles)";
-        if (recalc == true)
-            msg += " (recalc)";
         $('#map_redraw')[0].innerHTML = msg;
     }
     

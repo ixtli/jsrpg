@@ -74,4 +74,22 @@ function objectLeft(obj)
     return index;
 }
 
+function moveObjectRight(obj)
+{
+    
+}
 
+function moveObjectFurther(obj)
+{
+    
+}
+
+function moveObjectLeft(obj)
+{
+    
+}
+
+function moveObjectCloser(obj)
+{
+    
+}
