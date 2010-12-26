@@ -86,7 +86,7 @@ window.onload = init;
 
 function setBackgroundLinearVerticalGradient()
 {
-    var bgCtx = $('#bg')[0].getContext('2d');
+    var bgCtx = $('#bg')[0].getContext("2d");
     var grad = bgCtx.createLinearGradient(0,0,0,canvas.height);
     grad.addColorStop(0, "#bbdcf5");
     grad.addColorStop(1, "#84a69e");
