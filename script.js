@@ -1,6 +1,3 @@
-// debugging
-var tileBorderDebug = false;
-
 // Convenience
 const key_w = 87, key_a = 65, key_s = 83, key_d = 68, key_e = 69, key_f = 70,
     key_up = 38, key_down = 40, key_left = 37, key_right = 39, key_plus = 187,
@@ -8,58 +5,23 @@ const key_w = 87, key_a = 65, key_s = 83, key_d = 68, key_e = 69, key_f = 70,
 
 // Engine settings
 const FPS = 32;
-const alphaSelectionThreshold = 127;
 const mouseMoveDelay = (1000 / FPS);
 // This should be really small, so that the OS can regulate it
 // we just don't want to be scrolling much faster than once per frame
 const keyRepeatDelay = (1000 / FPS);
 const scrollBorder = 32;
 const reclipThreshold = 0;
-const shadowStep = .1;
 const secondarySelectionAlpha = .35;
-
-// Preload images.
-var selection = new Image();
-selection.src = "img/dark-selection.png";
-var grass = new Image();
-grass.src = "img/grass.png";
-var dark_wall = new Image();
-dark_wall.src = "img/wall.png";
-var dark_wall_right = new Image();
-dark_wall_right.src = "img/wall-right.png";
-var shadow = new Image();
-shadow.src = "img/shadow.png";
-
-// Sprites
-var tiles = [];
-
-// Controls
-var canvas = null;
-var buffer = null;
-var fgOverlayCanvas = null;
-var button = null;
-
-// Drawing contexts
-var canvasContext = null;
-var bufferCtx = null;
-var fgOverlayContext = null;
 
 // Animation variables
 var interval = null;
 var animationOn = false;
-var bufferDirty = false;
 var previousFrameTime = 0;
 
 // Map
 var map = null;
 var viewableMap = null;
 var viewX = 0, viewY = 0;
-var clipStack = [];
-
-// Tile settings
-var tileWidth = 64;
-var tileHeight = 32;
-var tileBorder = 2;
 
 // Sprite selection
 var focussed = null;
@@ -84,54 +46,28 @@ var keyMap = {up: key_w, down: key_s, left: key_a, right: key_d};
 
 window.onload = init;
 
-function setBackgroundLinearVerticalGradient()
-{
-    var bgCtx = $('#bg')[0].getContext("2d");
-    var grad = bgCtx.createLinearGradient(0,0,0,canvas.height);
-    grad.addColorStop(0, "#bbdcf5");
-    grad.addColorStop(1, "#84a69e");
-    bgCtx.fillStyle = grad;
-    bgCtx.fillRect(0,0,canvas.width, canvas.height);
-}
-
-function setOverlay()
-{
-    var fgCtx = $('#fg')[0].getContext("2d");
-    var grad = fgCtx.createLinearGradient(0,0,0,canvas.height);
-    grad.addColorStop(0, "rgba(255,255,255,0)");
-    grad.addColorStop(.15, "rgba(255,255,255,.25)");
-    grad.addColorStop(1, "rgba(0,0,0,0)");
-    fgCtx.fillStyle = grad;
-    fgCtx.fillRect(0,0,canvas.width, canvas.height);
-}
-
 function init()
 {
     // Get the canvas element to display the game in.
     canvas = document.getElementById('display');
+    viewWidth = canvas.width;
+    viewHeight = canvas.height;
     
     // define clipping buffer based on how big our canvas is
-    clipBuffer = Math.max(canvas.width, canvas.height) >> 2;
+    clipBuffer = Math.max(viewWidth, viewHeight) >> 2;
     
     // Create a buffer to draw to and initialize it
     buffer = $('<canvas>')[0];
-    buffer.height = canvas.height;
-    buffer.width = canvas.width;
-    
-    // Create a forground and background buffer and init them
-    // Create a buffer to draw to and initialize it
-    fgOverlayCanvas = $('<canvas>')[0];
-    fgOverlayCanvas.height = canvas.height;
-    fgOverlayCanvas.width = canvas.width;
+    buffer.height = viewHeight;
+    buffer.width = viewWidth;
     
     // Get graphics contexts for the canvas elements
     canvasContext = canvas.getContext("2d");
     bufferCtx = buffer.getContext("2d");
-    fgOverlayCanvas = fgOverlayCanvas.getContext("2d");
     
     // Init forground and background canvas
     setBackgroundLinearVerticalGradient();
-    setOverlay();
+    setOverlayWhiteVerticalGradient();
     
     // Initialize the tiles based on the map
     var t0 = new Date();
@@ -195,7 +131,7 @@ function init()
     $('#insert_time')[0].innerHTML = msg;
     
     t0 = new Date();
-    clipStack.push([0, 0, canvas.width, canvas.height]);
+    clipStack.push([0, 0, viewWidth, viewHeight]);
     refreshMap(true);
     t1 = new Date();
     
@@ -264,8 +200,8 @@ function setSelection(object, keepInViewport)
         {
             viewX = object.px - scrollBorder;
             delta = true;
-        } else if (object.px + object.w > viewX + canvas.width - scrollBorder) {
-            viewX = (object.px + object.w + scrollBorder) - canvas.width;
+        } else if (object.px + object.w > viewX + viewWidth - scrollBorder) {
+            viewX = (object.px + object.w + scrollBorder) - viewWidth;
             delta = true;
         }
         
@@ -273,8 +209,8 @@ function setSelection(object, keepInViewport)
         {
             viewY = object.py - scrollBorder;
             delta = true;
-        } else if (object.py + object.h > viewY + canvas.height - scrollBorder){
-            viewY = (object.py + object.h + scrollBorder) - canvas.height;
+        } else if (object.py + object.h > viewY + viewHeight - scrollBorder){
+            viewY = (object.py + object.h + scrollBorder) - viewHeight;
             delta = true;
         }
     }
@@ -283,7 +219,7 @@ function setSelection(object, keepInViewport)
     {
         var t2 = new Date();
         recalculateMapClipping();
-        clipStack.push([0, 0, canvas.width, canvas.height]);
+        clipStack.push([0, 0, viewWidth, viewHeight]);
         redrawMap(true);
         var t3 = new Date();
         
@@ -582,7 +518,7 @@ function keypressHandler(evt)
     {
         var t2 = new Date();
         recalculateMapClipping();
-        clipStack.push([0, 0, canvas.width, canvas.height]);
+        clipStack.push([0, 0, viewWidth, viewHeight]);
         redrawMap(true);
         var t3 = new Date();
         
@@ -600,10 +536,10 @@ function keypressHandler(evt)
 
 function refreshMap(render)
 {
-    if (viewableMap != null) delete viewableMap;
+    // if (viewableMap != null) delete viewableMap;
     
     viewableMap = map.clip(viewX - clipBuffer, viewY - clipBuffer,
-        canvas.width + viewX + clipBuffer, canvas.height + viewY + clipBuffer);
+        viewWidth + viewX + clipBuffer, viewHeight + viewY + clipBuffer);
     
     if (render == true) redrawMap(true);
 }
@@ -622,7 +558,7 @@ function mouseClickHandler(ev)
         obj = map.deleteObject(focussed);
         if (obj)
         {
-            clipStack.push(0,0,canvas.width, canvas.height);
+            clipStack.push(0,0,viewWidth, viewHeight);
             focussed = null;
         }
     } else {
@@ -652,17 +588,17 @@ function initTiles()
     // eventually this should only build tiles that the map needs...
     
     // Make a new canvas
-    var canvas = $('<canvas>')[0];
-    canvas.width = tileWidth;
-    canvas.height = tileHeight + (tileHeight >> 1) + tileBorder;
+    var c = $('<canvas>')[0];
+    c.width = tileWidth;
+    c.height = tileHeight + (tileHeight >> 1) + tileBorder;
     
     // Assemble sprite
-    var ctx = canvas.getContext('2d');
+    var ctx = c.getContext('2d');
     // Draw a red border to see if there are any gaps anywhere.
     if (tileBorderDebug)
     {
         ctx.fillStyle = "rgba(255,0,0,0.25)";
-        ctx.fillRect(0,0,canvas.width, canvas.height);
+        ctx.fillRect(0,0,viewWidth, viewHeight);
     }
     // Left wall
     ctx.drawImage(dark_wall, 0, (tileHeight >> 1) + 1);
@@ -672,55 +608,7 @@ function initTiles()
     ctx.drawImage(grass, 0, 0);
     
     // Set up the mapSprites data structure
-    tiles.push(canvas);
-}
-
-function redrawMap(clear)
-{
-    // Push context
-    bufferCtx.save();
-    // Bigin definition of new clipping path
-    bufferCtx.beginPath();
-    
-    while (clipStack.length != 0)
-    {
-        var obj = clipStack.pop();
-        bufferCtx.rect(obj[0], obj[1], obj[2], obj[3]);
-    }
-    
-    // Clip the area of relevant changes
-    bufferCtx.clip();
-    
-    if (clear) bufferCtx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    var d = viewableMap.data;
-    for (var i = 0; i < d.length; i++)
-    {
-        bufferCtx.drawImage(d[i].tile, d[i].px - viewX, d[i].py - viewY);
-        if (d[i].selected == true)
-            bufferCtx.drawImage(selection, d[i].px - viewX, d[i].py - viewY);
-        
-        if (d[i].secondary_selection == true)
-        {
-            var s = bufferCtx.globalAlpha;
-            bufferCtx.globalAlpha = secondarySelectionAlpha;
-            bufferCtx.drawImage(selection, d[i].px - viewX, d[i].py - viewY);
-            bufferCtx.globalAlpha = s;
-        }
-        
-        if (d[i].shadow != 0)
-        {
-            var s = bufferCtx.globalAlpha;
-            bufferCtx.globalAlpha = d[i].shadow;
-            bufferCtx.drawImage(shadow, d[i].px - viewX, d[i].py - viewY);
-            bufferCtx.globalAlpha = s;
-        }
-    }
-    
-    // Get rid of the previous clipping path
-    bufferCtx.restore();
-    
-    bufferDirty = true;
+    tiles.push(c);
 }
 
 function redrawObject(obj)
@@ -751,11 +639,11 @@ function recalculateMapClipping()
         
     if (viewX - viewableMap.clipx < (clipBuffer >> 1))
         recalc = true;
-    else if (viewableMap.clip_width - (viewX + canvas.width) < (clipBuffer >> 1))
+    else if (viewableMap.clip_width - (viewX + viewWidth) < (clipBuffer >> 1))
         recalc = true;
     else if (viewY - viewableMap.clipy < (clipBuffer >> 1))
         recalc = true;
-    else if (viewableMap.clip_height - (viewY + canvas.height) < (clipBuffer >> 1))
+    else if (viewableMap.clip_height - (viewY + viewHeight) < (clipBuffer >> 1))
         recalc = true;
     
     if (recalc == true)
@@ -771,7 +659,7 @@ function windowBorderScroll()
     {
         viewX -= mouseScrollGranulatiry;
         delta = true;
-    } else if (mouseX > canvas.width - scrollBorder) {
+    } else if (mouseX > viewWidth - scrollBorder) {
         viewX += mouseScrollGranulatiry;
         delta = true;
     }
@@ -780,7 +668,7 @@ function windowBorderScroll()
     {
         viewY -= mouseScrollGranulatiry;
         delta = true;
-    } else if (mouseY > canvas.height - scrollBorder) {
+    } else if (mouseY > viewHeight - scrollBorder) {
         viewY += mouseScrollGranulatiry;
         delta = true;
     }
@@ -789,7 +677,7 @@ function windowBorderScroll()
     {
         var t2 = new Date();
         recalculateMapClipping();
-        clipStack.push([0, 0, canvas.width, canvas.height]);
+        clipStack.push([0, 0, viewWidth, viewHeight]);
         redrawMap(true);
         var t3 = new Date();
         
@@ -831,7 +719,7 @@ function draw()
     
     if (bufferDirty == true)
     {
-        canvasContext.clearRect(0,0,canvas.width, canvas.height);
+        canvasContext.clearRect(0,0,viewWidth, viewHeight);
         canvasContext.drawImage(buffer, 0, 0);
         bufferDirty = false;
     }

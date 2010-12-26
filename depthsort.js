@@ -1,21 +1,3 @@
-function pixelProjection(x, y, z)
-{
-    var px, py;
-    
-    px = (canvas.width >> 1) - (tileWidth >> 1);
-    py = 0;
-    
-    px += x * tileHeight;
-    py += x * (tileHeight >> 1);
-    
-    px -= z * tileHeight;
-    py += z * (tileHeight >> 1);
-    
-    py -= y * 17;
-    
-    return {px: px, py: py};
-}
-
 function DSAZGeometryObject(z)
 {
     this.minx = null;
@@ -502,6 +484,12 @@ function DSASelectObject(x, y)
     for (var i = this.data.length - 1; i >=0; i--)
     {
         var obj = this.data[i];
+        
+        // Don't bother if it doesn't encroach on the viewport
+        if ((obj.py - viewY) + tileWidth < 0 || (obj.py - viewY) > viewHeight ||
+            (obj.px - viewX) + tileWidth < 0 || (obj.px - viewX) > viewWidth)
+            continue;
+        
         if (obj.px - viewX <= x && obj.py - viewY <= y &&
             obj.px - viewX + obj.w > x && obj.py - viewY + obj.h > y)
         {
@@ -533,12 +521,9 @@ function DSAClip(minx, miny, maxx, maxy)
         var p = this.z_geom[z];
         
         // Broad phase clipping by treating the plane as a box
-        if (p.points[3].y > rect.h || p.points[1].y < rect.y)
+        if (p.points[3].y > rect.h || p.points[1].y < rect.y ||
+            p.points[3].x > rect.w || p.points[1].x < rect.x)
             continue;
-        
-        if (p.points[3].x > rect.w || p.points[1].x < rect.x)
-            continue;
-        
         
         // Do more detailed plane collision test by splitting the zplane
         // in to two triangles and testing whether or not they intersect
