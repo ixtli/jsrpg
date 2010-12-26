@@ -620,6 +620,7 @@ function DSAUpdatePlaneGeometry(obj)
 function DSAInsert(tile, x, y, z)
 {
     var object = new DSAObject(tile, x, y, z);
+    object.container_array = this;
     
     // Initial case
     if (this.data.length == 0)
@@ -759,7 +760,6 @@ function DSAInsert(tile, x, y, z)
     
     // Insert into data array
     this.data.splice(index, 0, object);
-    this.data[index].container_array = this;
     
     return index;
 }

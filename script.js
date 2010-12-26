@@ -93,9 +93,9 @@ function init()
     }
     */
     
-    for (var i = 50; i >= 3; i--)
+    for (var i = 25; i >= 0; i--)
     {
-        for (var j = 50; j >= 3; j--)
+        for (var j = 25; j >= 0; j--)
         {
             map.insert(tiles[0], j, 0, i);
         }
