@@ -580,34 +580,6 @@ function mouseMoveHandler(evt)
     return false;
 }
 
-function initTiles()
-{
-    // eventually this should only build tiles that the map needs...
-    
-    // Make a new canvas
-    var c = $('<canvas>')[0];
-    c.width = tileWidth;
-    c.height = tileHeight + (tileHeight >> 1) + tileBorder;
-    
-    // Assemble sprite
-    var ctx = c.getContext('2d');
-    // Draw a red border to see if there are any gaps anywhere.
-    if (tileBorderDebug)
-    {
-        ctx.fillStyle = "rgba(255,0,0,0.25)";
-        ctx.fillRect(0,0,viewWidth, viewHeight);
-    }
-    // Left wall
-    ctx.drawImage(dark_wall, 0, (tileHeight >> 1) + 1);
-    // Right wall
-    ctx.drawImage(dark_wall_right, tileWidth >> 1, (tileHeight >> 1)+1);
-    // Tile top
-    ctx.drawImage(grass, 0, 0);
-    
-    // Set up the mapSprites data structure
-    tiles.push(c);
-}
-
 function redrawObject(obj)
 {
     clipStack.push([obj.px - viewX, obj.py - viewY, obj.w, obj.h]);
