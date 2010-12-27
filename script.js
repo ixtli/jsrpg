@@ -229,6 +229,8 @@ function setSelection(object, keepInViewport)
         redrawObject(object);
         redrawMap(false, true);
     }
+    
+    tileEditorUpdate();
 }
 
 function addToExtendedSelection(obj)
@@ -374,9 +376,12 @@ function focussedWasDeleted()
     // TODO: the following call to setSelection could redraw the
     // map twice if delta is set.  Deal with this.
     if (index != null)
+    {
         setSelection(map.data[index], true);
-    else
+    } else {
         focussed = null;
+        tileEditorUpdate();
+    }
 }
 
 function keypressHandler(evt)
@@ -535,10 +540,12 @@ function refreshMap(render)
 function mouseClickHandler(ev)
 {
     if (focussed == null)
-        return;
+        return true;
     else if (ev.type === 'mousedown') ev.preventDefault();
     else if (ev.type === 'mouseup') return true; // for now
     
+    if (mouseInside == false)
+        return true;
     
     var obj = null;
     if (ev.shiftKey)
@@ -556,6 +563,7 @@ function mouseClickHandler(ev)
     
     if (obj) refreshMap(true);
     
+    return false;
 }
 
 function mouseMoveHandler(evt)

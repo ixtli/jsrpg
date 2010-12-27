@@ -258,10 +258,16 @@ canvas {
 
 .editorview {
     width: 800px; height: 200px;
+    margin-top:5px;
 }
 
-#ebmode {
+.checks {
+    position: absolute;
     z-index: 0;
+    border-style: solid;
+    border-width: 1px;
+    width: 450px;
+    height: 197px;
 }
 
 #editor {
