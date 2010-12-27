@@ -130,11 +130,13 @@ function init()
     // Uncomment for logging
     // msg = "Map redraw: " + (t1-t0) + " ms" + " (" + viewableMap.data.length + " tiles)";
     
-    
     configureEventBindings();
     
     // set this for the fps counter
     canvasContext.font = "bold 14px sans-serif";
+    
+    // set up editor
+    editorInit();
     
     toggleAnimation();
 }

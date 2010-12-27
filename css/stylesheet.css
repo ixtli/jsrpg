@@ -255,3 +255,17 @@ canvas {
     letter-spacing:-20px;
     z-index: 3;
 }
+
+.editorview {
+    width: 800px; height: 200px;
+}
+
+#ebmode {
+    z-index: 0;
+}
+
+#editor {
+    z-index: 1;
+    width: 200px;
+    padding-left: 496px;
+}
