@@ -1,25 +1,3 @@
-// debugging
-var tileBorderDebug = false;
-
-// Graphical Constants
-const shadowStep = .1;
-const alphaSelectionThreshold = 127;
-const msgTypeSize = 14;
-const msgBorder = 3;
-const msgLeftPadding = 8;
-
-// Preload images.
-var selection = new Image();
-selection.src = "img/dark-selection.png";
-var grass = new Image();
-grass.src = "img/grass.png";
-var dark_wall = new Image();
-dark_wall.src = "img/wall.png";
-var dark_wall_right = new Image();
-dark_wall_right.src = "img/wall-right.png";
-var shadow = new Image();
-shadow.src = "img/shadow.png";
-
 // Canvas elements
 var canvas = null;
 var buffer = null;
@@ -34,11 +12,6 @@ var viewHeight = null;
 
 // Sprites
 var tiles = [];
-
-// Tile settings
-var tileWidth = 64;
-var tileHeight = 32;
-var tileBorder = 2;
 
 function pixelProjection(x, y, z)
 {
