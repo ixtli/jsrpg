@@ -21,6 +21,7 @@ const secondarySelectionAlpha = .35;
 const doubleBuffer = false;
 const cameraFollowsSelection = true;
 const tickerChangeRate = 10; // Seconds
+const fpsCounter = false;
 
 // debugging
 var tileBorderDebug = false;

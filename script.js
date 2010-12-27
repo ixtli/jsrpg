@@ -27,6 +27,8 @@ var mouseInside = false;
 var previousKeyboardEvent = new Date();
 var keyMap = {up: key_w, down: key_s, left: key_a, right: key_d};
 
+var fpsVal = FPS;
+
 window.onload = init;
 
 function init()
@@ -131,6 +133,9 @@ function init()
     $('#map_redraw')[0].innerHTML = msg;
     
     configureEventBindings();
+    
+    // set this for the fps counter
+    canvasContext.font = "bold 14px sans-serif";
     
     toggleAnimation();
 }
@@ -694,5 +699,16 @@ function draw()
         bufferDirty = false;
     }
     
-    previousFrameTime = new Date();
+    if (fpsCounter && mouseInside == true)
+    {
+        var nt = new Date();
+        canvasContext.fillStyle = "black";
+        canvasContext.fillRect(5, viewHeight - 20, 60, 50);
+        canvasContext.fillStyle = "white";
+        //fpsVal = Math.ceil(fpsVal * 0.9 + previousFrameTime*0.1);
+        canvasContext.fillText("FPS: " + (nt - previousFrameTime), 10, viewHeight - 4);
+        previousFrameTime = nt;
+    } else {
+        previousFrameTime = new Date();
+    }
 }
