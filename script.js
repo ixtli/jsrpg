@@ -300,7 +300,7 @@ function deleteExtendedSelection()
     
     for (var i = 0; i < extendedSelection.length; i++)
     {
-        var index = map.lowestObject(extendedSelection[i].z,
+        var index = map.indexOfLowestObject(extendedSelection[i].z,
             extendedSelection[i].x);
         
         if (index != null)
@@ -345,39 +345,23 @@ function deleteExtendedSelection()
     return true;
 }
 
-function focussedWasDeleted()
+function deleteFocussed()
 {
     // This method causes the selection to "fall" to the next lowest object
-    index = map.lowestObject(focussed.z, focussed.x);
+    var height = focussed.y;
     
-    if (index == null)
-        return;
-    
-    if (map.data[index] != focussed)
-    {
-        while(index < map.data.length)
-        {
-            if (map.data[index].x != focussed.x ||
-                map.data[index].z != focussed.z)
-            {
-                index--;
-                break;
-            }
-            
-            if (map.data[index].y >= focussed.y)
-                break;
-            
-            index++;
-        }
-    } else {
-        index = null;
-    }
+    // Find the lowest y values at (z,x)
+    var lowest = map.indexOfLowestObject(focussed.z, focussed.x);
+    map.deleteObject(focussed);
+    redrawObject(focussed);
+    var index = map.correctHeight(lowest, focussed.y);
     
     // TODO: the following call to setSelection could redraw the
-    // map twice if delta is set.  Deal with this.
+    // map twice if delta is set in keypressHandler.  Deal with this.
     if (index != null)
     {
         setSelection(map.data[index], true);
+        refreshMap(false);
     } else {
         focussed = null;
         tileEditorUpdate();
@@ -489,9 +473,7 @@ function keypressHandler(evt)
             refreshMap(false);
             delta = true;
         } else if (focussed != null) {
-            map.deleteObject(focussed);
-            focussedWasDeleted();
-            refreshMap(false);
+            deleteFocussed();
             delta = true;
         }
         break;

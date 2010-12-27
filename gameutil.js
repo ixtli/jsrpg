@@ -6,7 +6,7 @@ function objectCloser(obj)
         return null;
     
     // Find the object at z-1
-    var index = a.lowestObject(obj.z + 1, obj.x);
+    var index = a.indexOfLowestObject(obj.z + 1, obj.x);
     
     if (index != null)
     {
@@ -25,7 +25,7 @@ function objectFurther(obj)
         return null;
     
     // Find the object at z-1
-    var index = a.lowestObject(obj.z - 1, obj.x);
+    var index = a.indexOfLowestObject(obj.z - 1, obj.x);
     
     if (index != null)
     {
@@ -44,7 +44,7 @@ function objectRight(obj)
         return null;
     
     // Find the object at z-1
-    var index = a.lowestObject(obj.z, obj.x + 1);
+    var index = a.indexOfLowestObject(obj.z, obj.x + 1);
     
     if (index != null)
     {
@@ -63,7 +63,7 @@ function objectLeft(obj)
         return null;
     
     // Find the object at z-1
-    var index = a.lowestObject(obj.z, obj.x - 1);
+    var index = a.indexOfLowestObject(obj.z, obj.x - 1);
     
     if (index != null)
     {

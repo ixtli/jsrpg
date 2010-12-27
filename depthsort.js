@@ -102,7 +102,7 @@ function DepthSortedArray()
     this.deleteIndex = DSADeleteIndex;
     this.findIndexForObjectAt = DSAFindIndexForObjectAt;
     this.findIndexForObject = DSAFindIndexForObject;
-    this.lowestObject = DSAFindLowestObject;
+    this.indexOfLowestObject = DSAFindLowestObject;
     this.correctHeight = DSACorrectHeight;
     this.updatePlaneGeometry = DSAUpdatePlaneGeometry;
     
