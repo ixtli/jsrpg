@@ -8,10 +8,6 @@
     <title>Canvas Test!</title>
 </head>
 <body>
-    <p>これは日本語テストだ!
-        <label for="ebmode">EricB Mode</label>
-        <input type=checkbox id="ebmode">
-    </p>
     <div id="game" class="gameview" width="800" height="400">
         <canvas id="bg" width="800" height= "400"></canvas>
         <canvas id="display" width="800" height= "400">
@@ -20,10 +16,13 @@
         <canvas id="fg" width="800" height="400"></canvas>
         <canvas id="msg" width="800" height="26"></canvas>
     </div>
-    <p id="tilegen_time"></p>
-    <p id="selection_time"></p>
-    <p id="insert_time"></p>
-    <p id="map_redraw"></p>
+    <div id="suplimental" class="editorview">
+        <canvas id="editor" width="100" height="100">
+    </div>
+    <div id="checks" class="options">
+        <label for="ebmode">EricB Mode</label>
+        <input type=checkbox id="ebmode">
+    </div>
     <script type="application/javascript" src="http://code.jquery.com/jquery-1.4.4.min.js"></script>
     <script type="application/javascript" src="settings.js"></script>
     <script type="application/javascript" src="graphics.js"></script>

@@ -73,8 +73,6 @@ function setOverlayBlackHorazontalBars()
 
 function redrawMap(clear, clip)
 {
-    var t0 = new Date();
-    
     // Do not draw individual clipping regions while the view is scrolling
     // because the entire thing is going to be updated each frame
     if (clip == true && viewportIsScrolling == true)
@@ -147,11 +145,6 @@ function redrawMap(clear, clip)
     
     // Mark the buffer as dirty for double buffering.
     bufferDirty = true;
-    
-    var t1 = new Date();
-    msg = "Map redraw: " + (t1-t0) + " ms" + " ("
-    msg += viewableMap.data.length + " tiles)";
-    $('#map_redraw')[0].innerHTML = msg;
 }
 
 function setMessage(string)

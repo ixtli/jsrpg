@@ -506,7 +506,6 @@ function DSASelectObject(x, y)
 
 function DSAClip(minx, miny, maxx, maxy)
 {
-    var t0 = new Date();
     var ret = new DepthSortedArray();
     var d = this.data;
     var pr = 0;
@@ -556,10 +555,6 @@ function DSAClip(minx, miny, maxx, maxy)
             pr++;
         }
     }
-    
-    var t1 = new Date();
-    msg = "Clipping: "+(t1-t0)+"ms ("+pr+"/"+this.data.length+")";
-    $('#insert_time')[0].innerHTML = msg;
     
     // Save a bit of information
     ret.clipx = minx;

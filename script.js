@@ -67,7 +67,7 @@ function init()
     var t0 = new Date();
     initTiles();
     var t1 = new Date();
-    $('#tilegen_time')[0].innerHTML = "Tilegen: "+(t1-t0)+" ms";
+    console.log("Tilegen: "+(t1-t0)+" ms");
     
     map = new DepthSortedArray();
     
@@ -122,15 +122,14 @@ function init()
     
     var msg = "Terrain DSA insertion time: "+ (t1-t0) +"ms"
     msg += " (" + map.data.length + " tiles)";
-    $('#insert_time')[0].innerHTML = msg;
+    console.log(msg);
     
-    t0 = new Date();
     clipStack.push([0, 0, viewWidth, viewHeight]);
     refreshMap(true);
-    t1 = new Date();
     
-    msg = "Map redraw: " + (t1-t0) + " ms" + " (" + viewableMap.data.length + " tiles)";
-    $('#map_redraw')[0].innerHTML = msg;
+    // Uncomment for logging
+    // msg = "Map redraw: " + (t1-t0) + " ms" + " (" + viewableMap.data.length + " tiles)";
+    
     
     configureEventBindings();
     
@@ -221,14 +220,8 @@ function setSelection(object, keepInViewport)
     // If it left, redraw the map
     if (delta == true)
     {
-        var t2 = new Date();
         recalculateMapClipping();
         redrawMap(true, false);
-        var t3 = new Date();
-        
-        msg = "Map redraw: " + (t3-t2) + " ms" + " ("
-        msg += viewableMap.data.length + " tiles)";
-        $('#map_redraw')[0].innerHTML = msg;
     } else {
         redrawObject(object);
         redrawMap(false, true);
@@ -519,19 +512,9 @@ function keypressHandler(evt)
     
     if (delta == true)
     {
-        var t2 = new Date();
         recalculateMapClipping();
         redrawMap(true, false);
-        var t3 = new Date();
-        
-        msg = "Map redraw: " + (t3-t2) + " ms" + " ("
-        msg += viewableMap.data.length + " tiles)";
-        $('#map_redraw')[0].innerHTML = msg;
     }
-    
-    var t1 = new Date();
-    var msg = 'Keypress processing time: '+(t1-time) +' ms';
-    $('#selection_time')[0].innerHTML = msg;
     
     return false;
 }
@@ -675,7 +658,6 @@ function draw()
     if (allowSelection == true &&
         (previousMouseMove > previousFrameTime || viewportIsScrolling == true))
     {
-        var t0 = new Date();
         var obj = viewableMap.selectObject(mouseX, mouseY);
         
         if (obj)
@@ -683,10 +665,6 @@ function draw()
             setSelection(obj);
             redrawObject(obj);
             redrawMap(false, true);
-            
-            var t2 = new Date();
-            var msg = 'Selection time: '+(t2-t0) +' ms';
-            $('#selection_time')[0].innerHTML = msg;
         }
     }
     

@@ -2,7 +2,8 @@
 const tickerMessages = ["Click to add a block, shift+click to delete.",
     "Scroll with the WASD keys.", "Move the selection with the arrow keys.",
     "Hold shift and move the selection to select multiple tiles.",
-    "Use the + and -, or delete and space keys to add and remove selection."];
+    "Use the + and -, or delete and space keys to add and remove selection.",
+    "武器による攻撃や魔法の発動を行います 。"];
 
 // Convenience
 const key_w = 87, key_a = 65, key_s = 83, key_d = 68, key_e = 69, key_f = 70,
@@ -38,7 +39,7 @@ const tileWidth = 64;
 const tileHeight = 32;
 const tileBorder = 2;
 
-// Engine settings.  Things here can be changed at runtime without maleffect
+// Engine settings.  Things here can be changed during runtime without maleffect
 var allowScrolling = true;
 var mouseScrollGranulatiry = 8;
 var keyboardScrollGranulatiry = 32;
