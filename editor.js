@@ -2,12 +2,17 @@
 var tileEditorCanvas = null;
 var tileEditorCtx = null;
 
+var tileEditorMsg = ["No tile selected."
+];
+
 function tileEditorInit()
 {
     tileEditorCanvas = $('#editor')[0];
     tileEditorCtx = tileEditorCanvas.getContext('2d');
     
-    if (focussed != null) tileEditorUpdate();
+    tileEditorCtx.font = "bold 14px sans-serif";
+    
+    tileEditorUpdate();
 }
 
 function tileEditorUpdate()
@@ -20,5 +25,10 @@ function tileEditorUpdate()
     tileEditorCtx.clearRect(0,0,width, height);
     tileEditorCtx.fillStyle = 'rgba(100,0,0,.05)';
     tileEditorCtx.fillRect(0,0,width, height);
-    tileEditorCtx.drawImage(focussed.tile, midx, midy);
+    if (focussed != null) {
+        tileEditorCtx.drawImage(focussed.tile, midx, midy);
+    } else {
+        tileEditorCtx.fillStyle = 'rgba(0,0,0,.75)';
+        tileEditorCtx.fillText(tileEditorMsg[0], 5, height - 5);
+    }
 }

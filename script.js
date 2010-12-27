@@ -46,6 +46,10 @@ function init()
     
     // Get graphics contexts for the canvas elements
     canvasContext = canvas.getContext("2d");
+    
+    // set this for the fps counter
+    canvasContext.font = "bold 14px sans-serif";
+    
     if (doubleBuffer == true)
     {
         // Create a buffer to draw to and initialize it
@@ -131,9 +135,6 @@ function init()
     // msg = "Map redraw: " + (t1-t0) + " ms" + " (" + viewableMap.data.length + " tiles)";
     
     configureEventBindings();
-    
-    // set this for the fps counter
-    canvasContext.font = "bold 14px sans-serif";
     
     // set up editor
     tileEditorInit();
