@@ -136,7 +136,7 @@ function init()
     canvasContext.font = "bold 14px sans-serif";
     
     // set up editor
-    editorInit();
+    tileEditorInit();
     
     toggleAnimation();
 }
@@ -667,6 +667,7 @@ function draw()
             setSelection(obj);
             redrawObject(obj);
             redrawMap(false, true);
+            tileEditorUpdate();
         }
     }
     

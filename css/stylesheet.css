@@ -265,7 +265,9 @@ canvas {
 }
 
 #editor {
+    border-style: solid;
+    border-width: 1px;
     z-index: 1;
     width: 200px;
-    padding-left: 496px;
+    left: 606px;
 }

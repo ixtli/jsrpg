@@ -1,12 +1,24 @@
 // editor-specific globals
-var editorCanvas = null;
-var editorCtx = null;
+var tileEditorCanvas = null;
+var tileEditorCtx = null;
 
-function editorInit()
+function tileEditorInit()
 {
-    editorCanvas = $('#editor')[0];
-    editorCtx = editorCanvas.getContext('2d');
+    tileEditorCanvas = $('#editor')[0];
+    tileEditorCtx = tileEditorCanvas.getContext('2d');
     
-    editorCtx.fillStyle = 'rgba(0,0,0,1)';
-    editorCtx.fillRect(0,0,editorCanvas.width,editorCanvas.height);
+    if (focussed != null) tileEditorUpdate();
+}
+
+function tileEditorUpdate()
+{
+    var height = tileEditorCanvas.height;
+    var width = tileEditorCanvas.width;
+    var midx = (width >> 1) - tileHeight;
+    var midy = (height >> 1) - tileHeight;
+    
+    tileEditorCtx.clearRect(0,0,width, height);
+    tileEditorCtx.fillStyle = 'rgba(100,0,0,.05)';
+    tileEditorCtx.fillRect(0,0,width, height);
+    tileEditorCtx.drawImage(focussed.tile, midx, midy);
 }
