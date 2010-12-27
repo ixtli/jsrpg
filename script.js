@@ -45,6 +45,15 @@ var previousKeyboardEvent = new Date();
 var keyboardScrollGranulatiry = 32;
 var keyMap = {up: key_w, down: key_s, left: key_a, right: key_d};
 
+// Ticker messages
+var tickerMessages = ["Click to add a block, shift+click to delete.",
+    "Scroll with the WASD keys.", "Move the selection with the arrow keys.",
+    "Hold shift and move the selection to select multiple tiles.",
+    "Use the + and -, or delete and space keys to add and remove selection."];
+var tickerChangeRate = 10; // Seconds
+var lastTickerChange = new Date();
+var tickerInterval = null;
+
 window.onload = init;
 
 function init()
@@ -141,9 +150,9 @@ function init()
     
     configureEventBindings();
     
-    setMessage("武器による攻撃や魔法の発動を行います。");
-    
     toggleAnimation();
+    
+    setRandomTickerMessage();
 }
 
 function configureEventBindings()
@@ -624,14 +633,25 @@ function redrawObject(obj)
     clipStack.push([obj.px - viewX, obj.py - viewY, obj.w, obj.h]);
 }
 
+function setRandomTickerMessage()
+{
+    var i = Math.floor(Math.random() * (tickerMessages.length));
+    setMessage(tickerMessages[i]);
+}
+
 function toggleAnimation()
 {
     if (animationOn == true)
     {
         clearInterval(interval);
+        clearInterval(tickerInterval);
         interval = null;
         animationOn = false;
     } else {
+        tickerInterval = setInterval( function() {
+            setRandomTickerMessage();
+        },1000 * tickerChangeRate);
+        
         interval = setInterval(draw, 1000 / FPS);
         animationOn = true;
     }

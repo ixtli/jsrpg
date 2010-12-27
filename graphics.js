@@ -4,8 +4,8 @@ var tileBorderDebug = false;
 // Graphical Constants
 const shadowStep = .1;
 const alphaSelectionThreshold = 127;
-const msgTypeSize = 24;
-const msgBorder = 2;
+const msgTypeSize = 20;
+const msgLeftPadding = 8;
 
 // Preload images.
 var selection = new Image();
@@ -182,7 +182,15 @@ function redrawMap(clear, clip)
 
 function setMessage(string)
 {
-    var msgCtx = $('#msg')[0].getContext("2d");
+    var msgCanvas = $('#msg')[0];
+    var msgCtx = msgCanvas.getContext("2d");
+    
+    // Compute the y location to start from
+    var msgy = (msgCanvas.height - msgTypeSize) >> 1;
+    // Add 1 or 2 here because we're using ideographic baseline in order
+    // to support chinese characters
+    msgy += msgTypeSize + 1;
+    msgCtx.clearRect(0,0,msgCanvas.width, msgCanvas.height);
     msgCtx.fillStyle = 'rgba(0,0,0,1)';
     msgCtx.globalAlpha = .5;
     msgCtx.fillRect(0,0,viewWidth, viewHeight);
@@ -191,6 +199,6 @@ function setMessage(string)
     msgCtx.textBaseline = "ideographic";
     msgCtx.fillStyle = 'rgba(255,255,255,.9)';
     msgCtx.strokeStyle = 'rgba(0,0,0,.5)';
-    msgCtx.fillText(string, 4, msgTypeSize + 4);
-    msgCtx.strokeText(string, 4, msgTypeSize + 4);
+    msgCtx.fillText(string, msgLeftPadding, msgy);
+    msgCtx.strokeText(string, msgLeftPadding, msgy);
 }
