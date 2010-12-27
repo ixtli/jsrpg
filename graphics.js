@@ -97,21 +97,32 @@ function setOverlayBlackHorazontalBars()
     fgCtx.fillRect(0,0,viewWidth, viewHeight);
 }
 
-function redrawMap(clear)
+function redrawMap(clear, clip)
 {
-    // Push context
-    bufferCtx.save();
-    // Bigin definition of new clipping path
-    bufferCtx.beginPath();
+    var t0 = new Date();
     
-    while (clipStack.length != 0)
+    // Do not draw individual clipping regions while the view is scrolling
+    // because the entire thing is going to be updated each frame
+    if (clip == true && viewportIsScrolling == true)
+        return;
+    
+    if (clip == true)
     {
-        var obj = clipStack.pop();
-        bufferCtx.rect(obj[0], obj[1], obj[2], obj[3]);
+        // Push context
+        bufferCtx.save();
+        
+        // Bigin definition of new clipping path
+        bufferCtx.beginPath();
+        
+        while (clipStack.length != 0)
+        {
+            var obj = clipStack.pop();
+            bufferCtx.rect(obj[0], obj[1], obj[2], obj[3]);
+        }
+        
+        // Clip the area of relevant changes
+        bufferCtx.clip();
     }
-    
-    // Clip the area of relevant changes
-    bufferCtx.clip();
     
     if (clear) bufferCtx.clearRect(0, 0, viewWidth, viewHeight);
     
@@ -153,9 +164,20 @@ function redrawMap(clear)
     }
     
     // Get rid of the previous clipping path
-    bufferCtx.restore();
+    if (clip == true) bufferCtx.restore();
     
+    // If viewport is currently scrolling, dump all the clipping paths because
+    // they've just be redrawn
+    if (viewportIsScrolling == true)
+        clipStack = [];
+    
+    // Mark the buffer as dirty for double buffering.
     bufferDirty = true;
+    
+    var t1 = new Date();
+    msg = "Map redraw: " + (t1-t0) + " ms" + " ("
+    msg += viewableMap.data.length + " tiles)";
+    $('#map_redraw')[0].innerHTML = msg;
 }
 
 function setMessage(string)

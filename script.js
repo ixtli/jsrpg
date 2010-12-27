@@ -33,6 +33,7 @@ var extendedSelection = [];
 var clipBuffer = 0;
 var allowScrolling = true;
 var cameraFollowsSelection = true;
+var viewportIsScrolling = false;
 
 // Mouse movement event handling
 var previousMouseMove = new Date();
@@ -140,7 +141,7 @@ function init()
     
     configureEventBindings();
     
-    setMessage("Hello World!");
+    setMessage("武器による攻撃や魔法の発動を行います。");
     
     toggleAnimation();
 }
@@ -148,13 +149,13 @@ function init()
 function configureEventBindings()
 {
     // Set up mouse move event listener
-    $('#fg').bind('mouseenter focusin', function() {
-        $('#fg').bind('mousemove', mouseMoveHandler);
+    $('#game').bind('mouseenter focusin', function() {
+        $('#game').bind('mousemove', mouseMoveHandler);
         mouseInside = true;
     });
     
-    $('#fg').bind('mouseleave focusout', function() {
-        $('#fg').unbind('mousemove');
+    $('#game').bind('mouseleave focusout', function() {
+        $('#game').unbind('mousemove');
         mouseInside = false;
     });
     
@@ -189,12 +190,18 @@ function ericBHandler()
 
 function setSelection(object, keepInViewport)
 {
+    // Deselect the previously focussed object
     if (focussed != null)
     {
         redrawObject(focussed);
         focussed.selected = false;
     }
     
+    // Select object
+    object.selected = true;
+    focussed = object;
+    
+    // If we're trying to keep selection in view, figure out if it left
     var delta = false;
     if (cameraFollowsSelection == true && keepInViewport == true)
     {
@@ -217,22 +224,21 @@ function setSelection(object, keepInViewport)
         }
     }
     
+    // If it left, redraw the map
     if (delta == true)
     {
         var t2 = new Date();
         recalculateMapClipping();
-        clipStack.push([0, 0, viewWidth, viewHeight]);
-        redrawMap(true);
+        redrawMap(true, false);
         var t3 = new Date();
         
         msg = "Map redraw: " + (t3-t2) + " ms" + " ("
         msg += viewableMap.data.length + " tiles)";
         $('#map_redraw')[0].innerHTML = msg;
+    } else {
+        redrawObject(object);
+        redrawMap(false, true);
     }
-    
-    object.selected = true;
-    redrawObject(object);
-    focussed = object;
 }
 
 function addToExtendedSelection(obj)
@@ -262,7 +268,7 @@ function clearExtendedSelection()
         redrawObject(extendedSelection[i]);
     }
     
-    redrawMap(true);
+    redrawMap(true, true);
     extendedSelection = [];
 }
 
@@ -296,7 +302,7 @@ function insertAboveExtendedSelection()
 function deleteExtendedSelection()
 {
     if (extendedSelection.length == 0)
-        return null;
+        return false;
     
     var newSelection = [];
     
@@ -335,13 +341,52 @@ function deleteExtendedSelection()
             map.data[index].secondary_selection = true;
         }
         
+        if (extendedSelection[i] === focussed)
+            focussedWasDeleted();
+        
         map.deleteObject(extendedSelection[i]);
     }
     
     delete extendedSelection;
     extendedSelection = newSelection;
     
-    refreshMap(true);
+    return true;
+}
+
+function focussedWasDeleted()
+{
+    // This method causes the selection to "fall" to the next lowest object
+    index = map.lowestObject(focussed.z, focussed.x);
+    
+    if (index == null)
+        return;
+    
+    if (map.data[index] != focussed)
+    {
+        while(index < map.data.length)
+        {
+            if (map.data[index].x != focussed.x ||
+                map.data[index].z != focussed.z)
+            {
+                index--;
+                break;
+            }
+            
+            if (map.data[index].y >= focussed.y)
+                break;
+            
+            index++;
+        }
+    } else {
+        index = null;
+    }
+    
+    // TODO: the following call to setSelection could redraw the
+    // map twice if delta is set.  Deal with this.
+    if (index != null)
+        setSelection(map.data[index], true);
+    else
+        focussed = null;
 }
 
 function keypressHandler(evt)
@@ -357,7 +402,7 @@ function keypressHandler(evt)
     // if it's down when something else happens.  If we don't return false
     // safari sends a mousemove event which screws up selection.  Weird.
     if (code == key_shift)
-        return false;
+        return true;
     
     switch (code)
     {
@@ -392,10 +437,7 @@ function keypressHandler(evt)
             
             var found = objectFurther(focussed);
             if (found != null)
-            {
                 setSelection(found, true);
-                redrawMap(false);
-            }
         }
         break;
         
@@ -410,10 +452,7 @@ function keypressHandler(evt)
             
             var found = objectLeft(focussed);
             if (found != null)
-            {
                 setSelection(found, true);
-                redrawMap(false);
-            }
         }
         break;
         
@@ -428,10 +467,7 @@ function keypressHandler(evt)
             
             var found = objectRight(focussed);
             if (found != null)
-            {
                 setSelection(found, true);
-                redrawMap(false);
-            }
         }
         break;
         
@@ -446,64 +482,35 @@ function keypressHandler(evt)
             
             var found = objectCloser(focussed);
             if (found != null)
-            {
                 setSelection(found, true);
-                redrawMap(false);
-            }
         }
         break;
         
         case key_minus:
         case key_delete:
-        if (focussed)
+        if (extendedSelection.length > 0)
         {
-            // handle multiple selections
-            if (extendedSelection.length > 0)
-                deleteExtendedSelection();
-            
-            var index = map.lowestObject(focussed.z, focussed.x);
-            
-            if (index == null)
-                break;
-            
-            if (map.data[index] != focussed)
-            {
-                while(index < map.data.length)
-                {
-                    if (map.data[index].x != focussed.x ||
-                        map.data[index].z != focussed.z)
-                    {
-                        index--;
-                        break;
-                    }
-                    
-                    if (map.data[index].y >= focussed.y)
-                        break;
-                    
-                    index++;
-                }
-            } else {
-                index = null;
-            }
-            
+            deleteExtendedSelection();
+            refreshMap(false);
+            delta = true;
+        } else if (focussed != null) {
             map.deleteObject(focussed);
-            if (index) setSelection(map.data[index - 1], true);
-            refreshMap(true);
+            focussedWasDeleted();
+            refreshMap(false);
             delta = true;
         }
         break;
         
         case key_plus:
         case key_space:
-        if (focussed)
+        // handle multiple selections
+        if (extendedSelection.length > 0)
         {
-            // handle multiple selections
-            if (extendedSelection.length > 0)
-                insertAboveExtendedSelection();
-            
+            insertAboveExtendedSelection();
+        } else if (focussed != null) {
             obj = map.insertAboveObject(focussed, focussed.tile);
             if (obj)
-            {3
+            {
                 setSelection(obj, true);
                 refreshMap(true);
             }
@@ -520,8 +527,7 @@ function keypressHandler(evt)
     {
         var t2 = new Date();
         recalculateMapClipping();
-        clipStack.push([0, 0, viewWidth, viewHeight]);
-        redrawMap(true);
+        redrawMap(true, false);
         var t3 = new Date();
         
         msg = "Map redraw: " + (t3-t2) + " ms" + " ("
@@ -538,12 +544,12 @@ function keypressHandler(evt)
 
 function refreshMap(render)
 {
-    // if (viewableMap != null) delete viewableMap;
+    if (viewableMap != null) delete viewableMap;
     
     viewableMap = map.clip(viewX - clipBuffer, viewY - clipBuffer,
         viewWidth + viewX + clipBuffer, viewHeight + viewY + clipBuffer);
     
-    if (render == true) redrawMap(true);
+    if (render == true) redrawMap(true, false);
 }
 
 function mouseClickHandler(ev)
@@ -654,55 +660,43 @@ function recalculateMapClipping()
     return recalc;
 }
 
-function windowBorderScroll()
-{
-    var delta = false;
-    if (mouseX < scrollBorder)
-    {
-        viewX -= mouseScrollGranulatiry;
-        delta = true;
-    } else if (mouseX > viewWidth - scrollBorder) {
-        viewX += mouseScrollGranulatiry;
-        delta = true;
-    }
-    
-    if (mouseY < scrollBorder)
-    {
-        viewY -= mouseScrollGranulatiry;
-        delta = true;
-    } else if (mouseY > viewHeight - scrollBorder) {
-        viewY += mouseScrollGranulatiry;
-        delta = true;
-    }
-    
-    if (delta == true)
-    {
-        var t2 = new Date();
-        recalculateMapClipping();
-        clipStack.push([0, 0, viewWidth, viewHeight]);
-        redrawMap(true);
-        var t3 = new Date();
-        
-        msg = "Map redraw: " + (t3-t2) + " ms" + " ("
-        msg += viewableMap.data.length + " tiles)";
-        $('#map_redraw')[0].innerHTML = msg;
-    }
-    
-    return delta;
-}
-
 function draw()
 {
     // Scrolling by leaving the mouse on the side is the only interaction
-    // that involves holding a state that we care about
-    
-    var delta = false;
+    // that involves holding a state that we care about.  If we detect that
+    // the mouse is in the scroll border save that state so that renderMap
+    // will only redraw the entire screen if it's currently scrolling.
     if (allowScrolling == true && mouseInside == true)
-        delta = windowBorderScroll();
+    {
+        if (mouseX < scrollBorder)
+        {
+            viewX -= mouseScrollGranulatiry;
+            viewportIsScrolling = true;
+        } else if (mouseX > viewWidth - scrollBorder) {
+            viewX += mouseScrollGranulatiry;
+            viewportIsScrolling = true;
+        } else {
+            viewportIsScrolling = false;
+        }
+        
+        if (mouseY < scrollBorder)
+        {
+            viewY -= mouseScrollGranulatiry;
+            viewportIsScrolling = true;
+        } else if (mouseY > viewHeight - scrollBorder) {
+            viewY += mouseScrollGranulatiry;
+            viewportIsScrolling = true;
+        }
+        
+        if (viewportIsScrolling == true)
+            recalculateMapClipping();
+    } else {
+        viewportIsScrolling = false;
+    }
     
     // Handle mouse movement
     if (allowSelection == true &&
-        (previousMouseMove > previousFrameTime || delta == true))
+        (previousMouseMove > previousFrameTime || viewportIsScrolling == true))
     {
         var t0 = new Date();
         var obj = viewableMap.selectObject(mouseX, mouseY);
@@ -711,13 +705,15 @@ function draw()
         {
             setSelection(obj);
             redrawObject(obj);
-            redrawMap(false);
+            redrawMap(false, true);
             
             var t2 = new Date();
             var msg = 'Selection time: '+(t2-t0) +' ms';
             $('#selection_time')[0].innerHTML = msg;
         }
     }
+    
+    if (viewportIsScrolling == true) redrawMap(true, false);
     
     if (bufferDirty == true)
     {

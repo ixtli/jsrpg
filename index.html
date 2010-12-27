@@ -1,7 +1,8 @@
 <!doctype html>
 <html>
 <head>
-    <meta http-equiv="Content-Script-Type" content="application/javascript" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Script-Type" content="application/javascript charset=UTF-8" />
     <link rel="stylesheet" href="css/stylesheet.css" media="screen">
 
     <title>Canvas Test!</title>
@@ -11,7 +12,7 @@
         <label for="ebmode">EricB Mode</label>
         <input type=checkbox id="ebmode">
     </p>
-    <div class="gameview" width="800" height="400">
+    <div id="game" class="gameview" width="800" height="400">
         <canvas id="bg" width="800" height= "400"></canvas>
         <canvas id="display" width="800" height= "400">
             <p>Your browser does not support HTML5 canvas. Get Chrome.</p>

@@ -252,5 +252,6 @@ canvas {
 }
 
 #msg {
+    letter-spacing:-20px;
     z-index: 3;
 }
