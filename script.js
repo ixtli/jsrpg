@@ -1,3 +1,9 @@
+// Ticker messages
+const tickerMessages = ["Click to add a block, shift+click to delete.",
+    "Scroll with the WASD keys.", "Move the selection with the arrow keys.",
+    "Hold shift and move the selection to select multiple tiles.",
+    "Use the + and -, or delete and space keys to add and remove selection."];
+
 // Convenience
 const key_w = 87, key_a = 65, key_s = 83, key_d = 68, key_e = 69, key_f = 70,
     key_up = 38, key_down = 40, key_left = 37, key_right = 39, key_plus = 187,
@@ -12,6 +18,7 @@ const keyRepeatDelay = (1000 / FPS);
 const scrollBorder = 32;
 const reclipThreshold = 0;
 const secondarySelectionAlpha = .35;
+const doubleBuffer = true;
 
 // Animation variables
 var interval = null;
@@ -45,13 +52,8 @@ var previousKeyboardEvent = new Date();
 var keyboardScrollGranulatiry = 32;
 var keyMap = {up: key_w, down: key_s, left: key_a, right: key_d};
 
-// Ticker messages
-var tickerMessages = ["Click to add a block, shift+click to delete.",
-    "Scroll with the WASD keys.", "Move the selection with the arrow keys.",
-    "Hold shift and move the selection to select multiple tiles.",
-    "Use the + and -, or delete and space keys to add and remove selection."];
+// Ticker Control
 var tickerChangeRate = 10; // Seconds
-var lastTickerChange = new Date();
 var tickerInterval = null;
 
 window.onload = init;
@@ -66,6 +68,9 @@ function init()
     // define clipping buffer based on how big our canvas is
     clipBuffer = Math.max(viewWidth, viewHeight) >> 2;
     
+    // Adjust ticker height based on type size setting
+    $('#msg')[0].height = msgTypeSize + (msgBorder << 1);
+    
     // Create a buffer to draw to and initialize it
     buffer = $('<canvas>')[0];
     buffer.height = viewHeight;
@@ -75,9 +80,10 @@ function init()
     canvasContext = canvas.getContext("2d");
     bufferCtx = buffer.getContext("2d");
     
-    // Init forground and background canvas
+    // Init forground, ticker, and background canvases
     setBackgroundLinearVerticalGradient();
     setOverlayWhiteVerticalGradient();
+    setRandomTickerMessage();
     
     // Initialize the tiles based on the map
     var t0 = new Date();
@@ -151,8 +157,6 @@ function init()
     configureEventBindings();
     
     toggleAnimation();
-    
-    setRandomTickerMessage();
 }
 
 function configureEventBindings()
@@ -735,7 +739,7 @@ function draw()
     
     if (viewportIsScrolling == true) redrawMap(true, false);
     
-    if (bufferDirty == true)
+    if (bufferDirty == true && doubleBuffer == true)
     {
         canvasContext.clearRect(0,0,viewWidth, viewHeight);
         canvasContext.drawImage(buffer, 0, 0);

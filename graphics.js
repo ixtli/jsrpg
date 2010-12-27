@@ -4,7 +4,8 @@ var tileBorderDebug = false;
 // Graphical Constants
 const shadowStep = .1;
 const alphaSelectionThreshold = 127;
-const msgTypeSize = 20;
+const msgTypeSize = 14;
+const msgBorder = 3;
 const msgLeftPadding = 8;
 
 // Preload images.
@@ -190,6 +191,8 @@ function setMessage(string)
     // Add 1 or 2 here because we're using ideographic baseline in order
     // to support chinese characters
     msgy += msgTypeSize + 1;
+    
+    // Draw the message
     msgCtx.clearRect(0,0,msgCanvas.width, msgCanvas.height);
     msgCtx.fillStyle = 'rgba(0,0,0,1)';
     msgCtx.globalAlpha = .5;
@@ -199,6 +202,7 @@ function setMessage(string)
     msgCtx.textBaseline = "ideographic";
     msgCtx.fillStyle = 'rgba(255,255,255,.9)';
     msgCtx.strokeStyle = 'rgba(0,0,0,.5)';
-    msgCtx.fillText(string, msgLeftPadding, msgy);
     msgCtx.strokeText(string, msgLeftPadding, msgy);
+    msgCtx.fillText(string, msgLeftPadding, msgy);
 }
+
