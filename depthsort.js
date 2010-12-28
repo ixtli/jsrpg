@@ -724,10 +724,10 @@ function DSAInsert(tile, x, y, z)
                 if (this.allowDuplicates == false)
                 {
                     msg += "  Ignoring.";
-                    console.log(msg);
+                    log(msg);
                     return null;
                 }
-                console.log(msg);
+                log(msg);
             }
         }
         

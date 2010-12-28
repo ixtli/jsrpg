@@ -26,6 +26,12 @@ const fpsCounter = false;
 
 // debugging
 var tileBorderDebug = false;
+var debugMessages = true;
+function log(msg)
+{
+    if (debugMessages == true && typeof(console) != "undefined")
+        console.log(msg);
+}
 
 // Graphical Constants
 const shadowStep = .1;

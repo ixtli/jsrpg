@@ -71,7 +71,7 @@ function init()
     var t0 = new Date();
     initTiles();
     var t1 = new Date();
-    console.log("Tilegen: "+(t1-t0)+" ms");
+    log("Tilegen: "+(t1-t0)+" ms");
     
     map = new DepthSortedArray();
     
@@ -126,7 +126,7 @@ function init()
     
     var msg = "Terrain DSA insertion time: "+ (t1-t0) +"ms"
     msg += " (" + map.data.length + " tiles)";
-    console.log(msg);
+    log(msg);
     
     clipStack.push([0, 0, viewWidth, viewHeight]);
     refreshMap(true);
@@ -495,7 +495,7 @@ function keypressHandler(evt)
         break;
         
         default:
-        console.log("Unhandled keycode: " + code);
+        log("Unhandled keycode: " + code);
         return true;
         break;
     }
@@ -662,7 +662,8 @@ function draw()
         }
     }
     
-    if (viewportIsScrolling == true) redrawMap(true, false);
+    if (viewportIsScrolling == true)
+        redrawMap(true, false);
     
     if (bufferDirty == true && doubleBuffer == true)
     {
