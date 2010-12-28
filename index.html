@@ -4,6 +4,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta http-equiv="Content-Script-Type" content="application/javascript charset=UTF-8" />
     <link rel="stylesheet" href="css/stylesheet.css" media="screen">
+    <link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/
 
     <title>Canvas Test!</title>
 </head>
@@ -23,15 +24,12 @@
             <input type=checkbox id="clk"> Click to select <br>
         </div>
         <div class="editcontrols">
-            <form>
-                <label for="tindex">Sprite Index: </label>
-            <input type="number" name="tindex" placeholder="0"
-                min="0" max="999" step="1" value="0">
-            </form>
+              Sprite Index:<div id="tindex"></div>
         </div>
         <canvas id="editor" width="200" height="200">
     </div>
     <script type="application/javascript" src="http://code.jquery.com/jquery-1.4.4.min.js"></script>
+    <script type="application/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.7/jquery-ui.min.js"></script>
     <script type="application/javascript" src="settings.js"></script>
     <script type="application/javascript" src="tiledescription.js"></script>
     <script type="application/javascript" src="graphics.js"></script>

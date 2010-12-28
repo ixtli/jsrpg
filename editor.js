@@ -23,15 +23,13 @@ function bindTileEditorEventHandlers()
         tileEditorUpdate();
     });
     
-    $('#tindex').bind('change', tileIndexInputDidChange);
-    
-    return false;
+    $('#tindex').slider({max: sprites.length - 1});
+    $('#tindex').bind('slidechange', tileIndexInputDidChange);
 }
 
 function tileIndexInputDidChange()
 {
-    var val = $('#tindex').value;
-    log(val);
+    var val = $('#tindex').slider("value");
     if (focussed != null && val < sprites.length && val >= 0)
     {
         focussed.tile = sprites[val];
@@ -39,6 +37,8 @@ function tileIndexInputDidChange()
         redrawMap(true, true);
         tileEditorUpdate();
     }
+    
+    return false;
 }
 
 function tileEditorUpdate()
