@@ -1,6 +1,11 @@
+// preload images
+var terrainImage = new Image();
+terrainImage.src = "img/terrain.png";
+
 // Tile settings
 const tileWidth = 64;
 const tileHeight = 32;
+const tileBorder = 2;
 
 // Names of each tile for the editor
 terrainNames = ["grass", "night", "black", "grass",
@@ -8,6 +13,7 @@ terrainNames = ["grass", "night", "black", "grass",
                 "grass", "grass", "grass", "grass"];
 
 const mouseOverSelection = 1;
+const secondarySelectionSprite = 1;
 const shadowMaskTile = 2;
 
 const tileGraphicWidth = 64;

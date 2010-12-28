@@ -29,9 +29,12 @@ function tileEditorUpdate()
     // Draw bottom message
     tileEditorCtx.fillStyle = 'rgba(0,0,0,.75)';
     if (focussed != null) {
-        tileEditorCtx.drawImage(focussed.tile, midx, midy);
+        
+        tileEditorCtx.drawImage(focussed.tile.img, midx, midy);
         var msg = "("+focussed.x +","+ focussed.y+","+focussed.z+")";
         tileEditorCtx.fillText(msg, 5, height - 6);
+        tileEditorCtx.fillText(focussed.tile.name, 5, height - 23);
+        
     } else {
         tileEditorCtx.fillText(tileEditorMsg[0], 5, height - 6);
     }

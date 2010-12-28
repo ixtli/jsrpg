@@ -40,24 +40,7 @@ const msgTypeSize = 14;
 const msgBorder = 3;
 const msgLeftPadding = 8;
 
-// Tile settings
-const tileWidth = 64;
-const tileHeight = 32;
-const tileBorder = 2;
-
 // Engine settings.  Things here can be changed during runtime without maleffect
 var allowScrolling = true;
 var mouseScrollGranulatiry = 8;
 var keyboardScrollGranulatiry = 32;
-
-// Preload images
-var selection = new Image();
-selection.src = "img/dark-selection.png";
-var grass = new Image();
-grass.src = "img/grass.png";
-var dark_wall = new Image();
-dark_wall.src = "img/wall.png";
-var dark_wall_right = new Image();
-dark_wall_right.src = "img/wall-right.png";
-var shadow = new Image();
-shadow.src = "img/shadow.png";

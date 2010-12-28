@@ -85,7 +85,7 @@ function init()
         {
             for (var j = 30; j >= 0; j--)
             {
-                map.insert(tiles[0], j, y, i);
+                map.insert(sprites[0], j, y, i);
             }
         }
     }
@@ -95,32 +95,32 @@ function init()
     {
         for (var j = 25; j >= 0; j--)
         {
-            map.insert(tiles[0], j, 0, i);
+            map.insert(sprites[0], j, 0, i);
         }
     }
     
-    map.insert(tiles[0], 5, 1, 7);
-    map.insert(tiles[0], 7, 1, 7);
-    map.insert(tiles[0], 8, 1, 6);
-    map.insert(tiles[0], 6, 1, 8);
+    map.insert(sprites[0], 5, 1, 7);
+    map.insert(sprites[0], 7, 1, 7);
+    map.insert(sprites[0], 8, 1, 6);
+    map.insert(sprites[0], 6, 1, 8);
     
     for (var i = 2; i >= 1; i--)
-        map.insert(tiles[0], 6, i, 7);
+        map.insert(sprites[0], 6, i, 7);
     
     for (var i = 5; i >= 1; i--)
-        map.insert(tiles[0], 5, i, 6);
+        map.insert(sprites[0], 5, i, 6);
     
     for (var i = 0; i < 4; i++)
-        map.insert(tiles[0], 6, i, 6);
+        map.insert(sprites[0], 6, i, 6);
     
     for (var i = 0; i < 10; i++)
-        map.insert(tiles[0], 5, i, 5);
+        map.insert(sprites[0], 5, i, 5);
     
     for (var i = 5; i >= 1; i--)
-        map.insert(tiles[0], 5, i, 6);
+        map.insert(sprites[0], 5, i, 6);
     
     for (var i = 5; i >= 1; i--)
-        map.insert(tiles[0], 6, i, 5);
+        map.insert(sprites[0], 6, i, 5);
     
     t1 = new Date();
     

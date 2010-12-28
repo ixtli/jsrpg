@@ -47,8 +47,8 @@ function DSAObject(tile, x, y, z)
     
     // graphics related members
     this.tile = tile;
-    this.w = this.tile.width;
-    this.h = this.tile.height;
+    this.w = this.tile.w;
+    this.h = this.tile.h;
     this.shadow = 0;
     this.selected = false;
     this.secondary_selection = false;
@@ -495,7 +495,7 @@ function DSASelectObject(x, y)
         {
             var dx = Math.floor(x - (obj.px - viewX));
             var dy = Math.floor(y - (obj.py - viewY));
-            var pixeldata = obj.tile.getContext('2d').getImageData(dx,dy,1,1);
+            var pixeldata = obj.tile.img.getContext('2d').getImageData(dx,dy,1,1);
             if (pixeldata.data[3] > alphaSelectionThreshold) {
                 return obj;
             }

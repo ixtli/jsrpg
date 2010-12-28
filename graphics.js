@@ -11,7 +11,15 @@ var viewWidth = null;
 var viewHeight = null;
 
 // Sprites
-var tiles = [];
+var sprites = [];
+
+function Sprite(name, canv, w, h)
+{
+    this.name = name;
+    this.img = canv;
+    this.w = w;
+    this.h = h;
+}
 
 function pixelProjection(x, y, z)
 {
@@ -99,11 +107,12 @@ function redrawMap(clear, clip)
     if (clear) bufferCtx.clearRect(0, 0, viewWidth, viewHeight);
     
     var d = viewableMap.data;
-    var px, py;
+    var px, py, obj;
     for (var i = 0; i < d.length; i++)
     {
-        px = d[i].px - viewX;
-        py = d[i].py - viewY;
+        obj = d[i];
+        px = obj.px - viewX;
+        py = obj.py - viewY;
         
         // Don't bother if it doesn't encroach on the viewport
         if (py + tileWidth < 0 || py > viewHeight ||
@@ -111,26 +120,27 @@ function redrawMap(clear, clip)
             continue;
         
         // Draw tile
-        bufferCtx.drawImage(d[i].tile, px, py);
+        bufferCtx.drawImage(obj.tile.img, px, py);
         
         // Draw cursor selection
-        if (d[i].selected == true) bufferCtx.drawImage(selection, px, py);
+        if (obj.selected == true)
+            bufferCtx.drawImage(sprites[mouseOverSelection].img, px, py);
         
         // Draw lighter secondard selection
-        if (d[i].secondary_selection == true)
+        if (obj.secondary_selection == true)
         {
             var s = bufferCtx.globalAlpha;
             bufferCtx.globalAlpha = secondarySelectionAlpha;
-            bufferCtx.drawImage(selection, px, py);
+            bufferCtx.drawImage(sprites[secondarySelectionSprite].img, px, py);
             bufferCtx.globalAlpha = s;
         }
         
         // Draw shadow
-        if (d[i].shadow != 0)
+        if (obj.shadow != 0)
         {
             var s = bufferCtx.globalAlpha;
-            bufferCtx.globalAlpha = d[i].shadow;
-            bufferCtx.drawImage(shadow, px, py);
+            bufferCtx.globalAlpha = obj.shadow;
+            bufferCtx.drawImage(sprites[shadowMaskTile].img, px, py);
             bufferCtx.globalAlpha = s;
         }
     }
@@ -177,25 +187,31 @@ function initTiles()
     // eventually this should only build tiles that the map needs...
     
     // Make a new canvas
-    var c = $('<canvas>')[0];
-    c.width = tileWidth;
-    c.height = tileHeight + (tileHeight >> 1) + tileBorder;
-    
-    // Assemble sprite
-    var ctx = c.getContext('2d');
-    // Draw a red border to see if there are any gaps anywhere.
-    if (tileBorderDebug)
+    for (var y = 0; y < tileSheetHeight; y++)
     {
-        ctx.fillStyle = "rgba(255,0,0,0.25)";
-        ctx.fillRect(0,0,viewWidth, viewHeight);
+        for (var x = 0; x < tileSheetWidth; x++)
+        {
+            var c = $('<canvas>')[0];
+            c.width = tileGraphicWidth;
+            c.height = tileGraphicHeight;
+            
+            // Assemble sprite
+            var ctx = c.getContext('2d');
+            // Draw a red border to see if there are any gaps anywhere.
+            if (tileBorderDebug)
+            {
+                ctx.fillStyle = "rgba(255,0,0,0.25)";
+                ctx.fillRect(0,0,tileGraphicWidth, tileGraphicHeight);
+            }
+            ctx.drawImage(terrainImage, x * tileGraphicWidth,
+                y * tileGraphicHeight, tileGraphicWidth, tileGraphicHeight, 0,0,
+                c.width, c.height);
+            
+            // make a sprite object
+            var s = new Sprite(terrainNames[sprites.length], c,
+                tileGraphicWidth, tileGraphicHeight);
+            // Set up the mapSprites data structure
+            sprites.push(s);
+        }
     }
-    // Left wall
-    ctx.drawImage(dark_wall, 0, (tileHeight >> 1) + 1);
-    // Right wall
-    ctx.drawImage(dark_wall_right, tileWidth >> 1, (tileHeight >> 1)+1);
-    // Tile top
-    ctx.drawImage(grass, 0, 0);
-    
-    // Set up the mapSprites data structure
-    tiles.push(c);
 }
