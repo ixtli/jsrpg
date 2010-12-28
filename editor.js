@@ -1,6 +1,7 @@
 // editor-specific globals
 var tileEditorCanvas = null;
 var tileEditorCtx = null;
+var drawBackground = false;
 
 var tileEditorMsg = ["No tile selected."
 ];
@@ -11,8 +12,16 @@ function tileEditorInit()
     tileEditorCtx = tileEditorCanvas.getContext('2d');
     
     tileEditorCtx.font = "bold 14px sans-serif";
-    
+    bindTileEditorEventHandlers();
     tileEditorUpdate();
+}
+
+function bindTileEditorEventHandlers()
+{
+    $('#tebg').bind('click', function () {
+        drawBackground = drawBackground ? false : true;
+        tileEditorUpdate();
+    });
 }
 
 function tileEditorUpdate()
@@ -23,8 +32,12 @@ function tileEditorUpdate()
     var midy = (height >> 1) - tileHeight;
     
     tileEditorCtx.clearRect(0,0,width, height);
-    tileEditorCtx.fillStyle = 'rgba(100,0,0,.05)';
-    tileEditorCtx.fillRect(0,0,width, height);
+    
+    if (drawBackground)
+    {
+        tileEditorCtx.fillStyle = 'rgba(100,0,0,.05)';
+        tileEditorCtx.fillRect(0,0,width, height);
+    }
     
     // Draw bottom message
     tileEditorCtx.fillStyle = 'rgba(0,0,0,.75)';
