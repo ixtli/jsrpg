@@ -505,11 +505,11 @@ function mouseClickHandler(ev)
                 deleteFocussed();
             else
                 map.deleteObject(obj);
+            
+            if (obj) refreshMap(true);
         } else {
-            map.insertAboveObject(obj, focussed.tile);
+            setSelection(obj, false);
         }
-        
-        if (obj) refreshMap(true);
         
     } else {
         
