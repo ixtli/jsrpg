@@ -77,51 +77,7 @@ function init()
     
     // generate terrain
     t0 = new Date();
-    
-    /*
-    for (var y = 7; y >= 0; y--)
-    {
-        for (var i = 30; i >= 0; i--)
-        {
-            for (var j = 30; j >= 0; j--)
-            {
-                map.insert(sprites[0], j, y, i);
-            }
-        }
-    }
-    */
-    
-    for (var i = 25; i >= 0; i--)
-    {
-        for (var j = 25; j >= 0; j--)
-        {
-            map.insert(sprites[0], j, 0, i);
-        }
-    }
-    
-    map.insert(sprites[0], 5, 1, 7);
-    map.insert(sprites[0], 7, 1, 7);
-    map.insert(sprites[0], 8, 1, 6);
-    map.insert(sprites[0], 6, 1, 8);
-    
-    for (var i = 2; i >= 1; i--)
-        map.insert(sprites[0], 6, i, 7);
-    
-    for (var i = 5; i >= 1; i--)
-        map.insert(sprites[0], 5, i, 6);
-    
-    for (var i = 0; i < 4; i++)
-        map.insert(sprites[0], 6, i, 6);
-    
-    for (var i = 0; i < 10; i++)
-        map.insert(sprites[0], 5, i, 5);
-    
-    for (var i = 5; i >= 1; i--)
-        map.insert(sprites[0], 5, i, 6);
-    
-    for (var i = 5; i >= 1; i--)
-        map.insert(sprites[0], 6, i, 5);
-    
+    generateTestMap();
     t1 = new Date();
     
     var msg = "Terrain DSA insertion time: "+ (t1-t0) +"ms"

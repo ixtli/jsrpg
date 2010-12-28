@@ -44,3 +44,5 @@ const msgLeftPadding = 8;
 var allowScrolling = true;
 var mouseScrollGranulatiry = 8;
 var keyboardScrollGranulatiry = 32;
+var clickToSelect = false;
+
