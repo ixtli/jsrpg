@@ -42,6 +42,7 @@ const msgLeftPadding = 8;
 
 // Engine settings.  Things here can be changed during runtime without maleffect
 var allowScrolling = true;
+var allowBorderScroll = true;
 var mouseScrollGranulatiry = 8;
 var keyboardScrollGranulatiry = 32;
 var clickToSelect = false;

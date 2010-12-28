@@ -127,6 +127,14 @@ function configureEventBindings()
     $('#clk').bind('click', function () {
         clickToSelect = clickToSelect ? false : true;
     });
+    
+    // enable/disable scrolling
+    $('#allow-scroll').bind('click', function ()
+        {allowScrolling = allowScrolling ? false : true;});
+    
+    // enable/disable scrolling by mousing over border
+    $('#b-scrolling').bind('click', function ()
+        {allowBorderScroll = allowBorderScroll ? false : true;});
 }
 
 function ericBHandler()
@@ -349,21 +357,25 @@ function keypressHandler(evt)
     switch (code)
     {
         case keyMap.left:
+        if (allowScrolling == false) break;
         viewX -= keyboardScrollGranulatiry;
         delta = true;
         break;
         
         case keyMap.up:
+        if (allowScrolling == false) break;
         viewY -= keyboardScrollGranulatiry;
         delta = true;
         break;
         
         case keyMap.down:
+        if (allowScrolling == false) break;
         viewY += keyboardScrollGranulatiry;
         delta = true;
         break;
         
         case keyMap.right:
+        if (allowScrolling == false) break;
         viewX += keyboardScrollGranulatiry;
         delta = true;
         break;
@@ -603,7 +615,8 @@ function draw()
     // that involves holding a state that we care about.  If we detect that
     // the mouse is in the scroll border save that state so that renderMap
     // will only redraw the entire screen if it's currently scrolling.
-    if (allowScrolling == true && mouseInside == true)
+    if (allowScrolling == true && mouseInside == true &&
+        allowBorderScroll == true)
     {
         if (mouseX < scrollBorder)
         {
