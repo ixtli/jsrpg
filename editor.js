@@ -22,6 +22,23 @@ function bindTileEditorEventHandlers()
         drawBackground = drawBackground ? false : true;
         tileEditorUpdate();
     });
+    
+    $('#tindex').bind('change', tileIndexInputDidChange);
+    
+    return false;
+}
+
+function tileIndexInputDidChange()
+{
+    var val = $('#tindex').value;
+    log(val);
+    if (focussed != null && val < sprites.length && val >= 0)
+    {
+        focussed.tile = sprites[val];
+        redrawObject(focussed);
+        redrawMap(true, true);
+        tileEditorUpdate();
+    }
 }
 
 function tileEditorUpdate()
@@ -47,7 +64,7 @@ function tileEditorUpdate()
         var msg = "("+focussed.x +","+ focussed.y+","+focussed.z+")";
         tileEditorCtx.fillText(msg, 5, height - 6);
         tileEditorCtx.fillText(focussed.tile.name, 5, height - 23);
-        
+        $('#tindex').value = focussed.tile.i;
     } else {
         tileEditorCtx.fillText(tileEditorMsg[0], 5, height - 6);
     }

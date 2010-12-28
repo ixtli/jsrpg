@@ -19,6 +19,7 @@ function Sprite(name, canv, w, h)
     this.img = canv;
     this.w = w;
     this.h = h;
+    this.i = 0; // The index into the sprite array
 }
 
 function pixelProjection(x, y, z)
@@ -210,6 +211,7 @@ function initTiles()
             // make a sprite object
             var s = new Sprite(terrainNames[sprites.length], c,
                 tileGraphicWidth, tileGraphicHeight);
+            s.i = sprites.length;
             // Set up the mapSprites data structure
             sprites.push(s);
         }

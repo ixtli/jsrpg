@@ -266,8 +266,18 @@ canvas {
     z-index: 0;
     border-style: solid;
     border-width: 1px;
-    width: 450px;
-    height: 197px;
+    width: 250px;
+    height: inherit;
+}
+
+.editcontrols {
+    position: absolute;
+    z-index: 2;
+    border-style: solid;
+    border-width: 1px;
+    width: 334px;
+    height: inherit;
+    left: 265px;
 }
 
 #editor {
