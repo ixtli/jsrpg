@@ -23,22 +23,31 @@ function bindTileEditorEventHandlers()
         tileEditorUpdate();
     });
     
-    $('#tindex').slider({max: sprites.length - 1});
-    $('#tindex').bind('slidechange', tileIndexInputDidChange);
+    $('#tindex').slider({max: sprites.length-1,slide: tileIndexInputDidChange});
 }
 
-function tileIndexInputDidChange()
+function tileIndexInputDidChange(event, ui)
 {
-    var val = $('#tindex').slider("value");
-    if (focussed != null && val < sprites.length && val >= 0)
+    var val = ui.value;
+    var selectedSprite = sprites[val];
+    if (focussed != null)
     {
-        focussed.tile = sprites[val];
+        focussed.tile = selectedSprite;
         redrawObject(focussed);
         redrawMap(true, true);
         tileEditorUpdate();
     }
     
-    return false;
+    if (extendedSelection.length > 0)
+    {
+        var t;
+        for (var i = 0; i < extendedSelection.length; i++)
+        {
+            t = extendedSelection[i];
+            t.tile = selectedSprite;
+            redrawObject(t);
+        }
+    }
 }
 
 function tileEditorUpdate()
@@ -64,7 +73,7 @@ function tileEditorUpdate()
         var msg = "("+focussed.x +","+ focussed.y+","+focussed.z+")";
         tileEditorCtx.fillText(msg, 5, height - 6);
         tileEditorCtx.fillText(focussed.tile.name, 5, height - 23);
-        $('#tindex').value = focussed.tile.i;
+        $('#tindex').slider("value", focussed.tile.i);
     } else {
         tileEditorCtx.fillText(tileEditorMsg[0], 5, height - 6);
     }
