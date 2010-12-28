@@ -96,11 +96,11 @@ function moveObjectCloser(obj)
 
 function generateTestMap()
 {
-    for (var y = 0; y < 4; y++)
+    for (var y = 0; y < 3; y++)
     {
-        for (var z = 0; z < 2; z++)
+        for (var z = 0; z < 10; z++)
         {
-            for (var x = 0; x < 4; x++)
+            for (var x = 0; x < 10; x++)
             {
                 map.insert(sprites[0], x, y, z);
             }
