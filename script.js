@@ -87,14 +87,16 @@ function init()
     clipStack.push([0, 0, viewWidth, viewHeight]);
     refreshMap(true);
     
-    // Uncomment for logging
-    // msg = "Map redraw: " + (t1-t0) + " ms" + " (" + viewableMap.data.length + " tiles)";
-    
+    // Bind event handlers
     configureEventBindings();
     
     // set up editor
     tileEditorInit();
     
+    // Set initial selection (note: this needs to be done after editor init)
+    setSelection(map.data[0]);
+    
+    // Start drawing
     toggleAnimation();
 }
 
@@ -120,6 +122,11 @@ function configureEventBindings()
     
     // handle ericb mode
     $('#ebmode').bind('click', ericBHandler);
+    
+    // Click-to-select mode
+    $('#clk').bind('click', function () {
+        clickToSelect = clickToSelect ? false : true;
+    });
 }
 
 function ericBHandler()
@@ -486,20 +493,41 @@ function mouseClickHandler(ev)
         return true;
     
     var obj = null;
-    if (ev.shiftKey)
+    if (clickToSelect == true )
     {
-        obj = map.deleteObject(focussed);
-        if (obj)
+        obj = viewableMap.selectObject(mouseX, mouseY);
+        if (obj == null) return true;
+        
+        if (ev.shiftKey)
         {
             clipStack.push(0,0,viewWidth, viewHeight);
-            focussed = null;
+            if (obj === focussed)
+                deleteFocussed();
+            else
+                map.deleteObject(obj);
+        } else {
+            map.insertAboveObject(obj, focussed.tile);
         }
+        
+        if (obj) refreshMap(true);
+        
     } else {
-        obj = map.insertAboveObject(focussed, focussed.tile);
-        if (obj) redrawObject(obj);
+        
+        if (ev.shiftKey)
+        {
+            obj = map.deleteObject(focussed);
+            if (obj)
+            {
+                clipStack.push(0,0,viewWidth, viewHeight);
+                focussed = null;
+            }
+        } else {
+            obj = map.insertAboveObject(focussed, focussed.tile);
+            if (obj) redrawObject(obj);
+        }
+        
+        if (obj) refreshMap(true);
     }
-    
-    if (obj) refreshMap(true);
     
     return false;
 }
@@ -604,7 +632,7 @@ function draw()
     }
     
     // Handle mouse movement
-    if (allowSelection == true &&
+    if (allowSelection == true && clickToSelect == false &&
         (previousMouseMove > previousFrameTime || viewportIsScrolling == true))
     {
         var obj = viewableMap.selectObject(mouseX, mouseY);
@@ -641,3 +669,4 @@ function draw()
         previousFrameTime = new Date();
     }
 }
+
