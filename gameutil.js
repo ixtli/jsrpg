@@ -96,18 +96,17 @@ function moveObjectCloser(obj)
 
 function generateTestMap()
 {
-    /*
-    for (var y = 7; y >= 0; y--)
+    for (var y = 0; y < 4; y++)
     {
-        for (var i = 30; i >= 0; i--)
+        for (var z = 0; z < 2; z++)
         {
-            for (var j = 30; j >= 0; j--)
+            for (var x = 0; x < 4; x++)
             {
-                map.insert(sprites[0], j, y, i);
+                map.insert(sprites[0], x, y, z);
             }
         }
     }
-    */
+    /*
     
     for (var i = 25; i >= 0; i--)
     {
@@ -139,5 +138,6 @@ function generateTestMap()
     
     for (var i = 5; i >= 1; i--)
         map.insert(sprites[0], 6, i, 5);
+    */
 }
 

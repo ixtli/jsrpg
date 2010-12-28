@@ -712,11 +712,11 @@ function DSAInsert(tile, x, y, z)
                     this.data[index - 1].z == z)
                     dup = true;
             }
-            
-            if (this.data[index].x == x &&
-                this.data[index].y == y &&
-                this.data[index].z == z)
-                dup = true;
+            if (index != this.data.length)
+                if (this.data[index].x == x &&
+                    this.data[index].y == y &&
+                    this.data[index].z == z)
+                    dup = true;
             
             if (dup == true)
             {
