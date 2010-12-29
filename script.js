@@ -7,6 +7,8 @@ var previousFrameTime = 0;
 // Map
 var map = null;
 var viewableMap = null;
+var regions = null;
+var bufferRegions = new Array(4);
 var viewX = 0, viewY = 0;
 
 // Sprite selection
@@ -82,6 +84,14 @@ function init()
     
     var msg = "Terrain DSA insertion time: "+ (t1-t0) +"ms"
     msg += " (" + map.data.length + " tiles)";
+    log(msg);
+    
+    // Generate pre-clipped regions
+    t0 = new Date();
+    regions = map.regions(viewWidth, viewHeight);
+    t1 = new Date();
+    msg = "Clipping region generation time: " + (t1-t0)+"ms"
+    msg += " (" + regions.length + " regions)";
     log(msg);
     
     clipStack.push([0, 0, viewWidth, viewHeight]);

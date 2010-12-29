@@ -105,6 +105,7 @@ function DepthSortedArray()
     this.indexOfLowestObject = DSAFindLowestObject;
     this.correctHeight = DSACorrectHeight;
     this.updatePlaneGeometry = DSAUpdatePlaneGeometry;
+    this.regions = DSARegions;
     
     // Debugging
     this.duplicateDetection = true;
@@ -541,13 +542,19 @@ function DSAClip(minx, miny, maxx, maxy)
         var max = (z == this.z_sets.length - 1) ? this.data.length : 
             this.z_sets[z+1];
         
+        var obj = null;
         for (var i = this.z_sets[z]; i < max; i++)
         {
             // Narrow phase collision detection, which tests per pixel
-            if (d[i].px + d[i].w > minx && d[i].py + d[i].h > miny &&
-                d[i].px < maxx      && d[i].py < maxy )
+            // These clipping areas are going to be drawn right next to
+            // eachother.  So to avoid overlapping tiles, only select tiles
+            // who's px and py are in the rect.  Don't include tiles that
+            // start outisde and come in to the rect.
+            obj = d[i];
+            if (obj.px > minx && obj.py > miny &&
+                obj.px < maxx && obj.py < maxy )
             {
-                ret.data.splice(ret.data.length,0,d[i]);
+                ret.data.splice(ret.data.length,0,obj);
                 ret.abs_indicies.push(i);
             }
             
@@ -832,3 +839,45 @@ function triangleTest(rect, vertex0, vertex1, vertex2)
     return false;
 }
 
+function DSARegions(width, height)
+{
+    // Return an array of clipped DSAs that makes up the entire DSA
+    var a = this;
+    if (a.super_array != null)
+        a = this.super_array;
+    
+    // figure out max and min width and height of this dsa
+    var maxx = 0, maxy = 0, minx = null, miny = null;
+    var min = null, max = null;
+    for (var i = 0; i < this.z_geom.length; i++)
+    {
+        min = this.z_geom[i].points[3];
+        max = this.z_geom[i].points[1];
+        
+        if (minx == null)
+        {
+            minx = min.x;
+            miny = min.y;
+        } else {
+            if (minx > min.x) minx = min.x;
+            if (miny > min.y) miny = min.y;
+        }
+        
+        if (max.x > maxx) maxx = max.x;
+        if (max.y > maxy) maxy = max.y;
+    }
+    
+    // We now know the size now, initialize array of regions
+    var regionsWide = Math.ceil((maxx - minx) / width);
+    var regionsHigh = Math.ceil((maxy - miny) / height);
+    var ret = new Array(regionsWide * regionsHigh);
+    
+    // clip
+    for (var y = 0; y < regionsHigh; y++)
+    {
+        for (var x = 0; x < regionsWide; x++)
+            ret[x + (y * regionsWide)] = a.clip(x*width,y*height,width,height);
+    }
+    
+    return ret;
+}
