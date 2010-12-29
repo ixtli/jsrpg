@@ -26,7 +26,7 @@ function pixelProjection(x, y, z)
 {
     var px, py;
     
-    px = (viewWidth >> 1) - (tileWidth >> 1);
+    px = 0;
     py = 0;
     
     px += x * tileHeight;
