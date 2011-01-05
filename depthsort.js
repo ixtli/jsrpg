@@ -18,21 +18,30 @@ function DSAZGeometryObject(z)
 
 function DSAZGOProject()
 {
-    var r = pixelProjection(this.minx, this.miny, this.z);
-    this.points[0].x = r.px;
-    this.points[0].y = r.py + 100;
-    
-    r = pixelProjection(this.maxx, this.miny, this.z);
-    this.points[1].x = r.px + 128;
-    this.points[1].y = r.py + 100;
-    
-    r = pixelProjection(this.maxx, this.maxy, this.z);
-    this.points[2].x = r.px + 128;
-    this.points[2].y = r.py;
+    var i = 0;
+    var r = null;
     
     r = pixelProjection(this.minx, this.maxy, this.z);
-    this.points[3].x = r.px;
-    this.points[3].y = r.py;
+    this.points[i].x = r.px;
+    this.points[i].y = r.py + (tileHeight << 1);
+    
+    i++;
+    
+    r = pixelProjection(this.maxx, this.maxy, this.z);
+    this.points[i].x = r.px + tileWidth;
+    this.points[i].y = r.py + (tileHeight << 1);
+    
+    i++;
+    
+    r = pixelProjection(this.maxx, this.miny, this.z);
+    this.points[i].x = r.px + tileWidth;
+    this.points[i].y = r.py;
+    
+    i++;
+    
+    r = pixelProjection(this.minx, this.miny, this.z);
+    this.points[i].x = r.px;
+    this.points[i].y = r.py;
 }
 
 function DSAObject(tile, x, y, z)
