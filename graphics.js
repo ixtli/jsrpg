@@ -10,6 +10,12 @@ var bufferDirty = false;
 var viewWidth = null;
 var viewHeight = null;
 
+// buffer image
+var bufferX = null;
+var bufferY = null;
+var bufferHeight = null;
+var bufferWidth = null;
+
 // Sprites
 var sprites = [];
 
@@ -80,15 +86,147 @@ function setOverlayBlackHorazontalBars()
     fgCtx.fillRect(0,0,viewWidth, viewHeight);
 }
 
-function redrawMap(clear, clip)
+function moveBuffer(x, y)
 {
-    // Do not draw individual clipping regions while the view is scrolling
-    // because the entire thing is going to be updated each frame
-    if (clip == true && viewportIsScrolling == true)
-        return;
+    // Return true if the buffer has changed
+    
+    if (x == bufferX && y == bufferY)
+        return false;
+    
+    /*
+    var xmoved = 0;
+    var ymoved = 0;
+    var redraw = [];
+    
+    // Figure out where the buffer has moved
+    if (old != null)
+    {
+        if (x > bufferX + bufferWidth)
+            xmoved = 1; // Moved right
+        else if (x < bufferX)
+            xmoved = 2; // Moved left
+        
+        if (y > bufferY + bufferHeight)
+            ymoved = 1; // Moved down
+        else if (y < bufferY)
+            ymoved = 2; // Moved up
+    }
+    
+    // Edge-ish case: BOTH x and y moved
+    if (xmoved != 0 && ymoved != 0)
+    {
+        if (xmoved == 1)
+        {
+            if (ymoved == 1)
+            {
+                // moved right and down, move SE quad to NW
+                bufferCtx.drawImage(buffer,
+                    viewWidth, viewHeight, viewWidth, viewHeight,
+                    0, 0, viewWidth, viewHeight);
+            } else {
+                // moved right and up, move NE to SW
+                bufferCtx.drawImage(buffer,
+                    viewWidth, 0, viewWidth, viewHeight,
+                    0, viewHeight, viewWidth, viewHeight);
+            }
+        } else {
+            if (ymoved == 1)
+            {
+                // moved left and down, move SW to NE
+                bufferCtx.drawImage(buffer,
+                    0, viewHeight, viewWidth, viewHeight,
+                    viewWidth, 0, viewWidth, viewHeight);
+            } else {
+                // moved left and up, move NW to SE
+                bufferCtx.drawImage(buffer,
+                    0, 0, viewWidth, viewHeight,
+                    viewWidth, viewHeight, viewWidth, viewHeight);
+            }
+        }
+    } else if (xmoved != 0) {
+        // Only x moved
+        if (xmoved == 1)
+        {
+            // moved right, move right half to left half
+            bufferCtx.drawImage(buffer,
+                viewWidth, 0, viewWidth, viewHeight << 1,
+                0, 0, viewWidth, viewHeight << 1);
+        } else {
+            // moved left, move left half to right half
+            bufferCtx.drawImage(buffer,
+                0, 0, viewWidth, viewHeight << 1,
+                viewWidth, 0, viewWidth, viewHeight << 1);
+        }
+    } else if (ymoved != 0) {
+        // Only y moved
+        if (ymoved == 1)
+        {
+            // moved down, move bottom half to top half
+            bufferCtx.drawImage(bufferCtx,
+                0, viewHeight, viewWidth << 1, viewHeight,
+                0, 0, viewWidth << 1, viewHeight);
+        } else {
+            // moved up, move top half to bottom half
+            bufferCtx.drawImage(bufferCtx,
+                0, 0, viewWidth << 1, viewHeight,
+                0, viewHeight, viewWidth << 1, viewHeight);
+        }
+    }
+    
+    // Redraw the sectors that need redrawing
+    var clipArea = {px: 0, py: 0, w: viewWidth, h: viewHeight};
+    for (var i = 0; i < redraw.length; i++)
+    {
+        // Anything that needs to be redrawn needs to be so because it is a
+        // previously unrendered clipping region.
+        switch (val)
+        {
+            case 0:
+            clipArea.px = 0;
+            clipArea.py = 0;
+            clipStack.push(clipArea);
+            break;
+            
+            case 1:
+            clipArea.px = viewWidth;
+            clipArea.py = 0;
+            clipStack.push(clipArea);
+            break;
+            
+            case 2:
+            clipArea.px = 0;
+            clipArea.py = viewHeight;
+            clipStack.push(clipArea);
+            break;
+            
+            default:
+            case 3:
+            clipArea.px = viewWidth;
+            clipArea.py = viewHeight;
+            clipStack.push(clipArea);
+            break;
+        }
+    }
+    
+    if (redraw.length == 0)
+        redrawActiveRegion(true, false);
+    else
+        redrawActiveRegion(true, true);
+    */
+    bufferX = x;
+    bufferY = y;
+    redrawActiveRegion(true, false);
+}
+
+function redrawActiveRegion(clear, clip)
+{
     
     if (clip == true)
     {
+        // If there are no queued clipping areas, nothing is to be done
+        if (clipStack.length == 0)
+            return false;
+        
         // Push context
         bufferCtx.save();
         
@@ -98,29 +236,23 @@ function redrawMap(clear, clip)
         while (clipStack.length != 0)
         {
             var obj = clipStack.pop();
-            bufferCtx.rect(obj[0], obj[1], obj[2], obj[3]);
+            bufferCtx.rect(obj.px - buffx, obj.py - buffy, obj.w, obj.h);
         }
         
         // Clip the area of relevant changes
         bufferCtx.clip();
     }
     
-    if (clear) bufferCtx.clearRect(0, 0, viewWidth, viewHeight);
+    if (clear) bufferCtx.clearRect(0, 0, bufferWidth, bufferHeight);
     
-    var d = viewableMap.data;
+    var d = activeRegion.data;
     var px, py, obj;
     for (var i = 0; i < d.length; i++)
     {
         obj = d[i];
-        px = obj.px - viewX;
-        py = obj.py - viewY;
         
-        // Don't bother if it doesn't encroach on the viewport
-        if (py + tileWidth < 0 || py > viewHeight ||
-            px + tileWidth < 0 || px > viewWidth)
-            continue;
         
-        // Draw tile
+        // Draw object
         bufferCtx.drawImage(obj.tile.img, px, py);
         
         // Draw cursor selection
@@ -149,13 +281,13 @@ function redrawMap(clear, clip)
     // Get rid of the previous clipping path
     if (clip == true) bufferCtx.restore();
     
-    // If viewport is currently scrolling, dump all the clipping paths because
-    // they've just be redrawn
-    if (viewportIsScrolling == true)
-        clipStack = [];
+    // empty clip stack
+    clipStack = [];
     
     // Mark the buffer as dirty for double buffering.
     bufferDirty = true;
+    
+    return true;
 }
 
 function setMessage(string)

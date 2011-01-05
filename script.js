@@ -7,8 +7,6 @@ var previousFrameTime = 0;
 // Map
 var map = null;
 var viewableMap = null;
-var regions = null;
-var bufferRegions = new Array(4);
 var viewX = 0, viewY = 0;
 
 // Sprite selection
@@ -18,7 +16,6 @@ var mouseX = 0, mouseY = 0;
 var extendedSelection = [];
 
 // Viewport Scrolling
-var clipBuffer = 0;
 var viewportIsScrolling = false;
 
 // Mouse movement event handling
@@ -40,9 +37,6 @@ function init()
     viewWidth = canvas.width;
     viewHeight = canvas.height;
     
-    // define clipping buffer based on how big our canvas is
-    clipBuffer = Math.max(viewWidth, viewHeight) >> 2;
-    
     // Adjust ticker height based on type size setting
     $('#msg')[0].height = msgTypeSize + (msgBorder << 1);
     
@@ -52,17 +46,14 @@ function init()
     // set this for the fps counter
     canvasContext.font = "bold 14px sans-serif";
     
-    if (doubleBuffer == true)
-    {
-        // Create a buffer to draw to and initialize it
-        buffer = $('<canvas>')[0];
-        buffer.height = viewHeight;
-        buffer.width = viewWidth;
-        // Get the context
-        bufferCtx = buffer.getContext("2d");
-    } else {
-        bufferCtx = canvasContext;
-    }
+    // Create a buffer to draw to and initialize it
+    buffer = $('<canvas>')[0];
+    buffer.height = bufferHeight;
+    buffer.width = bufferWidth;
+    
+    // Get the context
+    bufferCtx = buffer.getContext("2d");
+    bufferCtx.strokeStyle = "black";
     
     // Init forground, ticker, and background canvases
     setBackgroundLinearVerticalGradient();
@@ -85,17 +76,6 @@ function init()
     var msg = "Terrain DSA insertion time: "+ (t1-t0) +"ms"
     msg += " (" + map.data.length + " tiles)";
     log(msg);
-    
-    // Generate pre-clipped regions
-    t0 = new Date();
-    regions = map.regions(viewWidth, viewHeight);
-    t1 = new Date();
-    msg = "Clipping region generation time: " + (t1-t0)+"ms"
-    msg += " (" + regions.length + " regions)";
-    log(msg);
-    
-    clipStack.push([0, 0, viewWidth, viewHeight]);
-    refreshMap(true);
     
     // Bind event handlers
     configureEventBindings();
@@ -204,11 +184,10 @@ function setSelection(object, keepInViewport)
     // If it left, redraw the map
     if (delta == true)
     {
-        recalculateMapClipping();
-        redrawMap(true, false);
+        
     } else {
-        redrawObject(object);
-        redrawMap(false, true);
+        //redrawObject(object);
+        // TODO: redrawMap(false, true);
     }
     
     tileEditorUpdate();
@@ -241,7 +220,7 @@ function clearExtendedSelection()
         redrawObject(extendedSelection[i]);
     }
     
-    redrawMap(true, true);
+    // TODO: redrawMap(true, true);
     extendedSelection = [];
 }
 
@@ -267,7 +246,8 @@ function insertAboveExtendedSelection()
         }
     }
     
-    refreshMap(false);
+    // TODO: Refresh map
+    
     clearExtendedSelection(); // This calls redraw map
     extendedSelection = newSelection;
 }
@@ -342,7 +322,7 @@ function deleteFocussed()
     if (index != null)
     {
         setSelection(map.data[index], true);
-        refreshMap(false);
+        // TODO: refresh map
     } else {
         focussed = null;
         tileEditorUpdate();
@@ -355,7 +335,6 @@ function keypressHandler(evt)
     if (time - previousKeyboardEvent < keyRepeatDelay)
         return;
     
-    var delta = false;
     var code = evt.keyCode ? evt.keyCode : evt.which;
     
     // Ignore when the user intially presses the shift key: we only care
@@ -369,25 +348,21 @@ function keypressHandler(evt)
         case keyMap.left:
         if (allowScrolling == false) break;
         viewX -= keyboardScrollGranulatiry;
-        delta = true;
         break;
         
         case keyMap.up:
         if (allowScrolling == false) break;
         viewY -= keyboardScrollGranulatiry;
-        delta = true;
         break;
         
         case keyMap.down:
         if (allowScrolling == false) break;
         viewY += keyboardScrollGranulatiry;
-        delta = true;
         break;
         
         case keyMap.right:
         if (allowScrolling == false) break;
         viewX += keyboardScrollGranulatiry;
-        delta = true;
         break;
         
         case key_up:
@@ -455,11 +430,9 @@ function keypressHandler(evt)
         if (extendedSelection.length > 0)
         {
             deleteExtendedSelection();
-            refreshMap(false);
-            delta = true;
+            // TODO: refresh map no clear
         } else if (focussed != null) {
             deleteFocussed();
-            delta = true;
         }
         break;
         
@@ -474,7 +447,7 @@ function keypressHandler(evt)
             if (obj)
             {
                 setSelection(obj, true);
-                refreshMap(true);
+                // TODO: refresh map clear
             }
         }
         break;
@@ -485,23 +458,7 @@ function keypressHandler(evt)
         break;
     }
     
-    if (delta == true)
-    {
-        recalculateMapClipping();
-        redrawMap(true, false);
-    }
-    
     return false;
-}
-
-function refreshMap(render)
-{
-    if (viewableMap != null) delete viewableMap;
-    
-    viewableMap = map.clip(viewX - clipBuffer, viewY - clipBuffer,
-        viewWidth + viewX + clipBuffer, viewHeight + viewY + clipBuffer);
-    
-    if (render == true) redrawMap(true, false);
 }
 
 function mouseClickHandler(ev)
@@ -528,7 +485,8 @@ function mouseClickHandler(ev)
             else
                 map.deleteObject(obj);
             
-            if (obj) refreshMap(true);
+            //// TODO: refresh map
+            //if (obj) refreshMap(true);
         } else {
             setSelection(obj, false);
         }
@@ -548,7 +506,8 @@ function mouseClickHandler(ev)
             if (obj) redrawObject(obj);
         }
         
-        if (obj) refreshMap(true);
+        // TODO: refresh map
+        //if (obj) refreshMap(true);
     }
     
     return false;
@@ -565,11 +524,6 @@ function mouseMoveHandler(evt)
     
     previousMouseMove = new Date();
     return false;
-}
-
-function redrawObject(obj)
-{
-    clipStack.push([obj.px - viewX, obj.py - viewY, obj.w, obj.h]);
 }
 
 function setRandomTickerMessage()
@@ -594,29 +548,6 @@ function toggleAnimation()
         interval = setInterval(draw, 1000 / FPS);
         animationOn = true;
     }
-}
-
-function recalculateMapClipping()
-{
-    var recalc = false;
-    
-    // A quick optimization for smallish maps
-    if (map.data.length == viewableMap.data.length)
-        return recalc;
-        
-    if (viewX - viewableMap.clipx < (clipBuffer >> 1))
-        recalc = true;
-    else if (viewableMap.clip_width - (viewX + viewWidth) < (clipBuffer >> 1))
-        recalc = true;
-    else if (viewY - viewableMap.clipy < (clipBuffer >> 1))
-        recalc = true;
-    else if (viewableMap.clip_height - (viewY + viewHeight) < (clipBuffer >> 1))
-        recalc = true;
-    
-    if (recalc == true)
-        refreshMap(false);
-    
-    return recalc;
 }
 
 function draw()
@@ -648,8 +579,6 @@ function draw()
             viewportIsScrolling = true;
         }
         
-        if (viewportIsScrolling == true)
-            recalculateMapClipping();
     } else {
         viewportIsScrolling = false;
     }
@@ -658,25 +587,30 @@ function draw()
     if (allowSelection == true && clickToSelect == false &&
         (previousMouseMove > previousFrameTime || viewportIsScrolling == true))
     {
-        var obj = viewableMap.selectObject(mouseX, mouseY);
+        var obj = null;
+        // TODO: var obj = viewableMap.selectObject(mouseX, mouseY);
         
         if (obj)
         {
             setSelection(obj);
             redrawObject(obj);
-            redrawMap(false, true);
+            // TODO: redrawMap(false, true);
             tileEditorUpdate();
         }
     }
     
     if (viewportIsScrolling == true)
-        redrawMap(true, false);
-    
-    if (bufferDirty == true && doubleBuffer == true)
     {
         canvasContext.clearRect(0,0,viewWidth, viewHeight);
-        canvasContext.drawImage(buffer, 0, 0);
-        bufferDirty = false;
+        bufferCtx.clearRect(0,0,viewWidth, viewHeight);
+        bufferX = viewX;
+        bufferY = viewY;
+        
+        map.clip(true, bufferX + 50, bufferY + 50, viewWidth - 100, viewHeight - 100);
+        bufferCtx.rect(50,50,viewWidth-100, viewHeight-100);
+        bufferCtx.stroke();
+        
+        canvasContext.drawImage(buffer,0,0);
     }
     
     if (fpsCounter && mouseInside == true)
@@ -692,4 +626,3 @@ function draw()
         previousFrameTime = new Date();
     }
 }
-

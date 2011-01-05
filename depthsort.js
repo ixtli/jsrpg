@@ -6,7 +6,10 @@ function DSAZGeometryObject(z)
     this.maxy = null;
     this.z = z;
     
-    this.points = [];
+    this.points = new Array(4);
+    
+    for (var i = 0; i < 4; i++)
+        this.points[i] = {x:0, y:0};
     
     this.updatePixelProjection = DSAZGOProject;
     
@@ -15,20 +18,21 @@ function DSAZGeometryObject(z)
 
 function DSAZGOProject()
 {
-    
-    this.points = [];
-    
     var r = pixelProjection(this.minx, this.miny, this.z);
-    this.points.push({x: r.px, y: r.py});
+    this.points[0].x = r.px;
+    this.points[0].y = r.py + 100;
     
     r = pixelProjection(this.maxx, this.miny, this.z);
-    this.points.push({x: r.px, y: r.py});
+    this.points[1].x = r.px + 128;
+    this.points[1].y = r.py + 100;
     
     r = pixelProjection(this.maxx, this.maxy, this.z);
-    this.points.push({x: r.px, y: r.py - tileHeight});
+    this.points[2].x = r.px + 128;
+    this.points[2].y = r.py;
     
     r = pixelProjection(this.minx, this.maxy, this.z);
-    this.points.push({x: r.px, y: r.py - tileHeight});
+    this.points[3].x = r.px;
+    this.points[3].y = r.py;
 }
 
 function DSAObject(tile, x, y, z)
@@ -78,15 +82,8 @@ function DepthSortedArray()
     this.data = [];
     this.maxz = 0;
     
-    this.clipx = 0;
-    this.clipy = 0;
-    this.clip_width = 0;
-    this.clip_height = 0;
-    this.super_array = null;
-    
     this.z_sets = [];
     this.z_geom = [];  // keep track of max and min x and y
-    this.abs_indicies = [];
     
     // Member functions
     this.insert = DSAInsert;
@@ -105,7 +102,6 @@ function DepthSortedArray()
     this.indexOfLowestObject = DSAFindLowestObject;
     this.correctHeight = DSACorrectHeight;
     this.updatePlaneGeometry = DSAUpdatePlaneGeometry;
-    this.regions = DSARegions;
     
     // Debugging
     this.duplicateDetection = true;
@@ -376,6 +372,9 @@ function DSADeleteIndex(index)
         }
     }
     
+    // Update clipping regions
+    mapDidChange(deleted);
+    
     return deleted;
 }
 
@@ -426,6 +425,9 @@ function DSAInsertAboveIndex(index, tile)
     
     a.castShadow(index);
     
+    // Update clipping regions
+    mapDidChange(n);
+    
     return n;
 }
 
@@ -475,6 +477,9 @@ function DSAInsertBelowIndex(index, tile)
     
     a.castShadow(index - 1);
     
+    // Update clipping regions
+    mapDidChange(n);
+    
     return n;
 }
 
@@ -505,74 +510,97 @@ function DSASelectObject(x, y)
     return null;
 }
 
-function DSAClip(minx, miny, maxx, maxy)
+function DSAClip(clear, minx, miny, width, height)
 {
-    var ret = new DepthSortedArray();
     var d = this.data;
     var pr = 0;
+    var p;
+    var maxx = minx + width;
+    var maxy = miny + height;
+    var buffx = bufferX;
+    var buffy = bufferY;
+    
+    
+    // Push context
+    bufferCtx.save();
+    
+    // Bigin definition of new clipping path
+    bufferCtx.beginPath();
+    
+    // Make clipping rect
+    bufferCtx.rect(minx - buffx, miny - buffy, width, height);
+    
+    // Clip the area of relevant changes
+    bufferCtx.clip();
+    
+    if (clear)
+        bufferCtx.clearRect(minx - buffx, miny - buffy, width, height);
+    
     
     // Construct the rectangle representing our viewport
     var rect = {x:minx,y:miny,w:maxx,h:maxy};
+    
+    // Do clipping
     for (var z = 0; z < this.z_sets.length; z++)
     {
-        if (this.z_sets[z] == -1)
-            continue;
+        p = this.z_geom[z];
         
-        var p = this.z_geom[z];
+        if (p == -1) continue;
         
         // Broad phase clipping by treating the plane as a box
-        if (p.points[3].y > rect.h || p.points[1].y < rect.y ||
-            p.points[3].x > rect.w || p.points[1].x < rect.x)
+        if (p.points[3].y > maxy || p.points[1].y < miny ||
+            p.points[3].x > maxx || p.points[1].x < minx)
             continue;
         
         // Do more detailed plane collision test by splitting the zplane
         // in to two triangles and testing whether or not they intersect
         // the viewport, represented as an AABB
-        var col = triangleTest(rect, p.points[0], p.points[1], p.points[2]);
-        if (col == false)
-        {
-            col = triangleTest(rect, p.points[0], p.points[2], p.points[3]);
-            if (col == false) continue;
-        }
+        if (triangleTest(rect, p.points[0], p.points[1], p.points[2]) == false)
+            if (triangleTest(rect, p.points[0], p.points[2], p.points[3]) == false)
+                continue;
         
-        // TODO: we can actually find where the minimum viewable x value on
-        // the current plane is, and test from there, never going further
-        // than the maximum possible viewable x
+        // TODO: restrict the min value even further by determining
+        // the earliest place an x value could start.  This can be done without
+        // worrying about the height of the zplane
+        var min = this.z_sets[z];
         
         var max = (z == this.z_sets.length - 1) ? this.data.length : 
             this.z_sets[z+1];
         
-        var obj = null;
-        for (var i = this.z_sets[z]; i < max; i++)
+        var obj = null, px = 0, py = 0, omaxx = 0, omaxy = 0;
+        var isInside = false, intersects = false;
+        for (var i = min; i < max; i++)
         {
-            // Narrow phase collision detection, which tests per pixel
-            // These clipping areas are going to be drawn right next to
-            // eachother.  So to avoid overlapping tiles, only select tiles
-            // who's px and py are in the rect.  Don't include tiles that
-            // start outisde and come in to the rect.
-            obj = d[i];
-            if (obj.px > minx && obj.py > miny &&
-                obj.px < maxx && obj.py < maxy )
-            {
-                ret.data.splice(ret.data.length,0,obj);
-                ret.abs_indicies.push(i);
-            }
+            // TODO: test to determine if the current X value could possibly
+            // enter into the bounding box based on the known height of the
+            // zplane.
             
-            // Keep track of how many tiles were processed:
-            pr++;
+            // Narrow phase collision detection: Treat the object as an AABB
+            // and draw it if it intersects the clipping area OR is contained
+            // entirely within it.
+            obj = d[i];
+            px = obj.px;
+            py = obj.py;
+            omaxx = obj.px + obj.w;
+            omaxy = obj.py + obj.h;
+            
+            // test to see if any part of the object is inside the rect
+            if (rectDoesIntersect(rect, px, py, omaxx, omaxy) == false)
+                // Maybe clipping rect is entirely inside this object?
+                if (rectDoesIntersect({x:px,y:py,w:omaxx,h:omaxy},
+                    minx, miny, maxx, maxy) == false)
+                    continue;
+            
+            // Draw
+            px = obj.px - buffx;
+            py = obj.py - buffy;
+            bufferCtx.drawImage(obj.tile.img, px, py);
         }
     }
     
-    // Save a bit of information
-    ret.clipx = minx;
-    ret.clipy = miny;
-    ret.clip_height = maxy;
-    ret.clip_width = maxx;
+    bufferCtx.restore();
     
-    ret.super_array = this;
-    ret.processed = pr;
-    
-    return ret;
+    return true;
 }
 
 function DSACull() {
@@ -766,10 +794,28 @@ function DSAInsert(tile, x, y, z)
     return index;
 }
 
+function rectDoesIntersect(rect, minx1, miny1, maxx1, maxy1)
+{
+    var minx0 = rect.x;
+    var miny0 = rect.y;
+    var maxx0 = rect.w;
+    var maxy0 = rect.h;
+    
+    if (minx0 >= minx1 && maxx0 <= maxx1 && miny0 >= miny1 && maxy0 <= maxy1)
+        return true;
+    
+    if (maxx1 < minx0 || minx1 > maxx0)
+        return false;
+    if (maxy1 < miny0 || miny1 > maxy0)
+        return false;
+    
+    return true;
+}
+
 function triangleTest(rect, vertex0, vertex1, vertex2)
 {
     /*
-    This function borrowed faithfully from a wonderfl (:3) discussion on
+    This function borrowed faithfully ported a wonderfl (:3) discussion on
     calculating triangle collision with AABBs on the following blog:
     http://sebleedelisle.com/2009/05/super-fast-trianglerectangle-intersection-test/
     
@@ -778,18 +824,16 @@ function triangleTest(rect, vertex0, vertex1, vertex2)
     */
     
     var l = rect.x;
-    var r = rect.w; 
-    var t = rect.y; 
+    var r = rect.w;
+    var t = rect.y;
     var b = rect.h;
     
-    var x0 = vertex0.x; 
-    var y0 = vertex0.y; 
-    var x1 = vertex1.x; 
-    var y1 = vertex1.y; 
-    var x2 = vertex2.x; 
-    var y2 = vertex2.y; 
-    
-    var c, m, s;
+    var x0 = vertex0.x;
+    var y0 = vertex0.y;
+    var x1 = vertex1.x;
+    var y1 = vertex1.y;
+    var x2 = vertex2.x;
+    var y2 = vertex2.y;
     
     var b0 = ((x0 > l) ? 1 : 0) | (((y0 > t) ? 1 : 0) << 1) |
         (((x0 > r) ? 1 : 0) << 2) | (((y0 > b) ? 1 : 0) << 3);
@@ -802,6 +846,8 @@ function triangleTest(rect, vertex0, vertex1, vertex2)
     var b2 = ((x2 > l) ? 1 : 0) | (((y2 > t) ? 1 : 0) << 1) |
         (((x2 > r) ? 1 : 0) << 2) | (((y2 > b) ? 1 : 0) << 3);
     if (b2 == 3) return true;
+    
+    var c = 0, m = 0, s = 0;
     
     var i0 = b0 ^ b1;
     if (i0 != 0)
@@ -839,45 +885,3 @@ function triangleTest(rect, vertex0, vertex1, vertex2)
     return false;
 }
 
-function DSARegions(width, height)
-{
-    // Return an array of clipped DSAs that makes up the entire DSA
-    var a = this;
-    if (a.super_array != null)
-        a = this.super_array;
-    
-    // figure out max and min width and height of this dsa
-    var maxx = 0, maxy = 0, minx = null, miny = null;
-    var min = null, max = null;
-    for (var i = 0; i < this.z_geom.length; i++)
-    {
-        min = this.z_geom[i].points[3];
-        max = this.z_geom[i].points[1];
-        
-        if (minx == null)
-        {
-            minx = min.x;
-            miny = min.y;
-        } else {
-            if (minx > min.x) minx = min.x;
-            if (miny > min.y) miny = min.y;
-        }
-        
-        if (max.x > maxx) maxx = max.x;
-        if (max.y > maxy) maxy = max.y;
-    }
-    
-    // We now know the size now, initialize array of regions
-    var regionsWide = Math.ceil((maxx - minx) / width);
-    var regionsHigh = Math.ceil((maxy - miny) / height);
-    var ret = new Array(regionsWide * regionsHigh);
-    
-    // clip
-    for (var y = 0; y < regionsHigh; y++)
-    {
-        for (var x = 0; x < regionsWide; x++)
-            ret[x + (y * regionsWide)] = a.clip(x*width,y*height,width,height);
-    }
-    
-    return ret;
-}
