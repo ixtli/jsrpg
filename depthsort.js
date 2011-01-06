@@ -577,7 +577,7 @@ function DSAClip(clear, minx, miny, width, height)
             this.z_sets[z+1];
         
         var obj = null, px = 0, py = 0, omaxx = 0, omaxy = 0;
-        var isInside = false, intersects = false;
+        var outside = false;
         for (var i = min; i < max; i++)
         {
             // TODO: test to determine if the current X value could possibly
@@ -590,15 +590,33 @@ function DSAClip(clear, minx, miny, width, height)
             obj = d[i];
             px = obj.px;
             py = obj.py;
-            omaxx = obj.px + obj.w;
-            omaxy = obj.py + obj.h;
+            omaxx = px + obj.w;
+            omaxy = py + obj.h;
             
-            // test to see if any part of the object is inside the rect
-            if (rectDoesIntersect(rect, px, py, omaxx, omaxy) == false)
+            if ((minx >= px && maxx <= omaxx &&
+                miny >= py && maxy <= omaxy) == false)
+            {
+                outside = false;
+                if (omaxx < minx || px > maxx)
+                    outside = true;
+                if (omaxy < miny || py > maxy)
+                    outside = true;
+                
                 // Maybe clipping rect is entirely inside this object?
-                if (rectDoesIntersect({x:px,y:py,w:omaxx,h:omaxy},
-                    minx, miny, maxx, maxy) == false)
-                    continue;
+                if (outside = true)
+                {
+                    // If the clipping rect is not contained inside the object
+                    // we can safely skip it
+                    if ((px >= minx && omaxx <= maxx &&
+                        py >= miny && omaxy <= maxy) == false)
+                    {
+                        if (minx < omaxx || maxx > px)
+                            continue;
+                        if (miny < omaxy || maxy > py)
+                            continue;
+                    }
+                }
+            }
             
             // Draw
             px = obj.px - buffx;
@@ -801,24 +819,6 @@ function DSAInsert(tile, x, y, z)
     this.data.splice(index, 0, object);
     
     return index;
-}
-
-function rectDoesIntersect(rect, minx1, miny1, maxx1, maxy1)
-{
-    var minx0 = rect.x;
-    var miny0 = rect.y;
-    var maxx0 = rect.w;
-    var maxy0 = rect.h;
-    
-    if (minx0 >= minx1 && maxx0 <= maxx1 && miny0 >= miny1 && maxy0 <= maxy1)
-        return true;
-    
-    if (maxx1 < minx0 || minx1 > maxx0)
-        return false;
-    if (maxy1 < miny0 || miny1 > maxy0)
-        return false;
-    
-    return true;
 }
 
 function triangleTest(rect, vertex0, vertex1, vertex2)
