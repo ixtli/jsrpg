@@ -23,19 +23,19 @@ function DSAZGOProject()
     
     r = pixelProjection(this.minx, this.maxy, this.z);
     this.points[i].x = r.px;
-    this.points[i].y = r.py + (tileHeight << 1);
+    this.points[i].y = r.py + tileHeight;
     
     i++;
     
     r = pixelProjection(this.maxx, this.maxy, this.z);
     this.points[i].x = r.px + tileWidth;
-    this.points[i].y = r.py + (tileHeight << 1);
+    this.points[i].y = (r.py + tileHeight) << 1;
     
     i++;
     
     r = pixelProjection(this.maxx, this.miny, this.z);
     this.points[i].x = r.px + tileWidth;
-    this.points[i].y = r.py;
+    this.points[i].y = r.py + tileHeight;
     
     i++;
     
@@ -545,7 +545,6 @@ function DSAClip(clear, minx, miny, width, height)
     if (clear)
         bufferCtx.clearRect(minx - buffx, miny - buffy, width, height);
     
-    
     // Construct the rectangle representing our viewport
     var rect = {x:minx,y:miny,w:maxx,h:maxy};
     
@@ -565,7 +564,7 @@ function DSAClip(clear, minx, miny, width, height)
         // in to two triangles and testing whether or not they intersect
         // the viewport, represented as an AABB
         if (triangleTest(rect, p.points[0], p.points[1], p.points[2]) == false)
-            if (triangleTest(rect, p.points[0], p.points[2], p.points[3]) == false)
+            if (triangleTest(rect,p.points[0],p.points[2], p.points[3])==false)
                 continue;
         
         // TODO: restrict the min value even further by determining
@@ -592,9 +591,8 @@ function DSAClip(clear, minx, miny, width, height)
             py = obj.py;
             omaxx = px + obj.w;
             omaxy = py + obj.h;
-            
-            if ((minx >= px && maxx <= omaxx &&
-                miny >= py && maxy <= omaxy) == false)
+            if ((minx <= px && maxx >= omaxx &&
+                miny <= py && maxy >= omaxy) == false)
             {
                 outside = false;
                 if (omaxx < minx || px > maxx)
@@ -603,12 +601,12 @@ function DSAClip(clear, minx, miny, width, height)
                     outside = true;
                 
                 // Maybe clipping rect is entirely inside this object?
-                if (outside = true)
+                if (outside == true)
                 {
-                    // If the clipping rect is not contained inside the object
-                    // we can safely skip it
-                    if ((px >= minx && omaxx <= maxx &&
-                        py >= miny && omaxy <= maxy) == false)
+                    // If the clipping rect is not contained entirely inside
+                    // the object we can safely skip it
+                    if ((px <= minx && omaxx >= maxx &&
+                        py <= miny && omaxy >= maxy) == false)
                     {
                         if (minx < omaxx || maxx > px)
                             continue;
@@ -618,9 +616,11 @@ function DSAClip(clear, minx, miny, width, height)
                 }
             }
             
+            // Adjust location to draw by the top/left of the buffer
+            px -= buffx;
+            py -= buffy;
+            
             // Draw
-            px = obj.px - buffx;
-            py = obj.py - buffy;
             bufferCtx.drawImage(obj.tile.img, px, py);
         }
     }
