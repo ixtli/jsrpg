@@ -73,6 +73,16 @@ function init()
     generateTestMap();
     t1 = new Date();
     
+    // Associate the buffer context with the map DSA
+    map.buffer = bufferCtx;
+    
+    // Configure the buffer
+    bufferX = viewX;
+    bufferY = viewY;
+    
+    //Initialize the buffer
+    map.updateBuffer(true, bufferX, bufferY, bufferWidth, bufferHeight);
+    
     var msg = "Terrain DSA insertion time: "+ (t1-t0) +"ms"
     msg += " (" + map.data.length + " tiles)";
     log(msg);
@@ -573,14 +583,27 @@ function draw()
         }
     }
     
+    // Check map bounds
+    if (viewX < bufferX || viewX + viewWidth > bufferX + bufferWidth ||
+        viewY < bufferY || viewY + viewHeight > bufferY + bufferHeight )
+    {
+        bufferX = viewX - (viewWidth >> 1);
+        bufferY = viewY - (viewHeight >> 1);
+        
+        var t0 = new Date();
+        map.updateBuffer(true, bufferX, bufferY, bufferWidth, bufferHeight);
+        var t1 = new Date();
+        log("Redraw buffer: " + (t1-t0)+"ms");
+    }
+    
     if (viewportIsScrolling == true)
     {
-        bufferX = viewX;
-        bufferY = viewY;
-        
-        map.updateBuffer(true, bufferX, bufferY, viewWidth, viewHeight);
+        // Clear context
         canvasContext.clearRect(0,0,viewWidth, viewHeight);
-        canvasContext.drawImage(buffer,0,0);
+        
+        // Redraw the subimage
+        canvasContext.drawImage(buffer, viewX - bufferX, viewY - bufferY,
+            viewWidth,viewHeight,0,0,viewWidth,viewHeight);
     }
     
     if (fpsCounter && mouseInside == true)

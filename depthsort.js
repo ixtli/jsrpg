@@ -123,6 +123,9 @@ function DepthSortedArray()
     this.duplicateDetection = true;
     this.allowDuplicates = false;
     
+    // Buffer to update
+    this.buffer = null;
+    
     // Always return true from constructors
     return true;
 }
@@ -520,6 +523,7 @@ function DSAUpdateBuffer(clear, minx, miny, width, height)
     var maxy = miny + height;
     var buffx = bufferX;
     var buffy = bufferY;
+    var b = this.buffer;
     
     // Construct the rectangle representing our viewport
     var rect = {x:minx,y:miny,w:maxx,h:maxy};
@@ -608,7 +612,7 @@ function DSAUpdateBuffer(clear, minx, miny, width, height)
             py -= buffy;
             
             // Draw
-            bufferCtx.drawImage(obj.tile.img, px, py);
+            b.drawImage(obj.tile.img, px, py);
         }
     }
     
