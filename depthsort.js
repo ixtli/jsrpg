@@ -124,25 +124,23 @@ function DSACorrectHeight(ind, height)
 {
     // This method takes a height and the index of the tile with the lowest
     // height at this (z, x) value
-    a = this;
-    if (this.super_array)
-        a = this.super_array;
+    var d = this.data;
     
     // Find the object with the lowest Y value that is closest to obj.y
     var index = ind;
-    while (index + 1 < a.data.length)
+    while (index + 1 < d.length)
     {
         // Stay in this x, z set
-        if (a.data[index+1].x != a.data[index].x ||
-            a.data[index+1].z != a.data[index].z)
+        if (d[index+1].x != d[index].x ||
+            d[index+1].z != d[index].z)
             break;
         
         // Basically this will find EITHER the nearest tile below height
         // OR the nearest tile with a space above it IF there is a tile
         // at height.  This should be used to determine which way an object
         // goes if entering this (z,x) value at height
-        if (a.data[index].y >= height &&
-            a.data[index + 1].y > a.data[index].y + 1)
+        if (d[index].y >= height &&
+            d[index + 1].y > d[index].y + 1)
             break;
         
         index++;
@@ -155,38 +153,35 @@ function DSAFindLowestObject(z, x)
 {
     // This method returns the index of the object with the
     // lowest y value at (x, z)
-    var a = this;
-    if (a.super_array)
-        a = this.super_array;
+    var d = this.data;
+    var zsets = this.z_sets;
     
-    if (a.z_sets[z] == -1)
+    if (zsets[z] == -1)
         return null;
     
     // Get the end of the current zset
-    var max;
-    if (z == a.maxz)
-        max = a.data.length;
-    else
-        max = a.z_sets[z + 1] - 1;
+    var max = d.length;
+    if (z != this.maxz)
+        max = zsets[z + 1] - 1;
         
     // Binary search
-    var min = a.z_sets[z];
+    var min = zsets[z];
     var mid;
     do {
         mid = min + ((max - min) >> 1);
-        if (x > a.data[mid].x )
+        if (x > d[mid].x )
             min = mid + 1;
         else
             max = mid - 1;
-    } while (a.data[mid].x != x && min <= max);
+    } while (d[mid].x != x && min <= max);
     
     // Success
     // Find the lowest block in this xset
-    if (a.data[mid].x == x)
+    if (d[mid].x == x)
     {
         while (mid > 0)
         {
-            if (a.data[mid - 1].z != z || a.data[mid - 1].x != x)
+            if (d[mid - 1].z != z || d[mid - 1].x != x)
                 break;
             mid--;
         }
@@ -202,54 +197,51 @@ function DSAFindIndexForObject(obj)
     // This method returns the the index of the object in the SUPER ARRAY only
     // returns null of not present
     
-    var a = this;
-    if (a.super_array)
-        a = this.super_array;
+    var d = this.data;
+    var zsets = this.z_sets;
     
     // Get the end of the current zset
-    var max;
-    if (obj.z == a.maxz)
-        max = a.data.length;
-    else
-        max = a.z_sets[obj.z + 1] - 1;
+    var max = d.length;;
+    if (obj.z != this.maxz)
+        max = zsets[obj.z + 1] - 1;
     
     // Binary search for x
-    var min = a.z_sets[obj.z];
+    var min = zsets[obj.z];
     var mid;
     do {
         mid = min + ((max - min) >> 1);
-        if (obj.x > a.data[mid].x )
+        if (obj.x > d[mid].x )
             min = mid + 1;
         else
             max = mid - 1;
-    } while (a.data[mid].x != obj.x && min <= max);
+    } while (d[mid].x != obj.x && min <= max);
     
     // is the x value present?
-    if (a.data[mid].x != obj.x)
+    if (d[mid].x != obj.x)
         return null;
     
     // Search linearly on y for the value
-    if (a.data[mid].y > obj.y)
+    if (d[mid].y > obj.y)
     {
         // go down
         while (mid >= 0)
         {
-            if (a.data[mid].x != obj.x || a.data[mid].z != obj.z)
+            if (d[mid].x != obj.x || d[mid].z != obj.z)
                 return null;
             
-            if (a.data[mid].y == obj.y)
+            if (d[mid].y == obj.y)
                 break;
             
             mid--;
         }
     } else {
         // go up
-        while (mid < a.data.length)
+        while (mid < d.length)
         {
-            if (a.data[mid].x != obj.x || a.data[mid].z != obj.z)
+            if (d[mid].x != obj.x || d[mid].z != obj.z)
                 return null;
             
-            if (a.data[mid].y == obj.y)
+            if (d[mid].y == obj.y)
                 break;
             
             mid++;
@@ -257,7 +249,7 @@ function DSAFindIndexForObject(obj)
     }
     
     // Is the y val correct?
-    if (a.data[mid].y != obj.y)
+    if (d[mid].y != obj.y)
         return null;
     
     // Success!
@@ -272,22 +264,21 @@ function DSAFindIndexForObjectAt(x, y, z)
 
 function DSACastShadow(index)
 {
-    if (this.super_array != null)
-        return;
-    
     if (index == 0)
         return;
     
-    var below = this.data[index - 1];
+    var d = this.data;
     
-    if (below.x != this.data[index].x || below.z != this.data[index].z )
+    var below = d[index - 1];
+    
+    if (below.x != d[index].x || below.z != d[index].z )
         return;
     
     // Don't cast a shadow on something directly below.
-    if (below.y == this.data[index].y - 1)
+    if (below.y == d[index].y - 1)
         return;
     
-    below.shadow = 1 - ((this.data[index].y - below.y) * shadowStep);
+    below.shadow = 1 - ((d[index].y - below.y) * shadowStep);
     
     if (below.shadow < 0)
         below.shadow = 0;
@@ -301,83 +292,83 @@ function DSADeleteObject(obj)
 
 function DSADeleteIndex(index)
 {
-    var a = this;
-    if (this.super_array != null)
-        a = this.super_array;
+    var d = this.data;
+    var zsets = this.z_sets;
+    var zgeom = this.z_geom;
     
     // Figure out if there is a block spacially above us or not
     var above = null;
     
-    if (index + 1 < a.data.length)
+    if (index + 1 < d.length)
     {
-        if (a.data[index + 1].x == a.data[index].x &&
-            a.data[index + 1].z == a.data[index].z)
-            above = a.data[index+1];
+        if (d[index + 1].x == d[index].x &&
+            d[index + 1].z == d[index].z)
+            above = d[index+1];
     }
     
-    var deleted = a.data.splice(index, 1)[0];
+    var deleted = d.splice(index, 1)[0];
     
     // Handle shadow
     if (above != null)
     {
-        a.castShadow(index);
+        this.castShadow(index);
     } else {
         // If nothing is above us, remove shadow
         if (index - 1 >= 0)
         {
-            if (a.data[index - 1].x == deleted.x &&
-                a.data[index - 1].z == deleted.z)
-                a.data[index - 1].shadow = 0;
+            if (d[index - 1].x == deleted.x &&
+                d[index - 1].z == deleted.z)
+                d[index - 1].shadow = 0;
         }
     }
     
     // Maintain zsets The zset of this object has decreased in size
     // Reduce the size of all zsets above us
-    for (var i = deleted.z + 1; i < a.z_sets.length; i++)
-        a.z_sets[i] -= 1;
+    for (var i = deleted.z + 1; i < zsets.length; i++)
+        zsets[i] -= 1;
     
     // Were we the last object in this zset?
-    if (a.z_sets[deleted.z] == a.z_sets[deleted.z + 1])
+    if (zsets[deleted.z] == zsets[deleted.z + 1])
     {
-        a.z_sets[deleted.z] = -1;
+        zsets[deleted.z] = -1;
         
         // Since the last set is empty, trim all empty tail sets
         do
         {
-            if (a.z_sets[a.z_sets.length - 1] != -1)
+            if (zsets[zsets.length - 1] != -1)
                 break;
                 
-            a.z_sets.pop();
-            a.z_geom.pop();
-        } while (a.z_sets.length > 0);
+            zsets.pop();
+            zgeom.pop();
+        } while (zsets.length > 0);
         
         // Keep track of maxz value
-        a.maxz = a.z_sets.length - 1;
+        this.maxz = zsets.length - 1;
     } else {
         // Since the set isn't empty, update the geom values
         // The x values are the easy part since z-planes are sorted by x val
         var max;
         if (deleted.z == this.maxz)
-            max = a.data.length-1;
+            max = d.length-1;
         else
-            max = a.z_sets[deleted.z+1] - 1;
+            max = zsets[deleted.z+1] - 1;
         
-        a.z_geom[deleted.z].maxx = a.data[max].x;
-        a.z_geom[deleted.z].minx = a.data[a.z_sets[deleted.z]].x;
+        zgeom[deleted.z].maxx = d[max].x;
+        zgeom[deleted.z].minx = d[zsets[deleted.z]].x;
         
         // Finding the highest yvalue requires scanning the entire zset
-        if (deleted.y == a.z_geom[deleted.z].miny || 
-            deleted.y == a.z_geom[deleted.z].maxy)
+        if (deleted.y == zgeom[deleted.z].miny || 
+            deleted.y == zgeom[deleted.z].maxy)
         {
-            for (var i = a.z_sets[deleted.z]; i < max; i++)
+            for (var i = zsets[deleted.z]; i < max; i++)
             {
-                if (a.data[i].y > a.z_geom[deleted.z].maxy)
-                    a.z_geom[deleted.z].maxy = a.data[i].y;
-                else if (a.data[i].y < a.z_geom[deleted.z].miny)
-                    a.z_geom[deleted.z].miny = a.data[i].y;
+                if (d[i].y > zgeom[deleted.z].maxy)
+                    zgeom[deleted.z].maxy = d[i].y;
+                else if (d[i].y < zgeom[deleted.z].miny)
+                    zgeom[deleted.z].miny = d[i].y;
             }
             
-            a.z_geom[deleted.z].updatePixelProjection();
+            zgeom[deleted.z].updatePixelProjection();
         }
     }
     
@@ -398,18 +389,17 @@ function DSAInsertAboveIndex(index, tile)
     // We should not insert into an array that is a clipped region of a
     // superset, because it would invalidate all the abs_indicies values
     
-    var a = this;
-    if (this.super_array != null)
-        a = this.super_array;
+    var d = this.data;
+    var zsets = this.z_sets;
     
-    var obj = a.data[index];
+    var obj = d[index];
     
     // Make sure there's nothing above us already
-    if (a.data.length > index + 1)
+    if (d.length > index + 1)
     {
-        if (a.data[index+1].z == obj.z &&
-            a.data[index+1].x == obj.x &&
-            a.data[index+1].y == obj.y + 1)
+        if (d[index+1].z == obj.z &&
+            d[index+1].x == obj.x &&
+            d[index+1].y == obj.y + 1)
             return null;
     }
     
@@ -423,16 +413,16 @@ function DSAInsertAboveIndex(index, tile)
         obj.shadow = 0;
     }
     
-    a.data.splice(index + 1, 0, n);
-    a.data[index + 1].container_array = a;
+    d.splice(index + 1, 0, n);
+    d[index + 1].container_array = a;
     
     // zset has increased in length, so increase all following zset indicies
-    for (var i = n.z + 1; i < a.z_sets.length ; i++)
-        a.z_sets[i] += 1;
+    for (var i = n.z + 1; i < zsets.length ; i++)
+        zsets[i] += 1;
     
     this.updatePlaneGeometry(n);
     
-    a.castShadow(index);
+    this.castShadow(index);
     
     // Update clipping regions
     mapDidChange(n);
@@ -448,43 +438,38 @@ function DSAInsertBelowObject(object, tile)
 
 function DSAInsertBelowIndex(index, tile)
 {
-    // We should not insert into an array that is a clipped region of a
-    // superset, because it would invalidate all the abs_indicies
-    
-    var a = this;
-    if (this.super_array != null)
-        a = this.super_array;
-    
-    var obj = a.data[index];
+    var d = this.data;
+    var zsets = this.z_sets;
+    var obj = d[index];
     
     // Make sure there's nothing below us already
     if (index - 1 >= 0)
     {
-        if (a.data[index-1].z == obj.z &&
-            a.data[index-1].x == obj.x &&
-            a.data[index-1].y == obj.y - 1)
+        if (d[index-1].z == obj.z &&
+            d[index-1].x == obj.x &&
+            d[index-1].y == obj.y - 1)
             return null;
     }
     
     var n = new DSAObject(tile, obj.x, obj.y - 1, obj.z);
-    a.data.splice(index, 0, n);
-    a.data[index].container_array = a;
+    d.splice(index, 0, n);
+    d[index].container_array = a;
     
     // zset has increased in length, so increase all following zset indicies
-    for (var i = n.z + 1; i < a.z_sets.length ; i++)
-        a.z_sets[i] += 1;
+    for (var i = n.z + 1; i < zsets.length ; i++)
+        zsets[i] += 1;
     
     this.updatePlaneGeometry(n);
     
     // We might be the new first block in the zset
     if (index > 0)
     {
-        if (a.data[index - 1].z != a.data[index].z )
+        if (d[index - 1].z != d[index].z )
             // we're the new first index in the zset
-            a.z_sets[a.data[index].z] = index;
+            zsets[d[index].z] = index;
     }
     
-    a.castShadow(index - 1);
+    this.castShadow(index - 1);
     
     // Update clipping regions
     mapDidChange(n);
@@ -496,9 +481,12 @@ function DSASelectObject(x, y)
 {
     // return the front-most tile at pixel position (x,y) in the current
     // viewport.
-    for (var i = this.data.length - 1; i >=0; i--)
+    
+    var d = this.data;
+    
+    for (var i = d.length - 1; i >=0; i--)
     {
-        var obj = this.data[i];
+        var obj = d[i];
         
         // Don't bother if it doesn't encroach on the viewport
         if ((obj.py - viewY) + tileWidth < 0 || (obj.py - viewY) > viewHeight ||
@@ -522,13 +510,16 @@ function DSASelectObject(x, y)
 function DSAClip(clear, minx, miny, width, height)
 {
     var d = this.data;
+    var zsets = this.z_sets;
+    var zgeom = this.z_geom;
     var pr = 0;
-    var p;
     var maxx = minx + width;
     var maxy = miny + height;
     var buffx = bufferX;
     var buffy = bufferY;
     
+    // Construct the rectangle representing our viewport
+    var rect = {x:minx,y:miny,w:maxx,h:maxy};
     
     // Push context
     bufferCtx.save();
@@ -542,17 +533,13 @@ function DSAClip(clear, minx, miny, width, height)
     // Clip the area of relevant changes
     bufferCtx.clip();
     
-    if (clear)
-        bufferCtx.clearRect(minx - buffx, miny - buffy, width, height);
-    
-    
-    // Construct the rectangle representing our viewport
-    var rect = {x:minx,y:miny,w:maxx,h:maxy};
+    if (clear) bufferCtx.clearRect(minx - buffx, miny - buffy, width, height);
     
     // Do clipping
-    for (var z = 0; z < this.z_sets.length; z++)
+    var p = null;
+    for (var z = 0; z < zsets.length; z++)
     {
-        p = this.z_geom[z];
+        p = zgeom[z];
         
         if (p == -1) continue;
         
@@ -571,10 +558,9 @@ function DSAClip(clear, minx, miny, width, height)
         // TODO: restrict the min value even further by determining
         // the earliest place an x value could start.  This can be done without
         // worrying about the height of the zplane
-        var min = this.z_sets[z];
         
-        var max = (z == this.z_sets.length - 1) ? this.data.length : 
-            this.z_sets[z+1];
+        var min = zsets[z];
+        var max = (z == zsets.length - 1) ? d.length : zsets[z+1];
         
         var obj = null, px = 0, py = 0, omaxx = 0, omaxy = 0;
         var outside = false;
