@@ -70,6 +70,13 @@ function DSAObject(tile, x, y, z)
     // when doing our modified backface culling
     this.transparent = false;
     
+    this.invisible = false;
+    
+    // The following notify the update algorithm that this object's graphics
+    // are going to be drawn outside of the bounds defined by (px,py,w,h)
+    this.wide = false;
+    this.tall = false;
+    
     // Member functions
     this.genPixelValues = function () {
         var r = pixelProjection(this.x, this.y, this.z);
@@ -96,7 +103,7 @@ function DepthSortedArray()
     
     // Member functions
     this.insert = DSAInsert;
-    this.clip = DSAClip;
+    this.updateBuffer = DSAUpdateBuffer;
     this.cull = DSACull;
     this.selectObject = DSASelectObject;
     this.insertAboveObject = DSAInsertAboveObject;
@@ -372,8 +379,7 @@ function DSADeleteIndex(index)
         }
     }
     
-    // Update clipping regions
-    mapDidChange(deleted);
+    this.updateBuffer(true, deleted.px, deleted.py, deleted.w, deleted.h);
     
     return deleted;
 }
@@ -386,9 +392,6 @@ function DSAInsertAboveObject(object, tile)
 
 function DSAInsertAboveIndex(index, tile)
 {
-    // We should not insert into an array that is a clipped region of a
-    // superset, because it would invalidate all the abs_indicies values
-    
     var d = this.data;
     var zsets = this.z_sets;
     
@@ -414,7 +417,7 @@ function DSAInsertAboveIndex(index, tile)
     }
     
     d.splice(index + 1, 0, n);
-    d[index + 1].container_array = a;
+    d[index + 1].container_array = this;
     
     // zset has increased in length, so increase all following zset indicies
     for (var i = n.z + 1; i < zsets.length ; i++)
@@ -424,8 +427,8 @@ function DSAInsertAboveIndex(index, tile)
     
     this.castShadow(index);
     
-    // Update clipping regions
-    mapDidChange(n);
+    // Update buffer
+    this.updateBuffer(true, obj.px, obj.py, obj.w, obj.h);
     
     return n;
 }
@@ -471,8 +474,8 @@ function DSAInsertBelowIndex(index, tile)
     
     this.castShadow(index - 1);
     
-    // Update clipping regions
-    mapDidChange(n);
+    // Update buffer
+    this.updateBuffer(true, n.px, n.py, n.w, n.h);
     
     return n;
 }
@@ -507,7 +510,7 @@ function DSASelectObject(x, y)
     return null;
 }
 
-function DSAClip(clear, minx, miny, width, height)
+function DSAUpdateBuffer(clear, minx, miny, width, height)
 {
     var d = this.data;
     var zsets = this.z_sets;
@@ -566,25 +569,22 @@ function DSAClip(clear, minx, miny, width, height)
         var outside = false;
         for (var i = min; i < max; i++)
         {
-            // TODO: test to determine if the current X value could possibly
-            // enter into the bounding box based on the known height of the
-            // zplane.
-            
-            // Narrow phase collision detection: Treat the object as an AABB
-            // and draw it if it intersects the clipping area OR is contained
-            // entirely within it.
             obj = d[i];
             px = obj.px;
             py = obj.py;
             omaxx = px + obj.w;
             omaxy = py + obj.h;
+            
+            // Narrow phase collision detection: Treat the object as an AABB
+            // and draw it if it intersects the clipping area OR is contained
+            // entirely within it.
             if ((minx <= px && maxx >= omaxx &&
                 miny <= py && maxy >= omaxy) == false)
             {
                 outside = false;
-                if (omaxx < minx || px > maxx)
+                if ((omaxx < minx || px > maxx) && obj.wide == false)
                     outside = true;
-                if (omaxy < miny || py > maxy)
+                if ((omaxy < miny || py > maxy) && obj.tall == false)
                     outside = true;
                 
                 // Maybe clipping rect is entirely inside this object?

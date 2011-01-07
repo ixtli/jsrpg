@@ -149,10 +149,7 @@ function setSelection(object, keepInViewport)
 {
     // Deselect the previously focussed object
     if (focussed != null)
-    {
-        redrawObject(focussed);
         focussed.selected = false;
-    }
     
     // Select object
     object.selected = true;
@@ -181,15 +178,6 @@ function setSelection(object, keepInViewport)
         }
     }
     
-    // If it left, redraw the map
-    if (delta == true)
-    {
-        
-    } else {
-        //redrawObject(object);
-        // TODO: redrawMap(false, true);
-    }
-    
     tileEditorUpdate();
 }
 
@@ -206,7 +194,7 @@ function addToExtendedSelection(obj)
     
     // We rely on the caller to decide to update the map or not,
     // since this could be called many times in a loop
-    redrawObject(extendedSelection[extendedSelection.length -1]);
+    map.updateBuffer(false, obj.px, obj.py, obj.w, obj.h);
     
     // Return it's index
     return extendedSelection.length - 1;
@@ -479,14 +467,10 @@ function mouseClickHandler(ev)
         
         if (ev.shiftKey)
         {
-            clipStack.push(0,0,viewWidth, viewHeight);
             if (obj === focussed)
                 deleteFocussed();
             else
                 map.deleteObject(obj);
-            
-            //// TODO: refresh map
-            //if (obj) refreshMap(true);
         } else {
             setSelection(obj, false);
         }
@@ -496,18 +480,10 @@ function mouseClickHandler(ev)
         if (ev.shiftKey)
         {
             obj = map.deleteObject(focussed);
-            if (obj)
-            {
-                clipStack.push(0,0,viewWidth, viewHeight);
-                focussed = null;
-            }
+            if (obj) focussed = null;
         } else {
             obj = map.insertAboveObject(focussed, focussed.tile);
-            if (obj) redrawObject(obj);
         }
-        
-        // TODO: refresh map
-        //if (obj) refreshMap(true);
     }
     
     return false;
@@ -593,19 +569,17 @@ function draw()
         if (obj)
         {
             setSelection(obj);
-            redrawObject(obj);
-            // TODO: redrawMap(false, true);
             tileEditorUpdate();
         }
     }
     
     if (viewportIsScrolling == true)
     {
-        canvasContext.clearRect(0,0,viewWidth, viewHeight);
         bufferX = viewX;
         bufferY = viewY;
         
-        map.clip(true, bufferX, bufferY, viewWidth, viewHeight);
+        map.updateBuffer(true, bufferX, bufferY, viewWidth, viewHeight);
+        canvasContext.clearRect(0,0,viewWidth, viewHeight);
         canvasContext.drawImage(buffer,0,0);
     }
     
