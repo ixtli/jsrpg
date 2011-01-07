@@ -13,8 +13,6 @@ var viewHeight = null;
 // buffer image
 var bufferX = null;
 var bufferY = null;
-var bufferHeight = null;
-var bufferWidth = null;
 
 // Sprites
 var sprites = [];
