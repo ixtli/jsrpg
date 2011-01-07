@@ -21,27 +21,27 @@ function DSAZGOProject()
     var i = 0;
     var r = null;
     
-    r = pixelProjection(this.minx, this.maxy, this.z);
+    r = pixelProjection(this.minx, this.miny, this.z);
     this.points[i].x = r.px;
-    this.points[i].y = r.py + tileHeight;
-    
-    i++;
-    
-    r = pixelProjection(this.maxx, this.maxy, this.z);
-    this.points[i].x = r.px + tileWidth;
-    this.points[i].y = (r.py + tileHeight) << 1;
+    this.points[i].y = r.py + 50;
     
     i++;
     
     r = pixelProjection(this.maxx, this.miny, this.z);
     this.points[i].x = r.px + tileWidth;
-    this.points[i].y = r.py + tileHeight;
+    this.points[i].y = r.py + 50;
     
     i++;
     
-    r = pixelProjection(this.minx, this.miny, this.z);
-    this.points[i].x = r.px;
+    r = pixelProjection(this.maxx, this.maxy, this.z);
+    this.points[i].x = r.px + tileWidth;
     this.points[i].y = r.py;
+    
+    i++;
+    
+    r = pixelProjection(this.minx, this.maxy, this.z);
+    this.points[i].x = r.px;
+    this.points[i].y = r.py - 50;
 }
 
 function DSAObject(tile, x, y, z)
@@ -544,6 +544,7 @@ function DSAClip(clear, minx, miny, width, height)
     
     if (clear)
         bufferCtx.clearRect(minx - buffx, miny - buffy, width, height);
+    
     
     // Construct the rectangle representing our viewport
     var rect = {x:minx,y:miny,w:maxx,h:maxy};

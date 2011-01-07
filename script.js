@@ -605,7 +605,7 @@ function draw()
         bufferX = viewX;
         bufferY = viewY;
         
-        map.clip(true, bufferX+50, bufferY+50, viewWidth-100, viewHeight-100);
+        map.clip(true, bufferX, bufferY, viewWidth, viewHeight);
         canvasContext.drawImage(buffer,0,0);
     }
     
