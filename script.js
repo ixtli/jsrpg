@@ -42,6 +42,9 @@ function init()
     
     // Get graphics contexts for the canvas elements
     canvasContext = canvas.getContext("2d");
+    // Do the following so we don't have to clearrect each time we copy
+    // from the buffer
+    canvasContext.globalCompositeOperation = "copy";
     
     // set this for the fps counter
     canvasContext.font = "bold 14px sans-serif";
@@ -589,9 +592,6 @@ function draw()
         if (viewX < bufferX || viewX + viewWidth > bufferX + bufferWidth ||
             viewY < bufferY || viewY + viewHeight > bufferY + bufferHeight )
             moveBuffer(viewX - (viewWidth >> 1), viewY - (viewHeight >> 1));
-        
-        // Clear context
-        canvas.width = viewWidth;
         
         // Redraw the subimage
         canvasContext.drawImage(buffer, viewX - bufferX, viewY - bufferY,
