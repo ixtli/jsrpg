@@ -143,7 +143,10 @@ function moveBuffer(x, y)
     // Move the part of the existing image that can be used
     var w = bufferWidth - xmagnitude;
     var h = bufferHeight - ymagnitude;
+    var oldCO = bufferCtx.globalCompositeOperation;
+    bufferCtx.globalCompositeOperation = "copy"; // Magic!
     bufferCtx.drawImage(buffer, xfrom, yfrom, w, h, xto, yto, w, h);
+    bufferCtx.globalCompositeOperation = oldCO;
     
     // Reclip the areas that need redrawing
     if (xmagnitude > 0)
