@@ -11,7 +11,7 @@ const key_w = 87, key_a = 65, key_s = 83, key_d = 68, key_e = 69, key_f = 70,
     key_minus = 189, key_delete = 8, key_space = 32, key_shift = 16;
 
 // Engine constants.  Things here require restart to change
-const FPS = 100;
+const FPS = 32;
 const mouseMoveDelay = (1000 / FPS);
 // This should be really small, so that the OS can regulate it
 // we just don't want to be scrolling much faster than once per frame
@@ -44,7 +44,7 @@ const msgLeftPadding = 8;
 // Engine settings.  Things here can be changed during runtime without maleffect
 var allowScrolling = true;
 var allowBorderScroll = true;
-var mouseScrollGranulatiry = 8;
+var mouseScrollGranulatiry = 4;
 var keyboardScrollGranulatiry = 32;
 var clickToSelect = false;
 
