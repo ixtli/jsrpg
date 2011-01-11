@@ -11,7 +11,7 @@ const key_w = 87, key_a = 65, key_s = 83, key_d = 68, key_e = 69, key_f = 70,
     key_minus = 189, key_delete = 8, key_space = 32, key_shift = 16;
 
 // Engine constants.  Things here require restart to change
-const FPS = 32;
+const FPS = 100;
 const mouseMoveDelay = (1000 / FPS);
 // This should be really small, so that the OS can regulate it
 // we just don't want to be scrolling much faster than once per frame
@@ -19,8 +19,8 @@ const keyRepeatDelay = (1000 / FPS);
 const scrollBorder = 32;
 const reclipThreshold = 0;
 const secondarySelectionAlpha = .35;
-const bufferWidth = 1600;
-const bufferHeight = 800;
+const bufferWidth = 800;
+const bufferHeight = 400;
 const cameraFollowsSelection = true;
 const tickerChangeRate = 10; // Seconds
 const fpsCounter = false;

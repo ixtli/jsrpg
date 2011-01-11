@@ -66,7 +66,7 @@ function init()
     var t1 = new Date();
     log("Tilegen: "+(t1-t0)+" ms");
     
-    map = new DepthSortedArray();
+    map = new DepthSortedArray(0);
     
     // generate terrain
     t0 = new Date();
@@ -583,26 +583,18 @@ function draw()
         }
     }
     
-    // Check map bounds
-    if (viewX < bufferX || viewX + viewWidth > bufferX + bufferWidth ||
-        viewY < bufferY || viewY + viewHeight > bufferY + bufferHeight )
-    {
-        bufferX = viewX - (viewWidth >> 1);
-        bufferY = viewY - (viewHeight >> 1);
-        
-        var t0 = new Date();
-        map.updateBuffer(true, bufferX, bufferY, bufferWidth, bufferHeight);
-        var t1 = new Date();
-        log("Redraw buffer: " + (t1-t0)+"ms");
-    }
-    
     if (viewportIsScrolling == true)
     {
+        // Check map bounds
+        if (viewX < bufferX || viewX + viewWidth > bufferX + bufferWidth ||
+            viewY < bufferY || viewY + viewHeight > bufferY + bufferHeight )
+            moveBuffer(viewX - (viewWidth >> 1), viewY - (viewHeight >> 1));
+        
         // Clear context
-        canvasContext.clearRect(0,0,viewWidth, viewHeight);
+        canvas.width = viewWidth;
         
         // Redraw the subimage
-        canvasContext.drawImage(buffer, viewX - bufferX, viewY - bufferY,
+        canvasContext.drawImage(buffer, 0, 0,
             viewWidth,viewHeight,0,0,viewWidth,viewHeight);
     }
     

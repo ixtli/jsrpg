@@ -87,133 +87,86 @@ function setOverlayBlackHorazontalBars()
 function moveBuffer(x, y)
 {
     // Return true if the buffer has changed
-    
     if (x == bufferX && y == bufferY)
         return false;
     
-    /*
-    var xmoved = 0;
-    var ymoved = 0;
-    var redraw = [];
+    var xmagnitude = 0, ymagnitude = 0;
+    var xpositive, ypositive;
+    var xfrom = 0;
+    var yfrom = 0;
+    var xto = 0;
+    var yto = 0;
     
-    // Figure out where the buffer has moved
-    if (old != null)
+    if (x != bufferX)
     {
-        if (x > bufferX + bufferWidth)
-            xmoved = 1; // Moved right
-        else if (x < bufferX)
-            xmoved = 2; // Moved left
+        xmagnitude = x - bufferX;
+        xpositive = xmagnitude > 0 ? true : false;
+        xmagnitude = Math.abs(xmagnitude);
         
-        if (y > bufferY + bufferHeight)
-            ymoved = 1; // Moved down
-        else if (y < bufferY)
-            ymoved = 2; // Moved up
+        if (xpositive == true)
+        {
+            xfrom = xmagnitude;
+            xto = 0;
+        } else {
+            xfrom = 0;
+            xto = xmagnitude;
+        }
+        
+        bufferX = x;
     }
     
-    // Edge-ish case: BOTH x and y moved
-    if (xmoved != 0 && ymoved != 0)
+    if (y != bufferY)
     {
-        if (xmoved == 1)
+        ymagnitude = y - bufferY;
+        ypositive = ymagnitude > 0 ? true : false;
+        ymagnitude = Math.abs(ymagnitude);
+        
+        if (ypositive == true)
         {
-            if (ymoved == 1)
-            {
-                // moved right and down, move SE quad to NW
-                bufferCtx.drawImage(buffer,
-                    viewWidth, viewHeight, viewWidth, viewHeight,
-                    0, 0, viewWidth, viewHeight);
-            } else {
-                // moved right and up, move NE to SW
-                bufferCtx.drawImage(buffer,
-                    viewWidth, 0, viewWidth, viewHeight,
-                    0, viewHeight, viewWidth, viewHeight);
-            }
+            yfrom = ymagnitude;
+            yto = 0;
         } else {
-            if (ymoved == 1)
-            {
-                // moved left and down, move SW to NE
-                bufferCtx.drawImage(buffer,
-                    0, viewHeight, viewWidth, viewHeight,
-                    viewWidth, 0, viewWidth, viewHeight);
-            } else {
-                // moved left and up, move NW to SE
-                bufferCtx.drawImage(buffer,
-                    0, 0, viewWidth, viewHeight,
-                    viewWidth, viewHeight, viewWidth, viewHeight);
-            }
+            yfrom = 0;
+            yto = ymagnitude;
         }
-    } else if (xmoved != 0) {
-        // Only x moved
-        if (xmoved == 1)
-        {
-            // moved right, move right half to left half
-            bufferCtx.drawImage(buffer,
-                viewWidth, 0, viewWidth, viewHeight << 1,
-                0, 0, viewWidth, viewHeight << 1);
-        } else {
-            // moved left, move left half to right half
-            bufferCtx.drawImage(buffer,
-                0, 0, viewWidth, viewHeight << 1,
-                viewWidth, 0, viewWidth, viewHeight << 1);
-        }
-    } else if (ymoved != 0) {
-        // Only y moved
-        if (ymoved == 1)
-        {
-            // moved down, move bottom half to top half
-            bufferCtx.drawImage(bufferCtx,
-                0, viewHeight, viewWidth << 1, viewHeight,
-                0, 0, viewWidth << 1, viewHeight);
-        } else {
-            // moved up, move top half to bottom half
-            bufferCtx.drawImage(bufferCtx,
-                0, 0, viewWidth << 1, viewHeight,
-                0, viewHeight, viewWidth << 1, viewHeight);
-        }
+        
+        bufferY = y;
     }
     
-    // Redraw the sectors that need redrawing
-    var clipArea = {px: 0, py: 0, w: viewWidth, h: viewHeight};
-    for (var i = 0; i < redraw.length; i++)
+    // Check to make sure that we've not moved entirely out of bounds of buffer
+    if (xmagnitude > bufferWidth || ymagnitude > bufferHeight)
     {
-        // Anything that needs to be redrawn needs to be so because it is a
-        // previously unrendered clipping region.
-        switch (val)
-        {
-            case 0:
-            clipArea.px = 0;
-            clipArea.py = 0;
-            clipStack.push(clipArea);
-            break;
-            
-            case 1:
-            clipArea.px = viewWidth;
-            clipArea.py = 0;
-            clipStack.push(clipArea);
-            break;
-            
-            case 2:
-            clipArea.px = 0;
-            clipArea.py = viewHeight;
-            clipStack.push(clipArea);
-            break;
-            
-            default:
-            case 3:
-            clipArea.px = viewWidth;
-            clipArea.py = viewHeight;
-            clipStack.push(clipArea);
-            break;
-        }
+        map.updateBuffer(true, bufferX, bufferY, bufferWidth, bufferHeight);
+        return true;
     }
     
-    if (redraw.length == 0)
-        redrawActiveRegion(true, false);
-    else
-        redrawActiveRegion(true, true);
-    */
-    bufferX = x;
-    bufferY = y;
-    redrawActiveRegion(true, false);
+    // Move the part of the existing image that can be used
+    var w = bufferWidth - xmagnitude;
+    var h = bufferHeight - ymagnitude;
+    bufferCtx.drawImage(buffer, xfrom, yfrom, w, h, xto, yto, w, h);
+    
+    // Reclip the areas that need redrawing
+    if (xmagnitude > 0)
+    {
+        if (xpositive == true)
+            map.updateBuffer(true,bufferX+w, bufferY, xmagnitude, bufferHeight);
+        else
+            map.updateBuffer(true, bufferX, bufferY, xmagnitude, bufferHeight);
+    }
+    
+    if (ymagnitude > 0)
+    {
+        var px = bufferX;
+        if (xmagnitude > 0 && xpositive == false)
+            px += xmagnitude;
+        
+        if (ypositive == true)
+            map.updateBuffer(true, px, bufferY + h, w, ymagnitude);
+        else
+            map.updateBuffer(true, px, bufferY, w, ymagnitude);
+    }
+    
+    return true;
 }
 
 function setMessage(string)
