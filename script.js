@@ -594,7 +594,7 @@ function draw()
         canvas.width = viewWidth;
         
         // Redraw the subimage
-        canvasContext.drawImage(buffer, 0, 0,
+        canvasContext.drawImage(buffer, viewX - bufferX, viewY - bufferY,
             viewWidth,viewHeight,0,0,viewWidth,viewHeight);
     }
     
