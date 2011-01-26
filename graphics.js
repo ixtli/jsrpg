@@ -6,7 +6,7 @@ var buffer = null;
 var canvasContext = null;
 var bufferCtx = null;
 var clipStack = [];
-var bufferDirty = false;
+var viewportDirty = false;
 var viewWidth = null;
 var viewHeight = null;
 

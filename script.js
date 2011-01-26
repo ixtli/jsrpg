@@ -28,6 +28,8 @@ var keyMap = {up: key_w, down: key_s, left: key_a, right: key_d};
 
 var fpsVal = FPS;
 
+var debugDrawing = false;
+
 window.onload = init;
 
 function init()
@@ -160,9 +162,15 @@ function ericBHandler()
 
 function setSelection(object, keepInViewport)
 {
+    if (focussed === object)
+        return false;
+    
     // Deselect the previously focussed object
     if (focussed != null)
+    {
         focussed.selected = false;
+        map.updateBuffer(false, focussed.px, focussed.py, focussed.w, focussed.h);
+    }
     
     // Select object
     object.selected = true;
@@ -191,7 +199,17 @@ function setSelection(object, keepInViewport)
         }
     }
     
+    // TODO: Move map if delta == true
+    
+    // redraw selected tile
+    debugDrawing = true;
+    map.updateBuffer(false, focussed.px, focussed.py, focussed.w, focussed.h);
+    debugDrawing = false;
+    
+    // Update the tile editor
     tileEditorUpdate();
+    
+    return true;
 }
 
 function addToExtendedSelection(obj)
@@ -215,10 +233,12 @@ function addToExtendedSelection(obj)
 
 function clearExtendedSelection()
 {
+    var obj = null;
     for (var i = 0; i < extendedSelection.length; i++)
     {
-        extendedSelection[i].secondary_selection = false;
-        redrawObject(extendedSelection[i]);
+        obj = extendedSelection[i];
+        obj.secondary_selection = false;
+        map.updateBuffer(false, obj.px, obj.py, obj.w, obj.h);
     }
     
     // TODO: redrawMap(true, true);
@@ -248,8 +268,7 @@ function insertAboveExtendedSelection()
     }
     
     // TODO: Refresh map
-    
-    clearExtendedSelection(); // This calls redraw map
+    clearExtendedSelection();
     extendedSelection = newSelection;
 }
 
@@ -315,7 +334,7 @@ function deleteFocussed()
     // Find the lowest y values at (z,x)
     var lowest = map.indexOfLowestObject(focussed.z, focussed.x);
     map.deleteObject(focussed);
-    redrawObject(focussed);
+    map.updateBuffer(true, focussed.px, focussed.py, focussed.w, focussed.h);
     var index = map.correctHeight(lowest, focussed.y);
     
     // TODO: the following call to setSelection could redraw the
@@ -323,7 +342,6 @@ function deleteFocussed()
     if (index != null)
     {
         setSelection(map.data[index], true);
-        // TODO: refresh map
     } else {
         focussed = null;
         tileEditorUpdate();
@@ -506,10 +524,18 @@ function mouseMoveHandler(evt)
 {
     var time = new Date();
     if (time - previousMouseMove < mouseMoveDelay)
-        return;
+        return false;
     
     mouseX = evt.pageX - canvas.offsetLeft;
     mouseY = evt.pageY - canvas.offsetTop;
+    
+    var obj = map.selectObject(mouseX + viewX, mouseY + viewY);
+    
+    if (obj != null)
+    {
+        setSelection(obj);
+        tileEditorUpdate();
+    }
     
     previousMouseMove = new Date();
     return false;
@@ -572,20 +598,6 @@ function draw()
         viewportIsScrolling = false;
     }
     
-    // Handle mouse movement
-    if (allowSelection == true && clickToSelect == false &&
-        (previousMouseMove > previousFrameTime || viewportIsScrolling == true))
-    {
-        var obj = null;
-        // TODO: var obj = viewableMap.selectObject(mouseX, mouseY);
-        
-        if (obj)
-        {
-            setSelection(obj);
-            tileEditorUpdate();
-        }
-    }
-    
     if (viewportIsScrolling == true)
     {
         // Check map bounds
@@ -593,11 +605,19 @@ function draw()
             viewY < bufferY || viewY + viewHeight > bufferY + bufferHeight )
             moveBuffer(viewX - (viewWidth >> 1), viewY - (viewHeight >> 1));
         
-        // Redraw the subimage
+        viewportDirty = true;
+    }
+    // Redraw the subimage if dirty
+    if (viewportDirty == true)
+    {
         canvasContext.drawImage(buffer, viewX - bufferX, viewY - bufferY,
             viewWidth,viewHeight,0,0,viewWidth,viewHeight);
+        bufferDirty = false;
+        viewportDirty = false;
     }
     
+    // TODO: Make this report some sort of reasonable "FPS"
+    /*
     if (fpsCounter && mouseInside == true)
     {
         var nt = new Date();
@@ -610,4 +630,5 @@ function draw()
     } else {
         previousFrameTime = new Date();
     }
+    */
 }

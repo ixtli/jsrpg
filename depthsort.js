@@ -485,31 +485,78 @@ function DSAInsertBelowIndex(index, tile)
 
 function DSASelectObject(x, y)
 {
-    // return the front-most tile at pixel position (x,y) in the current
-    // viewport.
+    // return the front-most tile at absolute pixel position (x,y) on the map
     
     var d = this.data;
+    var zsets = this.z_sets;
+    var zgeom = this.z_geom;
+    var outside = false;
+    var min = 0, max = 0;
+    var obj = null, px = 0, py = 0, omaxx = 0, omaxy = 0;
+    var poly = null;
+    var zlist = [];
     
-    for (var i = d.length - 1; i >=0; i--)
+    // Multiple zplanes will probably overlap the point, so find all of them
+    for (var z = 0; z < zsets.length; z++)
     {
-        var obj = d[i];
+        p = zgeom[z];
+        if (p == -1) continue;
         
-        // Don't bother if it doesn't encroach on the viewport
-        if ((obj.py - viewY) + tileWidth < 0 || (obj.py - viewY) > viewHeight ||
-            (obj.px - viewX) + tileWidth < 0 || (obj.px - viewX) > viewWidth)
-            continue;
+        poly = p.points;
         
-        if (obj.px - viewX <= x && obj.py - viewY <= y &&
-            obj.px - viewX + obj.w > x && obj.py - viewY + obj.h > y)
+        // is the point inside this zset?
+        var j = 3;
+        var inside = false;
+        var pi = null, pj = null;
+        for (var i = -1; ++i < 4; j = i)
         {
-            var dx = Math.floor(x - (obj.px - viewX));
-            var dy = Math.floor(y - (obj.py - viewY));
-            var pixeldata = obj.tile.img.getContext('2d').getImageData(dx,dy,1,1);
-            if (pixeldata.data[3] > alphaSelectionThreshold) {
-                return obj;
+            pi = poly[i];
+            pj = poly[j];
+            if ((pi.y <= y && y < pj.y) || (pj.y <= y && y < pi.y))
+            {
+                if (x < (pj.x - pi.x) * (y - pi.y) / (pj.y - pi.y) + pi.x)
+                    inside = !inside;
+            }
+        }
+        
+        // add this zset to the list of sets to consider
+        if (inside == true) zlist.push(z);
+    }
+    
+    // Bounds checking
+    if (zlist.length == 0)
+    {
+        
+        return null;
+    }
+    
+    // Check each selected zset
+    var min = 0, max = 0, dx = 0, dy = 0, pixeldata = null, current = null;
+    for (var set_index = zlist.length - 1; set_index >= 0; set_index--)
+    {
+        current = zlist[set_index];
+        min = zsets[current];
+        max = (current == zsets.length - 1) ? d.length : zsets[current + 1];
+        for (var i = max - 1; i >= min; i--)
+        {
+            obj = d[i];
+            px = obj.px;
+            py = obj.py;
+            omaxx = px + obj.w;
+            omaxy = py + obj.h;
+            
+            if (px < x && py < y && omaxx > x && omaxy > y)
+            {
+                dx = Math.floor(x - px);
+                dy = Math.floor(y - py);
+                pixeldata = obj.tile.img.getContext('2d').getImageData(dx,dy,1,1);
+                if (pixeldata.data[3] > alphaSelectionThreshold) {
+                    return obj;
+                }
             }
         }
     }
+    
     return null;
 }
 
@@ -524,23 +571,30 @@ function DSAUpdateBuffer(clear, minx, miny, width, height)
     var buffx = bufferX;
     var buffy = bufferY;
     var b = this.buffer;
+    var obj = null, px = 0, py = 0, omaxx = 0, omaxy = 0;
+    var outside = false;
     
     // Construct the rectangle representing our viewport
     var rect = {x:minx,y:miny,w:maxx,h:maxy};
     
+    // Ensure that the update hits the buffer
+    if (maxx < buffx || maxy < buffy ||
+        minx > buffx + bufferWidth || miny > buffy + bufferHeight)
+        return false;
+    
     // Push context
-    bufferCtx.save();
+    b.save();
     
     // Bigin definition of new clipping path
-    bufferCtx.beginPath();
+    b.beginPath();
     
     // Make clipping rect
-    bufferCtx.rect(minx - buffx, miny - buffy, width, height);
+    b.rect(minx - buffx, miny - buffy, width, height);
     
     // Clip the area of relevant changes
-    bufferCtx.clip();
+    b.clip();
     
-    if (clear) bufferCtx.clearRect(minx - buffx, miny - buffy, width, height);
+    if (clear) b.clearRect(minx - buffx, miny - buffy, width, height);
     
     // Do clipping
     var p = null;
@@ -568,9 +622,6 @@ function DSAUpdateBuffer(clear, minx, miny, width, height)
         
         var min = zsets[z];
         var max = (z == zsets.length - 1) ? d.length : zsets[z+1];
-        
-        var obj = null, px = 0, py = 0, omaxx = 0, omaxy = 0;
-        var outside = false;
         for (var i = min; i < max; i++)
         {
             obj = d[i];
@@ -612,11 +663,28 @@ function DSAUpdateBuffer(clear, minx, miny, width, height)
             py -= buffy;
             
             // Draw
-            b.drawImage(obj.tile.img, px, py);
+            if (obj.selected == true)
+            {
+                b.drawImage(sprites[1].img, px, py);
+            } else {
+                b.drawImage(obj.tile.img, px, py);
+            }
+            
+            if (debugDrawing == true)
+            {
+                // Draw a box around the sprite for debugging
+                b.strokeStyle = "black";
+                b.rect(px, py, obj.w, obj.h);
+                b.stroke();
+            }
         }
     }
     
-    bufferCtx.restore();
+    b.restore();
+    
+    // TODO: only set this if this draw is intersecting, inside, or completely
+    // enclosing the viewport.
+    viewportDirty = true;
     
     return true;
 }

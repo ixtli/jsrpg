@@ -102,7 +102,8 @@ function generateTestMap()
         {
             for (var x = 0; x < 100; x++)
             {
-                var ind = Math.floor(Math.random() * 3);
+                //var ind = Math.floor(Math.random() * 3);
+                var ind = 0;
                 map.insert(sprites[ind], x, y, z);
             }
         }
