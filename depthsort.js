@@ -669,15 +669,15 @@ function DSAUpdateBuffer(clear, minx, miny, width, height)
             } else {
                 b.drawImage(obj.tile.img, px, py);
             }
-            
-            if (debugDrawing == true)
-            {
-                // Draw a box around the sprite for debugging
-                b.strokeStyle = "black";
-                b.rect(px, py, obj.w, obj.h);
-                b.stroke();
-            }
         }
+    }
+    
+    if (debugDrawing == true)
+    {
+        // Draw a box around the sprite for debugging
+        b.strokeStyle = "red";
+        b.rect(minx - buffx, miny - buffy, obj.w, obj.h);
+        b.stroke();
     }
     
     b.restore();
