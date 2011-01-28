@@ -925,52 +925,80 @@ function triangleTest(rect, vertex0, vertex1, vertex2)
     
     var b0 = ((x0 > l) ? 1 : 0) | ((y0 > t) ? 2 : 0) |
              ((x0 > r) ? 4 : 0) | ((y0 > b) ? 8 : 0);
-    if (b0 == 3) return 1;
+    if (b0 == 3) return true;
     
     var b1 = ((x1 > l) ? 1 : 0) | ((y1 > t) ? 2 : 0) |
              ((x1 > r) ? 4 : 0) | ((y1 > b) ? 8 : 0);
-    if (b1 == 3) return 1;
+    if (b1 == 3) return true;
     
     var b2 = ((x2 > l) ? 1 : 0) | ((y2 > t) ? 2 : 0) |
              ((x2 > r) ? 4 : 0) | ((y2 > b) ? 8 : 0);
-    if (b2 == 3) return 1;
+    if (b2 == 3) return true;
     
-    var c = 0, m = 0, s = 0;
+    var c = 0, m = 0, s = 0, test = 0;
     
     var i0 = b0 ^ b1;
     if (i0 != 0)
     {
-        m = (y1-y0) / (x1-x0); 
-        c = y0 -(m * x0);
-        if (i0 & 1) { s = m * l + c; if ( s > t && s < b) return true; }
-        if (i0 & 2) { s = (t - c) / m; if ( s > l && s < r) return true; }
-        if (i0 & 4) { s = m * r + c; if ( s > t && s < b) return true; }
-        if (i0 & 8) { s = (b - c) / m; if ( s > l && s < r) return true; }
+        if (x1 != x0)
+        {
+            m = (y1-y0) / (x1-x0);
+            c = y0 -(m * x0);
+            if (i0 & 1) { s = m * l + c; if ( s >= t && s <= b) return 1; }
+            if (i0 & 2) { s = (t - c) / m; if ( s >= l && s <= r) return 1; }
+            if (i0 & 4) { s = m * r + c; if ( s >= t && s <= b) return 1; }
+            if (i0 & 8) { s = (b - c) / m; if ( s >= l && s <= r) return 1; }
+        } else {
+            if (l == x0 || r == x0) return 1;
+            if (x0 > l && x0 < r) return 1;
+        }
     }
     
     var i1 = b1 ^ b2;
     if (i1 != 0)
     {
-        m = (y2-y1) / (x2-x1); 
-        c = y1 -(m * x1);
-        if (i1 & 1) { s = m * l + c; if ( s > t && s < b) return true; }
-        if (i1 & 2) { s = (t - c) / m; if ( s > l && s < r) return true; }
-        if (i1 & 4) { s = m * r + c; if ( s > t && s < b) return true; }
-        if (i1 & 8) { s = (b - c) / m; if ( s > l && s < r) return true; }
+        if (x2 != x1)
+        {
+            m = (y2-y1) / (x2-x1);
+            c = y1 -(m * x1);
+            if (i1 & 1) { s = m * l + c; if ( s >= t && s <= b) return 1; }
+            if (i1 & 2) { s = (t - c) / m; if ( s >= l && s <= r) return 1; }
+            if (i1 & 4) { s = m * r + c; if ( s >= t && s <= b) return 1; }
+            if (i1 & 8) { s = (b - c) / m; if ( s >= l && s <= r) return 1; }
+        } else {
+            if (l == x1 || r == x1) return 1;
+            if (x1 > l && x1 < r) return 1;
+        }
+        
     }
     
     var i2 = b0 ^ b2;
     if (i2 != 0)
     {
-        m = (y2-y0) / (x2-x0); 
-        c = y0 -(m * x0);
-        if (i2 & 1) { s = m * l + c; if ( s > t && s < b) return true; }
-        if (i2 & 2) { s = (t - c) / m; if ( s > l && s < r) return true; }
-        if (i2 & 4) { s = m * r + c; if ( s > t && s < b) return true; }
-        if (i2 & 8) { s = (b - c) / m; if ( s > l && s < r) return true; }
+        if (x2 != x0)
+        {
+            m = (y2-y0) / (x2 - x0);
+            c = y0 -(m * x0);
+            if (i2 & 1) { s = m * l + c; if ( s >= t && s <= b) return 1; }
+            if (i2 & 2) { s = (t - c) / m; if ( s >= l && s <= r) return 1; }
+            if (i2 & 4) { s = m * r + c; if ( s >= t && s <= b) return 1; }
+            if (i2 & 8) { s = (b - c) / m; if ( s >= l && s <= r) return 1; }
+        } else {
+            if (l == x0 || r == x0) return 1;
+            if (x0 > l && x0 < r) return 1;
+        }
+        
     }
     
     // It may be the case that the clipping rect is entirely within a triangle
+    // Make a bounding box around the triangle
+    var tbb_l = Math.min(x0,x1,x2);
+    var tbb_t = Math.min(y0,y1,y2);
+    var tbb_r = Math.max(x0,x1,x2);
+    var tbb_b = Math.max(y0,y1,y2);
+    
+    // is the rectangle inside the bounding box?
+    if (tbb_l <= l && tbb_r >= r && tbb_t <= t && tbb_b >= b)
     {
         // If so, test each point of the AABB.  If any are within the
         // triangle, then the AABB is entirely inside the triangle
