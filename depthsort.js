@@ -636,12 +636,14 @@ function DSAUpdateBuffer(clear, minx, miny, width, height, debug)
             p.points[3].x > maxx || p.points[1].x < minx)
             continue;
         
+        
         // Do more detailed plane collision test by splitting the zplane
         // in to two triangles and testing whether or not they intersect
         // the viewport, represented as an AABB
         if (triangleTest(rect, p.points[0], p.points[1], p.points[2]) == false)
             if (triangleTest(rect,p.points[0],p.points[2], p.points[3])==false)
                 continue;
+        
         
         // TODO: restrict the min value even further by determining
         // the earliest place an x value could start.  This can be done without
@@ -698,14 +700,11 @@ function DSAUpdateBuffer(clear, minx, miny, width, height, debug)
             }
         }
     }
-    
     b.restore();
     
     // TODO: only set this if this draw is intersecting, inside, or completely
     // enclosing the viewport.
     viewportDirty = true;
-    
-
     
     return true;
 }
@@ -924,17 +923,17 @@ function triangleTest(rect, vertex0, vertex1, vertex2)
     var x2 = vertex2.x;
     var y2 = vertex2.y;
     
-    var b0 = ((x0 > l) ? 1 : 0) | (((y0 > t) ? 1 : 0) << 1) |
-        (((x0 > r) ? 1 : 0) << 2) | (((y0 > b) ? 1 : 0) << 3);
-    if (b0 == 3) return true;
+    var b0 = ((x0 > l) ? 1 : 0) | ((y0 > t) ? 2 : 0) |
+             ((x0 > r) ? 4 : 0) | ((y0 > b) ? 8 : 0);
+    if (b0 == 3) return 1;
     
-    var b1 = ((x1 > l) ? 1 : 0) | (((y1 > t) ? 1 : 0) << 1) |
-        (((x1 > r) ? 1 : 0) << 2) | (((y1 > b) ? 1 : 0) << 3);
-    if (b1 == 3) return true;
+    var b1 = ((x1 > l) ? 1 : 0) | ((y1 > t) ? 2 : 0) |
+             ((x1 > r) ? 4 : 0) | ((y1 > b) ? 8 : 0);
+    if (b1 == 3) return 1;
     
-    var b2 = ((x2 > l) ? 1 : 0) | (((y2 > t) ? 1 : 0) << 1) |
-        (((x2 > r) ? 1 : 0) << 2) | (((y2 > b) ? 1 : 0) << 3);
-    if (b2 == 3) return true;
+    var b2 = ((x2 > l) ? 1 : 0) | ((y2 > t) ? 2 : 0) |
+             ((x2 > r) ? 4 : 0) | ((y2 > b) ? 8 : 0);
+    if (b2 == 3) return 1;
     
     var c = 0, m = 0, s = 0;
     
@@ -971,27 +970,7 @@ function triangleTest(rect, vertex0, vertex1, vertex2)
         if (i2 & 8) { s = (b - c) / m; if ( s > l && s < r) return true; }
     }
     
-    // Test to see if the rect is entirely within the triangle if inside == true
-    // Make a bounding box out of the triangle
-    var tbb_l = x0;
-    var tbb_t = y0;
-    var tbb_r = x0;
-    var tbb_b = y0;
-    
-    // Find minimum values for top and bottom
-    if (tbb_l > x1) tbb_l = x1;
-    if (tbb_l > x2) tbb_l = x2;
-    if (tbb_t > y1) tbb_t = y1;
-    if (tbb_t > y2) tbb_t = y2;
-    
-    // Find maximum values for length and width (right and bottom)
-    if (tbb_r < x1) tbb_r = x1;
-    if (tbb_r < x2) tbb_r = x2;
-    if (tbb_b < y1) tbb_b = y1;
-    if (tbb_b < y2) tbb_b = y2;
-    
-    // is the rectangle inside the bounding box?
-    if (tbb_l <= l && tbb_r >= r && tbb_t <= t && tbb_b >= b)
+    // It may be the case that the clipping rect is entirely within a triangle
     {
         // If so, test each point of the AABB.  If any are within the
         // triangle, then the AABB is entirely inside the triangle
@@ -1023,9 +1002,9 @@ function triangleTest(rect, vertex0, vertex1, vertex2)
         v = (dot00 * dot12 - dot01 * dot02) * invDenom;
         if ((u >= 0) && (v >= 0) && (u + v <= 1)) return true;
         
-        // upper left
-        v2x = l - x0;
-        v2y = t - y0;
+        // bottom right
+        v2x = r - x0;
+        v2y = b - y0;
         
         dot02 = (v0x * v2x) + (v0y * v2y);
         dot12 = (v1x * v2x) + (v1y * v2y);
