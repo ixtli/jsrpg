@@ -29,7 +29,7 @@ function DSAZGOProject()
     
     r = pixelProjection(this.maxx, this.miny, this.z);
     this.points[i].x = r.px + tileWidth;
-    this.points[i].y = r.py + 50;
+    this.points[i].y = r.py + 50 + 32;
     
     i++;
     
@@ -41,7 +41,7 @@ function DSAZGOProject()
     
     r = pixelProjection(this.minx, this.maxy, this.z);
     this.points[i].x = r.px;
-    this.points[i].y = r.py - 50;
+    this.points[i].y = r.py - 32;
 }
 
 function DSAObject(tile, x, y, z)
@@ -118,6 +118,7 @@ function DepthSortedArray()
     this.indexOfLowestObject = DSAFindLowestObject;
     this.correctHeight = DSACorrectHeight;
     this.updatePlaneGeometry = DSAUpdatePlaneGeometry;
+    this.drawPlaneBounds = DSADrawZPlaneBounds;
     
     // Debugging
     this.duplicateDetection = true;
@@ -560,7 +561,33 @@ function DSASelectObject(x, y)
     return null;
 }
 
-function DSAUpdateBuffer(clear, minx, miny, width, height)
+function DSADrawZPlaneBounds()
+{
+    var d = this.data;
+    var b = this.buffer;
+    var zsets = this.z_sets;
+    var zgeom = this.z_geom;
+    
+    var p = null;
+    for (var z = 0; z < zsets.length; z++)
+    {
+        p = zgeom[z];
+        
+        if (p == -1) continue;
+        
+        b.strokeStyle = "red";
+        b.beginPath();
+        b.moveTo(p.points[0].x - bufferX, p.points[0].y - bufferY);
+        b.lineTo(p.points[1].x - bufferX, p.points[1].y - bufferY);
+        b.lineTo(p.points[2].x - bufferX, p.points[2].y - bufferY);
+        b.lineTo(p.points[3].x - bufferX, p.points[3].y - bufferY);
+        b.lineTo(p.points[0].x - bufferX, p.points[0].y - bufferY);
+        b.closePath();
+        b.stroke();
+    }
+}
+
+function DSAUpdateBuffer(clear, minx, miny, width, height, debug)
 {
     var d = this.data;
     var zsets = this.z_sets;
@@ -672,19 +699,13 @@ function DSAUpdateBuffer(clear, minx, miny, width, height)
         }
     }
     
-    if (debugDrawing == true)
-    {
-        // Draw a box around the sprite for debugging
-        b.strokeStyle = "red";
-        b.rect(minx - buffx, miny - buffy, obj.w, obj.h);
-        b.stroke();
-    }
-    
     b.restore();
     
     // TODO: only set this if this draw is intersecting, inside, or completely
     // enclosing the viewport.
     viewportDirty = true;
+    
+
     
     return true;
 }
@@ -948,6 +969,79 @@ function triangleTest(rect, vertex0, vertex1, vertex2)
         if (i2 & 2) { s = (t - c) / m; if ( s > l && s < r) return true; }
         if (i2 & 4) { s = m * r + c; if ( s > t && s < b) return true; }
         if (i2 & 8) { s = (b - c) / m; if ( s > l && s < r) return true; }
+    }
+    
+    // Test to see if the rect is entirely within the triangle if inside == true
+    // Make a bounding box out of the triangle
+    var tbb_l = x0;
+    var tbb_t = y0;
+    var tbb_r = x0;
+    var tbb_b = y0;
+    
+    // Find minimum values for top and bottom
+    if (tbb_l > x1) tbb_l = x1;
+    if (tbb_l > x2) tbb_l = x2;
+    if (tbb_t > y1) tbb_t = y1;
+    if (tbb_t > y2) tbb_t = y2;
+    
+    // Find maximum values for length and width (right and bottom)
+    if (tbb_r < x1) tbb_r = x1;
+    if (tbb_r < x2) tbb_r = x2;
+    if (tbb_b < y1) tbb_b = y1;
+    if (tbb_b < y2) tbb_b = y2;
+    
+    // is the rectangle inside the bounding box?
+    if (tbb_l <= l && tbb_r >= r && tbb_t <= t && tbb_b >= b)
+    {
+        // If so, test each point of the AABB.  If any are within the
+        // triangle, then the AABB is entirely inside the triangle
+        var v0x = x2 - x0;
+        var v0y = y2 - y0; // 2 - 0
+        var v1x = x1 - x0;
+        var v1y = y1 - y0; // 1 - 0
+        var v2x = l - x0;
+        var v2y = t - y0; // upper left - 0
+        
+        var dot00 = (v0x * v0x) + (v0y * v0y); // dot(v0, v0)
+        var dot01 = (v0x * v1x) + (v0y * v1y); // dot(v0, v1)
+        var dot02 = (v0x * v2x) + (v0y * v2y); // dot(v0, v2)
+        var dot11 = (v1x * v1x) + (v1y * v1y); // dot(v1, v1)
+        var dot12 = (v1x * v2x) + (v1y * v2y); // dot(v1, v2)
+        var invDenom = 1 / (dot00 * dot11 - dot01 * dot01);
+        var u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+        var v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+        
+        if ((u >= 0) && (v >= 0) && (u + v <= 1)) return true;
+        
+        // bottom left
+        v2x = l - x0;
+        v2y = b - y0;
+        
+        dot02 = (v0x * v2x) + (v0y * v2y);
+        dot12 = (v1x * v2x) + (v1y * v2y);
+        u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+        v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+        if ((u >= 0) && (v >= 0) && (u + v <= 1)) return true;
+        
+        // upper left
+        v2x = l - x0;
+        v2y = t - y0;
+        
+        dot02 = (v0x * v2x) + (v0y * v2y);
+        dot12 = (v1x * v2x) + (v1y * v2y);
+        u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+        v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+        if ((u >= 0) && (v >= 0) && (u + v <= 1)) return true;
+        
+        // top right
+        v2x = r - x0;
+        v2y = t - y0;
+        
+        dot02 = (v0x * v2x) + (v0y * v2y);
+        dot12 = (v1x * v2x) + (v1y * v2y);
+        u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+        v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+        if ((u >= 0) && (v >= 0) && (u + v <= 1)) return true;
     }
     
     return false;

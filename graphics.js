@@ -136,7 +136,7 @@ function moveBuffer(x, y)
     // Check to make sure that we've not moved entirely out of bounds of buffer
     if (xmagnitude > bufferWidth || ymagnitude > bufferHeight)
     {
-        map.updateBuffer(true, bufferX, bufferY, bufferWidth, bufferHeight);
+        map.updateBuffer(true, bufferX, bufferY, bufferWidth, bufferHeight, true);
         return true;
     }
     
@@ -152,9 +152,9 @@ function moveBuffer(x, y)
     if (xmagnitude > 0)
     {
         if (xpositive == true)
-            map.updateBuffer(true,bufferX+w, bufferY, xmagnitude, bufferHeight);
+            map.updateBuffer(true,bufferX+w, bufferY, xmagnitude, bufferHeight, true);
         else
-            map.updateBuffer(true, bufferX, bufferY, xmagnitude, bufferHeight);
+            map.updateBuffer(true, bufferX, bufferY, xmagnitude, bufferHeight, true);
     }
     
     if (ymagnitude > 0)
@@ -164,9 +164,9 @@ function moveBuffer(x, y)
             px += xmagnitude;
         
         if (ypositive == true)
-            map.updateBuffer(true, px, bufferY + h, w, ymagnitude);
+            map.updateBuffer(true, px, bufferY + h, w, ymagnitude, true);
         else
-            map.updateBuffer(true, px, bufferY, w, ymagnitude);
+            map.updateBuffer(true, px, bufferY, w, ymagnitude, true);
     }
     
     return true;

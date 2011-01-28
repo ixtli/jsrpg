@@ -28,8 +28,6 @@ var keyMap = {up: key_w, down: key_s, left: key_a, right: key_d};
 
 var fpsVal = FPS;
 
-var debugDrawing = false;
-
 window.onload = init;
 
 function init()
@@ -169,7 +167,7 @@ function setSelection(object, keepInViewport)
     if (focussed != null)
     {
         focussed.selected = false;
-        map.updateBuffer(false, focussed.px, focussed.py, focussed.w, focussed.h);
+        map.updateBuffer(true, focussed.px, focussed.py, focussed.w, focussed.h);
     }
     
     // Select object
@@ -202,9 +200,7 @@ function setSelection(object, keepInViewport)
     // TODO: Move map if delta == true
     
     // redraw selected tile
-    debugDrawing = true;
-    map.updateBuffer(false, focussed.px, focussed.py, focussed.w, focussed.h);
-    debugDrawing = false;
+    map.updateBuffer(true, focussed.px, focussed.py, focussed.w, focussed.h);
     
     // Update the tile editor
     tileEditorUpdate();
