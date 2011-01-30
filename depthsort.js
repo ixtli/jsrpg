@@ -679,10 +679,8 @@ function DSAUpdateBuffer(clear, minx, miny, width, height, debug)
                     if ((px <= minx && omaxx >= maxx &&
                         py <= miny && omaxy >= maxy) == false)
                     {
-                        if (minx < omaxx || maxx > px)
-                            continue;
-                        if (miny < omaxy || maxy > py)
-                            continue;
+                        if (minx < omaxx || maxx > px) continue;
+                        if (miny < omaxy || maxy > py) continue;
                     }
                 }
             }
@@ -698,13 +696,58 @@ function DSAUpdateBuffer(clear, minx, miny, width, height, debug)
             } else {
                 b.drawImage(obj.tile.img, px, py);
             }
+            
+            // Secondary selection handling
+            if (obj.secondary_selection == true)
+            {
+                var s = b.globalAlpha;
+                b.globalAlpha = secondarySelectionAlpha;
+                b.drawImage(sprites[secondarySelectionSprite].img, px, py);
+                b.globalAlpha = s;
+            }
+            
+            // Draw shadow
+            if (obj.shadow != 0)
+            {
+                var s = b.globalAlpha;
+                b.globalAlpha = obj.shadow;
+                b.drawImage(sprites[shadowMaskTile].img, px, py);
+                b.globalAlpha = s;
+            }
         }
     }
     b.restore();
     
-    // TODO: only set this if this draw is intersecting, inside, or completely
-    // enclosing the viewport.
-    viewportDirty = true;
+    // Only redraw viewport if this draw's clipping area is intersecting,
+    // inside, or completely enclosing the viewport.
+    omaxx = viewX + viewWidth;
+    omaxy = viewY + viewHeight;
+    
+    if ((minx <= viewX && maxx >= omaxx &&
+        miny <= viewY && maxy >= omaxy) == false)
+    {
+        outside = false;
+        if ((omaxx < minx || viewX > maxx) && obj.wide == false)
+            outside = true;
+        if ((omaxy < miny || viewY > maxy) && obj.tall == false)
+            outside = true;
+        
+        // Maybe clipping rect is entirely inside this object?
+        if (outside == true)
+        {
+            // If the clipping rect is not contained entirely inside
+            // the object we can safely skip it
+            if ((px <= minx && omaxx >= maxx &&
+                py <= miny && omaxy >= maxy) == false)
+            {
+                if (minx < omaxx || maxx > px) return true;
+                if (miny < omaxy || maxy > py) return true;
+                viewportDirty = true;
+            }
+        } else {
+            viewportDirty = true;
+        }
+    }
     
     return true;
 }
@@ -909,6 +952,13 @@ function triangleTest(rect, vertex0, vertex1, vertex2)
     
     This particular optimization best suits my purposes and was contributed
     to the discussion by Bertrand Larrieu from http://lab9.fr/
+    
+    Lab9's implementations lacked the ability to deal with triangles who had
+    vertical faces, and I have modified it.  As well, I have added my own final,
+    two part test to determine whether or not the rect is completely contained
+    within the triangle.  Lab9 did offer this in a separate package, but the
+    speed gain is negligible.  My implentation uses UV coordinates, inspired by
+    http://www.blackpawn.com/texts/pointinpoly/default.html
     */
     
     var l = rect.x;
@@ -992,10 +1042,17 @@ function triangleTest(rect, vertex0, vertex1, vertex2)
     
     // It may be the case that the clipping rect is entirely within a triangle
     // Make a bounding box around the triangle
-    var tbb_l = Math.min(x0,x1,x2);
-    var tbb_t = Math.min(y0,y1,y2);
-    var tbb_r = Math.max(x0,x1,x2);
-    var tbb_b = Math.max(y0,y1,y2);
+    var tbb_l = x0 < x1 ? x0 : x1;
+    if (tbb_l > x2) tbb_l = x2;
+    
+    var tbb_t = y0 < y1 ? y0 : y1;
+    if (tbb_t > y2) tbb_t = y2;
+    
+    var tbb_r = x0 > x1 ? x0 : x1;
+    if (tbb_r < x2) tbb_r = x2;
+    
+    var tbb_b = y0 > y1 ? y0 : y1;
+    if (tbb_b < y2) tbb_b = y2;
     
     // is the rectangle inside the bounding box?
     if (tbb_l <= l && tbb_r >= r && tbb_t <= t && tbb_b >= b)

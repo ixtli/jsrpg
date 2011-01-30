@@ -197,7 +197,11 @@ function setSelection(object, keepInViewport)
         }
     }
     
-    // TODO: Move map if delta == true
+    // Move map if delta == true
+    if (delta == true)
+        if (viewX < bufferX || viewX + viewWidth > bufferX + bufferWidth ||
+            viewY < bufferY || viewY + viewHeight > bufferY + bufferHeight )
+                moveBuffer(viewX - (viewWidth >> 1), viewY - (viewHeight >> 1));
     
     // redraw selected tile
     map.updateBuffer(true, focussed.px, focussed.py, focussed.w, focussed.h);
@@ -234,10 +238,9 @@ function clearExtendedSelection()
     {
         obj = extendedSelection[i];
         obj.secondary_selection = false;
-        map.updateBuffer(false, obj.px, obj.py, obj.w, obj.h);
+        map.updateBuffer(true, obj.px, obj.py, obj.w, obj.h);
     }
     
-    // TODO: redrawMap(true, true);
     extendedSelection = [];
 }
 
@@ -247,7 +250,8 @@ function insertAboveExtendedSelection()
         return;
     
     var newSelection = [];
-    var tmp;
+    var tmp = null;
+    var obj = null;
     
     for (var i = 0; i < extendedSelection.length; i++)
     {
@@ -255,15 +259,15 @@ function insertAboveExtendedSelection()
             extendedSelection[i].tile);
         if (tmp != null)
         {
+            obj = extendedSelection[i];
             newSelection.splice(newSelection.length, 0, tmp);
             tmp.secondary_selection = true;
-            extendedSelection[i].secondary_selection = false;
-            redrawObject(tmp);
-            redrawObject(extendedSelection[i]);
+            obj.secondary_selection = false;
+            map.updateBuffer(true, tmp.px, tmp.py, tmp.w, tmp.h);
+            map.updateBuffer(true, obj.px, obj.py, obj.w, obj.h);
         }
     }
     
-    // TODO: Refresh map
     clearExtendedSelection();
     extendedSelection = newSelection;
 }
