@@ -753,8 +753,6 @@ function DSAUpdateBuffer(clear, minx, miny, width, height)
         viewportDirty = true;
     }
     
-    this.drawPlaneBounds();
-    
     return true;
 }
 
