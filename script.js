@@ -278,10 +278,12 @@ function deleteExtendedSelection()
         return false;
     
     var newSelection = [];
+    var index = 0;
+    var newObj = null;
     
     for (var i = 0; i < extendedSelection.length; i++)
     {
-        var index = map.indexOfLowestObject(extendedSelection[i].z,
+        index = map.indexOfLowestObject(extendedSelection[i].z,
             extendedSelection[i].x);
         
         if (index != null)
@@ -310,8 +312,10 @@ function deleteExtendedSelection()
         
         if (index != null)
         {
-            newSelection.splice(newSelection.length, 0, map.data[index]);
-            map.data[index].secondary_selection = true;
+            newObj = map.data[index];
+            newSelection.splice(newSelection.length, 0, newObj);
+            newObj.secondary_selection = true;
+            map.updateBuffer(true, newObj.px, newObj.py, newObj.w, newObj.h);
         }
         
         if (extendedSelection[i] === focussed)
@@ -449,7 +453,6 @@ function keypressHandler(evt)
         if (extendedSelection.length > 0)
         {
             deleteExtendedSelection();
-            // TODO: refresh map no clear
         } else if (focussed != null) {
             deleteFocussed();
         }
@@ -464,10 +467,7 @@ function keypressHandler(evt)
         } else if (focussed != null) {
             obj = map.insertAboveObject(focussed, focussed.tile);
             if (obj)
-            {
                 setSelection(obj, true);
-                // TODO: refresh map clear
-            }
         }
         break;
         
