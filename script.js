@@ -367,6 +367,7 @@ function keypressHandler(evt)
         return;
     
     var code = evt.keyCode ? evt.keyCode : evt.which;
+    var viewportDelta = false;
     
     // Ignore when the user intially presses the shift key: we only care
     // if it's down when something else happens.  If we don't return false
@@ -379,21 +380,25 @@ function keypressHandler(evt)
         case keyMap.left:
         if (allowScrolling == false) break;
         viewX -= keyboardScrollGranulatiry;
+        viewportDelta = true;
         break;
         
         case keyMap.up:
         if (allowScrolling == false) break;
         viewY -= keyboardScrollGranulatiry;
+        viewportDelta = true;
         break;
         
         case keyMap.down:
         if (allowScrolling == false) break;
         viewY += keyboardScrollGranulatiry;
+        viewportDelta = true;
         break;
         
         case keyMap.right:
         if (allowScrolling == false) break;
         viewX += keyboardScrollGranulatiry;
+        viewportDelta = true;
         break;
         
         case key_up:
@@ -483,6 +488,16 @@ function keypressHandler(evt)
         log("Unhandled keycode: " + code);
         return true;
         break;
+    }
+    
+    if (viewportDelta == true)
+    {
+        // Check map bounds
+        if (viewX < bufferX || viewX + viewWidth > bufferX + bufferWidth ||
+            viewY < bufferY || viewY + viewHeight > bufferY + bufferHeight )
+            moveBuffer(viewX - (viewWidth >> 1), viewY - (viewHeight >> 1));
+        
+        viewportDirty = true;
     }
     
     return false;
