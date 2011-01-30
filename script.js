@@ -16,7 +16,10 @@ var mouseX = 0, mouseY = 0;
 var extendedSelection = [];
 
 // Viewport Scrolling
-var viewportIsScrolling = false;
+var viewportScrollLeft = false;
+var viewportScrollUp = false;
+var horizontalScrollSpeed = 0;
+var verticalScrollSpeed = 0;
 
 // Mouse movement event handling
 var previousMouseMove = new Date();
@@ -107,13 +110,17 @@ function configureEventBindings()
 {
     // Set up mouse move event listener
     $('#game').bind('mouseenter focusin', function() {
-        $('#game').bind('mousemove', mouseMoveHandler);
         mouseInside = true;
+        $('#game').bind('mousemove', mouseMoveHandler);
+        
     });
     
     $('#game').bind('mouseleave focusout', function() {
-        $('#game').unbind('mousemove');
         mouseInside = false;
+        
+        // Fire mousemove with mouseInside = false to stop scrolling
+        $('#game').trigger('mousemove');
+        $('#game').unbind('mousemove');
     });
     
     // Set up click handlers
@@ -552,6 +559,40 @@ function mouseMoveHandler(evt)
     mouseX = evt.pageX - canvas.offsetLeft;
     mouseY = evt.pageY - canvas.offsetTop;
     
+    // Check to see if the mouse has entered the scroll border
+    if (allowScrolling == true && mouseInside == true &&
+        allowBorderScroll == true)
+    {
+        if (mouseX < scrollBorder)
+        {
+            // left
+            horizontalScrollSpeed = mouseScrollGranulatiry;
+            viewportScrollLeft = true;
+        } else if (mouseX > viewWidth - scrollBorder) {
+            // right
+            horizontalScrollSpeed = mouseScrollGranulatiry;
+            viewportScrollLeft = false;
+        } else {
+            horizontalScrollSpeed = 0;
+        }
+        
+        if (mouseY < scrollBorder)
+        {
+            // up
+            verticalScrollSpeed = mouseScrollGranulatiry;
+            viewportScrollUp = true;
+        } else if (mouseY > viewHeight - scrollBorder) {
+            // down
+            verticalScrollSpeed = mouseScrollGranulatiry;
+            viewportScrollUp = false;
+        } else {
+            verticalScrollSpeed = 0;
+        }
+    } else {
+        horizontalScrollSpeed = 0;
+        verticalScrollSpeed = 0;
+    }
+    
     var obj = map.selectObject(mouseX + viewX, mouseY + viewY);
     
     if (obj != null)
@@ -590,52 +631,44 @@ function toggleAnimation()
 
 function draw()
 {
-    // Scrolling by leaving the mouse on the side is the only interaction
-    // that involves holding a state that we care about.  If we detect that
-    // the mouse is in the scroll border save that state so that renderMap
-    // will only redraw the entire screen if it's currently scrolling.
-    if (allowScrolling == true && mouseInside == true &&
-        allowBorderScroll == true)
+    var delta = false;
+    
+    if (horizontalScrollSpeed > 0)
     {
-        if (mouseX < scrollBorder)
-        {
-            viewX -= mouseScrollGranulatiry;
-            viewportIsScrolling = true;
-        } else if (mouseX > viewWidth - scrollBorder) {
-            viewX += mouseScrollGranulatiry;
-            viewportIsScrolling = true;
-        } else {
-            viewportIsScrolling = false;
-        }
+        if (viewportScrollLeft == true)
+            viewX -= horizontalScrollSpeed;
+        else
+            viewX += horizontalScrollSpeed;
         
-        if (mouseY < scrollBorder)
-        {
-            viewY -= mouseScrollGranulatiry;
-            viewportIsScrolling = true;
-        } else if (mouseY > viewHeight - scrollBorder) {
-            viewY += mouseScrollGranulatiry;
-            viewportIsScrolling = true;
-        }
-        
-    } else {
-        viewportIsScrolling = false;
+        delta = true;
     }
     
-    if (viewportIsScrolling == true)
+    if (verticalScrollSpeed > 0)
+    {
+        if (viewportScrollUp == true)
+            viewY -= verticalScrollSpeed;
+        else
+            viewY += verticalScrollSpeed;
+        
+        delta = true;
+    }
+    
+    if (delta == true)
     {
         // Check map bounds
         if (viewX < bufferX || viewX + viewWidth > bufferX + bufferWidth ||
             viewY < bufferY || viewY + viewHeight > bufferY + bufferHeight )
             moveBuffer(viewX - (viewWidth >> 1), viewY - (viewHeight >> 1));
         
+        // We scrolled
         viewportDirty = true;
     }
+    
     // Redraw the subimage if dirty
     if (viewportDirty == true)
     {
         canvasContext.drawImage(buffer, viewX - bufferX, viewY - bufferY,
             viewWidth,viewHeight,0,0,viewWidth,viewHeight);
-        bufferDirty = false;
         viewportDirty = false;
     }
     

@@ -3,7 +3,7 @@ const tickerMessages = ["Click to add a block, shift+click to delete.",
     "Scroll with the WASD keys.", "Move the selection with the arrow keys.",
     "Hold shift and move the selection to select multiple tiles.",
     "Use the + and -, or delete and space keys to add and remove selection.",
-    "武器による攻撃や魔法の発動を行います 。"];
+    "武器による攻撃や魔法の発動を行います 。", "Now with smoother scrolling!"];
 
 // Convenience
 const key_w = 87, key_a = 65, key_s = 83, key_d = 68, key_e = 69, key_f = 70,
@@ -11,7 +11,7 @@ const key_w = 87, key_a = 65, key_s = 83, key_d = 68, key_e = 69, key_f = 70,
     key_minus = 189, key_delete = 8, key_space = 32, key_shift = 16;
 
 // Engine constants.  Things here require restart to change
-const FPS = 200;
+const FPS = 60;
 const mouseMoveDelay = (1000 / FPS);
 // This should be really small, so that the OS can regulate it
 // we just don't want to be scrolling much faster than once per frame
@@ -26,8 +26,8 @@ const tickerChangeRate = 10; // Seconds
 const fpsCounter = false;
 
 // debugging
-var tileBorderDebug = false;
-var debugMessages = true;
+const tileBorderDebug = false;
+const debugMessages = true;
 function log(msg)
 {
     if (debugMessages == true && typeof(console) != "undefined")

@@ -33,8 +33,7 @@ function tileIndexInputDidChange(event, ui)
     if (focussed != null)
     {
         focussed.tile = selectedSprite;
-        redrawObject(focussed);
-        redrawMap(true, true);
+        map.updateBuffer(true, focussed.px, focussed.py, focussed.w, focussed.h);
         tileEditorUpdate();
     }
     
