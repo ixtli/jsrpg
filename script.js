@@ -252,6 +252,10 @@ function insertAboveExtendedSelection()
     var newSelection = [];
     var tmp = null;
     var obj = null;
+    var clipRect = new Array(2);
+    
+    clipRect[0] = {x: 0, y: 0, w: 0, h: 0};
+    clipRect[1] = {x: 0, y: 0, w: 0, h: 0};
     
     for (var i = 0; i < extendedSelection.length; i++)
     {
@@ -263,6 +267,10 @@ function insertAboveExtendedSelection()
             newSelection.splice(newSelection.length, 0, tmp);
             tmp.secondary_selection = true;
             obj.secondary_selection = false;
+            
+            // Make a rect 
+            map.updateBuffer
+            
             map.updateBuffer(true, tmp.px, tmp.py, tmp.w, tmp.h);
             map.updateBuffer(true, obj.px, obj.py, obj.w, obj.h);
         }
@@ -511,7 +519,7 @@ function mouseClickHandler(ev)
         if (ev.shiftKey)
         {
             obj = map.deleteObject(focussed);
-            if (obj) focussed = null;
+            if (obj != null) focussed = null;
         } else {
             obj = map.insertAboveObject(focussed, focussed.tile);
         }

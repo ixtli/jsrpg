@@ -432,7 +432,7 @@ function DSAInsertAboveIndex(index, tile)
     this.castShadow(index);
     
     // Update buffer
-    this.updateBuffer(true, obj.px, obj.py, obj.w, obj.h);
+    this.updateBuffer(true, n.px, n.py, n.w, n.h);
     
     return n;
 }
@@ -587,7 +587,7 @@ function DSADrawZPlaneBounds()
     }
 }
 
-function DSAUpdateBuffer(clear, minx, miny, width, height, debug)
+function DSAUpdateBuffer(clear, minx, miny, width, height)
 {
     var d = this.data;
     var zsets = this.z_sets;
@@ -600,6 +600,7 @@ function DSAUpdateBuffer(clear, minx, miny, width, height, debug)
     var b = this.buffer;
     var obj = null, px = 0, py = 0, omaxx = 0, omaxy = 0;
     var outside = false;
+    var point0 = 0, point1 = 0, point2 = 0, point3 = 0;
     
     // Construct the rectangle representing our viewport
     var rect = {x:minx,y:miny,w:maxx,h:maxy};
@@ -628,20 +629,23 @@ function DSAUpdateBuffer(clear, minx, miny, width, height, debug)
     for (var z = 0; z < zsets.length; z++)
     {
         p = zgeom[z];
+        point0 = p.points[0];
+        point1 = p.points[1];
+        point2 = p.points[2];
+        point3 = p.points[3];
         
         if (p == -1) continue;
         
         // Broad phase clipping by treating the plane as a box
-        if (p.points[3].y > maxy || p.points[1].y < miny ||
-            p.points[3].x > maxx || p.points[1].x < minx)
+        if (point3.y > maxy || point1.y < miny ||
+            point3.x > maxx || point1.x < minx)
             continue;
-        
         
         // Do more detailed plane collision test by splitting the zplane
         // in to two triangles and testing whether or not they intersect
         // the viewport, represented as an AABB
-        if (triangleTest(rect, p.points[0], p.points[1], p.points[2]) == false)
-            if (triangleTest(rect,p.points[0],p.points[2], p.points[3])==false)
+        if (triangleTest(rect, point0, point1, point2) == false)
+            if (triangleTest(rect, point0, point2, point3) == false)
                 continue;
         
         
@@ -679,8 +683,9 @@ function DSAUpdateBuffer(clear, minx, miny, width, height, debug)
                     if ((px <= minx && omaxx >= maxx &&
                         py <= miny && omaxy >= maxy) == false)
                     {
-                        if (minx < omaxx || maxx > px) continue;
-                        if (miny < omaxy || maxy > py) continue;
+                        if (minx < omaxx || maxx > px ||
+                            miny < omaxy || maxy > py)
+                            continue;
                     }
                 }
             }
@@ -724,29 +729,23 @@ function DSAUpdateBuffer(clear, minx, miny, width, height, debug)
     omaxy = viewY + viewHeight;
     
     if ((minx <= viewX && maxx >= omaxx &&
-        miny <= viewY && maxy >= omaxy) == false)
+         miny <= viewY && maxy >= omaxy) == false)
     {
-        outside = false;
-        if ((omaxx < minx || viewX > maxx) && obj.wide == false)
-            outside = true;
-        if ((omaxy < miny || viewY > maxy) && obj.tall == false)
-            outside = true;
-        
         // Maybe clipping rect is entirely inside this object?
-        if (outside == true)
+        if (omaxx < minx || viewX > maxx || omaxy < miny || viewY > maxy)
         {
             // If the clipping rect is not contained entirely inside
             // the object we can safely skip it
-            if ((px <= minx && omaxx >= maxx &&
-                py <= miny && omaxy >= maxy) == false)
+            if ((viewX <= minx && omaxx >= maxx &&
+                viewY <= miny && omaxy >= maxy) == false)
             {
-                if (minx < omaxx || maxx > px) return true;
-                if (miny < omaxy || maxy > py) return true;
-                viewportDirty = true;
+                if (minx < omaxx || maxx > viewX || 
+                    miny < omaxy || maxy > viewY)
+                    return true;
             }
-        } else {
-            viewportDirty = true;
         }
+        
+        viewportDirty = true;
     }
     
     return true;
@@ -1077,7 +1076,7 @@ function triangleTest(rect, vertex0, vertex1, vertex2)
         
         if ((u >= 0) && (v >= 0) && (u + v <= 1)) return true;
         
-        // bottom left
+        // bottom left - 0
         v2x = l - x0;
         v2y = b - y0;
         
@@ -1087,7 +1086,7 @@ function triangleTest(rect, vertex0, vertex1, vertex2)
         v = (dot00 * dot12 - dot01 * dot02) * invDenom;
         if ((u >= 0) && (v >= 0) && (u + v <= 1)) return true;
         
-        // bottom right
+        // bottom right - 0
         v2x = r - x0;
         v2y = b - y0;
         
@@ -1097,7 +1096,7 @@ function triangleTest(rect, vertex0, vertex1, vertex2)
         v = (dot00 * dot12 - dot01 * dot02) * invDenom;
         if ((u >= 0) && (v >= 0) && (u + v <= 1)) return true;
         
-        // top right
+        // top right - 0
         v2x = r - x0;
         v2y = t - y0;
         
