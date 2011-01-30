@@ -658,7 +658,12 @@ function draw()
         // Check map bounds
         if (viewX < bufferX || viewX + viewWidth > bufferX + bufferWidth ||
             viewY < bufferY || viewY + viewHeight > bufferY + bufferHeight )
+        {
+            var t0 = new Date();
             moveBuffer(viewX - (viewWidth >> 1), viewY - (viewHeight >> 1));
+            var t1 = new Date();
+            log("Move buffer: " + (t1-t0) + "ms");
+        }
         
         // We scrolled
         viewportDirty = true;

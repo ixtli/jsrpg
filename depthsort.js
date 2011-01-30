@@ -338,10 +338,12 @@ function DSADeleteIndex(index)
     for (var i = deleted.z + 1; i < zsets.length; i++)
         zsets[i] -= 1;
     
+    var set_index = zsets[deleted.z];
+    
     // Were we the last object in this zset?
-    if (zsets[deleted.z] == zsets[deleted.z + 1])
+    if (set_index == zsets[deleted.z + 1])
     {
-        zsets[deleted.z] = -1;
+        z_sets[deleted.z] = -1;
         
         // Since the last set is empty, trim all empty tail sets
         do
@@ -365,22 +367,25 @@ function DSADeleteIndex(index)
             max = zsets[deleted.z+1] - 1;
         
         zgeom[deleted.z].maxx = d[max].x;
-        zgeom[deleted.z].minx = d[zsets[deleted.z]].x;
+        zgeom[deleted.z].minx = d[set_index].x;
         
         // Finding the highest yvalue requires scanning the entire zset
         if (deleted.y == zgeom[deleted.z].miny || 
             deleted.y == zgeom[deleted.z].maxy)
         {
-            for (var i = zsets[deleted.z]; i < max; i++)
+            zgeom[deleted.z].maxy = d[set_index].y;
+            zgeom[deleted.z].miny = d[set_index].y;
+            
+            for (var i = set_index + 1; i < max; i++)
             {
                 if (d[i].y > zgeom[deleted.z].maxy)
                     zgeom[deleted.z].maxy = d[i].y;
                 else if (d[i].y < zgeom[deleted.z].miny)
                     zgeom[deleted.z].miny = d[i].y;
             }
-            
-            zgeom[deleted.z].updatePixelProjection();
         }
+        
+        zgeom[deleted.z].updatePixelProjection();
     }
     
     this.updateBuffer(true, deleted.px, deleted.py, deleted.w, deleted.h);
@@ -747,6 +752,8 @@ function DSAUpdateBuffer(clear, minx, miny, width, height)
         
         viewportDirty = true;
     }
+    
+    this.drawPlaneBounds();
     
     return true;
 }
