@@ -1,3 +1,78 @@
+function DSAXGeometryObject(start, obj)
+{
+    this.x = obj.x;
+    
+    this.minx = 0;
+    this.maxx = 0;
+    this.miny = 0;
+    this.maxy = 0;
+    
+    this.start = null;
+    
+    this.update = DSAXGOUpdate;
+    this.addObject = DSAXGOAddObject;
+    
+    this.addObject(obj);
+}
+
+function DSAXGOAddObject(obj, index)
+{
+    // Special case
+    if (this.start == null)
+    {
+        this.start = index;
+        this.minx = obj.px;
+        this.miny = obj.py;
+        this.maxx = this.minx + obj.w;
+        this.maxy = this.miny + obj.h;
+        
+        return;
+    }
+    
+    // Start index in the map array
+    if (index < this.start) this.start = index;
+    
+    // Geometry
+    if (obj.px < this.minx) this.minx = obj.px;
+    if (obj.py < this.miny) this.miny = obj.py;
+    if (obj.w + obj.px > this.maxx) this.maxx = obj.px + obj.w;
+    if (obj.h + obj.py > this.maxy) this.maxy = obj.py + obj.h;
+}
+
+function DSAXGOUpdate(map, index)
+{
+    // This is only called if something has changed that requires the entire
+    // x value to be rescanned such as deletion or a tile's metric being changed.
+    // Therefore we have to treat everything as invalidated and scan the
+    // entire x value again.
+    
+    var d = map.data;
+    var obj = d[index];
+    var z = obj.z;
+    var x = obj.x;
+    
+    // reinit
+    this.start = index;
+    this.minx = obj.px;
+    this.miny = obj.py;
+    this.maxx = this.minx + obj.w;
+    this.maxy = this.miny + obj.h;
+    
+    for (var i = index + 1; i < d.length; i++)
+    {
+        obj = d[i];
+        
+        // don't change x or z
+        if (obj.z != z || obj.x != x) break;
+        
+        // Geometry
+        if (obj.px < this.minx) this.minx = obj.px;
+        if (obj.py < this.miny) this.miny = obj.py;
+        if (obj.w + obj.px > this.maxx) this.maxx = obj.px + obj.w;
+        if (obj.h + obj.py > this.maxy) this.maxy = obj.py + obj.h;
+    }
+}
+
 function DSAZGeometryObject(z)
 {
     this.minx = null;
@@ -7,6 +82,7 @@ function DSAZGeometryObject(z)
     this.z = z;
     
     this.points = new Array(4);
+    this.xrects = [];
     
     for (var i = 0; i < 4; i++)
         this.points[i] = {x:0, y:0};
@@ -358,34 +434,60 @@ function DSADeleteIndex(index)
         // Keep track of maxz value
         this.maxz = zsets.length - 1;
     } else {
+        // reconcile xrects
+        var zg = zgeom[deleted.z];
+        var rects = zg.xrects;
+        
+        // find the xrect associated with the deleted tile
+        var xrect = null, rect_index = 0;
+        for (; rect_index < rects.length; rect_index++)
+        {
+            xrect = rects[rect_index];
+            if (xrect.x == deleted.x) break;
+        }
+        
+        // decrement the start position of the rest of the xrects
+        for (i = rect_index + 1; i < rects.length; i++)
+            rects[i].start--;
+        
+        // if we're the last one
+        if (rect_index == rects.length - 1)
+        {
+            // check to see if we're empty
+            if (d[xrect.start].x != deleted.x)
+                rects.pop();
+        } else if (xrect.start == rects[rect_index + 1].start) {
+            // delete
+            rects.splice(rect_index,0);
+        }
+        
         // Since the set isn't empty, update the geom values
         // The x values are the easy part since z-planes are sorted by x val
         var max;
         if (deleted.z == this.maxz)
-            max = d.length-1;
+            max = d.length - 1;
         else
             max = zsets[deleted.z+1] - 1;
         
-        zgeom[deleted.z].maxx = d[max].x;
-        zgeom[deleted.z].minx = d[set_index].x;
+        zg.maxx = d[max].x;
+        zg.minx = d[set_index].x;
         
         // Finding the highest yvalue requires scanning the entire zset
-        if (deleted.y == zgeom[deleted.z].miny || 
-            deleted.y == zgeom[deleted.z].maxy)
+        if (deleted.y == zg.miny || deleted.y == zg.maxy)
         {
-            zgeom[deleted.z].maxy = d[set_index].y;
-            zgeom[deleted.z].miny = d[set_index].y;
+            zg.maxy = d[set_index].y;
+            zg.miny = d[set_index].y;
             
             for (var i = set_index + 1; i < max; i++)
             {
-                if (d[i].y > zgeom[deleted.z].maxy)
-                    zgeom[deleted.z].maxy = d[i].y;
-                else if (d[i].y < zgeom[deleted.z].miny)
-                    zgeom[deleted.z].miny = d[i].y;
+                if (d[i].y > zg.maxy)
+                    zg.maxy = d[i].y;
+                else if (d[i].y < zg.miny)
+                    zg.miny = d[i].y;
             }
         }
         
-        zgeom[deleted.z].updatePixelProjection();
+        zg.updatePixelProjection();
     }
     
     this.updateBuffer(true, deleted.px, deleted.py, deleted.w, deleted.h);
@@ -432,8 +534,10 @@ function DSAInsertAboveIndex(index, tile)
     for (var i = n.z + 1; i < zsets.length ; i++)
         zsets[i] += 1;
     
-    this.updatePlaneGeometry(n);
+    // update geometry
+    this.updatePlaneGeometry(n, index);
     
+    // recast a shadow
     this.castShadow(index);
     
     // Update buffer
@@ -471,7 +575,7 @@ function DSAInsertBelowIndex(index, tile)
     for (var i = n.z + 1; i < zsets.length ; i++)
         zsets[i] += 1;
     
-    this.updatePlaneGeometry(n);
+    this.updatePlaneGeometry(n, index);
     
     // We might be the new first block in the zset
     if (index > 0)
@@ -760,7 +864,7 @@ function DSACull() {
     
 }
 
-function DSAUpdatePlaneGeometry(obj)
+function DSAUpdatePlaneGeometry(obj, index)
 {
     // Is this the biggest xval?
     var plane = this.z_geom[obj.z];
@@ -777,13 +881,49 @@ function DSAUpdatePlaneGeometry(obj)
         return;
     }
     
-    if (obj.x > plane.maxx)
+    var x = obj.x;
+    
+    if (x > plane.maxx)
     {
-        plane.maxx = obj.x;
+        plane.maxx = x;
         delta = true;
-    } else if (obj.x < plane.minx) {
-        plane.minx = obj.x;
+        plane.xrects.push(new DSAXGeometryObject(index, obj));
+    } else if (x < plane.minx) {
+        plane.minx = x;
         delta = true;
+        plane.xrects.splice(0,0,new DSAXGeometryObject(index, obj));
+    }
+    
+    if (delta == false)
+    {
+        // Test all xrects to see if this is new
+        var xr = plane.xrects, cur = null;
+        var found = false;
+        for (var i = 0; i < xr.length; i++)
+        {
+            cur = xr[i].x;
+            if (cur == x)
+            {
+                found = true;
+                cur = i;
+                break;
+            }
+            
+            if (cur.x > x)
+            {
+                cur = i;
+                break;
+            }
+        }
+        
+        if (found == false)
+        {
+            xr.splice(cur, 0, new DSAXGeometryObject(index, obj));
+        } else {
+            // gotta increase the start of every other DSAXGeom object
+            for (var i = cur; i < xr.length; i++)
+                xr[i].start++;
+        }
     }
     
     // Is this the biggest or smallest yval?
@@ -802,26 +942,30 @@ function DSAUpdatePlaneGeometry(obj)
 
 function DSAInsert(tile, x, y, z)
 {
+    var d = this.data;
+    var data_length = d.length;
+    var zsets = this.z_sets;
+    var zgeom = this.z_geom;
     var object = new DSAObject(tile, x, y, z);
     object.container_array = this;
     
     // Initial case
-    if (this.data.length == 0)
+    if (data_length == 0)
     {
         this.maxz = z;
         for (var i = 0; i < z; i++)
         {
-            this.z_sets.push(-1);
-            this.z_geom.push(new DSAZGeometryObject(i));
+            zsets.push(-1);
+            zgeom.push(new DSAZGeometryObject(i));
         }
         
         // Push the index of the new set
-        this.z_sets.push(0);
-        this.z_geom.push(new DSAZGeometryObject(z));
-        this.updatePlaneGeometry(object);
+        zsets.push(0);
+        zgeom.push(new DSAZGeometryObject(z));
+        this.updatePlaneGeometry(object, 0);
         
         // Push the actual object
-        this.data.splice(0, 0, object);
+        d.splice(0, 0, object);
         return;
     }
     
@@ -832,17 +976,17 @@ function DSAInsert(tile, x, y, z)
         // Make blank zsets until we get to the new one
         for (var i = this.maxz; i < z - 1; i++)
         {
-            this.z_sets.push(-1);
-            this.z_geom.push(new DSAZGeometryObject(i));
+            zsets.push(-1);
+            zgeom.push(new DSAZGeometryObject(i));
         }
         
         // Push object
-        this.data.splice(this.data.length, 0, object);
+        d.splice(data_length, 0, object);
         
         // Push the index of the new set
-        this.z_sets.push(this.data.length - 1);
-        this.z_geom.push(new DSAZGeometryObject(z));
-        this.updatePlaneGeometry(object);
+        zsets.push(data_length);
+        zgeom.push(new DSAZGeometryObject(z));
+        this.updatePlaneGeometry(object, data_length);
         
         // Update maxz value
         this.maxz = z;
@@ -855,35 +999,35 @@ function DSAInsert(tile, x, y, z)
     var index = 0;
     
     // Does this z value exist in this.data?  If it does, sort by x
-    if (this.z_sets[object.z] > -1)
+    if (zsets[object.z] > -1)
     {
-        index = this.z_sets[object.z];
+        index = zsets[object.z];
         var xstart = index;
-        for (; index < this.data.length; index++)
+        for (; index < data_length; index++)
         {
             // stay in this zset
-            if (this.data[index].z != object.z)
+            if (d[index].z != object.z)
                 break;
             
-            if (this.data[index].x > object.x)
+            if (d[index].x > object.x)
                 break;
             
-            if (this.data[xstart].x != this.data[index].x)
+            if (d[xstart].x != d[index].x)
                 xstart = index;
         }
         
         // Does this x value exist in this zset yet?  If so, sort by y
-        if (this.data[xstart].x == object.x)
+        if (d[xstart].x == object.x)
         {
             index = xstart;
-            for (; index < this.data.length; index++)
+            for (; index < data_length; index++)
             {
                 // stay in this zset and xset
-                if (this.data[index].z != object.z ||
-                    this.data[index].x != object.x)
+                if (d[index].z != object.z ||
+                    d[index].x != object.x)
                     break;
                 
-                if (this.data[index].y > object.y)
+                if (d[index].y > object.y)
                     break;
             }
         }
@@ -895,15 +1039,15 @@ function DSAInsert(tile, x, y, z)
             
             if (index != 0)
             {
-                if (this.data[index - 1].x == x &&
-                    this.data[index - 1].y == y &&
-                    this.data[index - 1].z == z)
+                if (d[index - 1].x == x &&
+                    d[index - 1].y == y &&
+                    d[index - 1].z == z)
                     dup = true;
             }
-            if (index != this.data.length)
-                if (this.data[index].x == x &&
-                    this.data[index].y == y &&
-                    this.data[index].z == z)
+            if (index != data_length)
+                if (d[index].x == x &&
+                    d[index].y == y &&
+                    d[index].z == z)
                     dup = true;
             
             if (dup == true)
@@ -924,25 +1068,25 @@ function DSAInsert(tile, x, y, z)
         if (z == this.maxz)
         {
             // We're the first to insert into the biggest zset
-            index = this.data.length;
+            index = data_length;
         } else {
             // We want to insert before the beginning of the next-biggest zset
-            index = this.z_sets[z+1];
+            index = zsets[z+1];
         }
         
         // This is a new zval, so note its index in the z_sets[]
-        this.z_sets[z] = index;
+        zsets[z] = index;
     }
     
     // zset has increased in length, so increase all following zset indicies
-    for (var i = z + 1; i < this.z_sets.length; i++)
-        this.z_sets[i] += 1;
+    for (var i = z + 1; i < zsets.length; i++)
+        zsets[i] += 1;
     
     // Keep z-geometry up to date
-    this.updatePlaneGeometry(object);
+    this.updatePlaneGeometry(object, index);
     
     // Insert into data array
-    this.data.splice(index, 0, object);
+    d.splice(index, 0, object);
     
     return index;
 }
