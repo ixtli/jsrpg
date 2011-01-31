@@ -345,6 +345,13 @@ function deleteExtendedSelection()
     return true;
 }
 
+function focussedWasDeleted()
+{
+    // TODO: update editor
+    focussed = null;
+    return true;
+}
+
 function deleteFocussed()
 {
     // This method causes the selection to "fall" to the next lowest object
