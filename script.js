@@ -6,7 +6,6 @@ var previousFrameTime = 0;
 
 // Map
 var map = null;
-var viewableMap = null;
 var viewX = 0, viewY = 0;
 
 // Sprite selection
@@ -120,6 +119,11 @@ function configureEventBindings()
         
         // Fire mousemove with mouseInside = false to stop scrolling
         $('#game').trigger('mousemove');
+        
+        // This doesn't happen sometimes, and it's annoying.
+        horizontalScrollSpeed = 0;
+        verticalScrollSpeed = 0;
+        
         $('#game').unbind('mousemove');
     });
     
@@ -206,12 +210,19 @@ function setSelection(object, keepInViewport)
     
     // Move map if delta == true
     if (delta == true)
+    {
         if (viewX < bufferX || viewX + viewWidth > bufferX + bufferWidth ||
             viewY < bufferY || viewY + viewHeight > bufferY + bufferHeight )
                 moveBuffer(viewX - (viewWidth >> 1), viewY - (viewHeight >> 1));
-    
-    // redraw selected tile
-    map.updateBuffer(true, focussed.px, focussed.py, focussed.w, focussed.h);
+        
+        // redraw tile but do NOT update viewport
+        map.updateBuffer(false, focussed.px, focussed.py, focussed.w, focussed.h);
+        
+        viewportDirty = true;
+    } else {
+        // redraw only selected tile and update viewport
+        map.updateBuffer(true, focussed.px, focussed.py, focussed.w, focussed.h);
+    }
     
     // Update the tile editor
     tileEditorUpdate();
@@ -530,7 +541,7 @@ function mouseClickHandler(ev)
     var obj = null;
     if (clickToSelect == true )
     {
-        obj = viewableMap.selectObject(mouseX, mouseY);
+        obj = map.selectObject(mouseX + viewX, mouseY + viewY);;
         if (obj == null) return true;
         
         if (ev.shiftKey)
@@ -600,12 +611,19 @@ function mouseMoveHandler(evt)
         verticalScrollSpeed = 0;
     }
     
-    var obj = map.selectObject(mouseX + viewX, mouseY + viewY);
-    
-    if (obj != null)
+    // N.B.: The following is for performance.  I have found that with the
+    // current redraw implementation, selecting an object WHILE scrolling
+    // starts to put too much stress on the browser.  So for now, its off.
+    if (horizontalScrollSpeed == 0 && verticalScrollSpeed == 0 &&
+        clickToSelect == false)
     {
-        setSelection(obj);
-        tileEditorUpdate();
+        var obj = map.selectObject(mouseX + viewX, mouseY + viewY);
+        
+        if (obj != null)
+        {
+            setSelection(obj);
+            tileEditorUpdate();
+        }
     }
     
     previousMouseMove = new Date();
@@ -666,10 +684,7 @@ function draw()
         if (viewX < bufferX || viewX + viewWidth > bufferX + bufferWidth ||
             viewY < bufferY || viewY + viewHeight > bufferY + bufferHeight )
         {
-            var t0 = new Date();
             moveBuffer(viewX - (viewWidth >> 1), viewY - (viewHeight >> 1));
-            var t1 = new Date();
-            log("Move buffer: " + (t1-t0) + "ms");
         }
         
         // We scrolled

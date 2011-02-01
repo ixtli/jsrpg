@@ -677,7 +677,8 @@ function DSADrawZPlaneBounds()
     var zsets = this.z_sets;
     var zgeom = this.z_geom;
     
-    var p = null;
+    var p = null, r = null;
+    var t = null;
     for (var z = 0; z < zsets.length; z++)
     {
         p = zgeom[z];
@@ -696,7 +697,7 @@ function DSADrawZPlaneBounds()
     }
 }
 
-function DSAUpdateBuffer(clear, minx, miny, width, height)
+function DSAUpdateBuffer(update, minx, miny, width, height)
 {
     var d = this.data;
     var zsets = this.z_sets;
@@ -731,7 +732,7 @@ function DSAUpdateBuffer(clear, minx, miny, width, height)
     // Clip the area of relevant changes
     b.clip();
     
-    if (clear) b.clearRect(minx - buffx, miny - buffy, width, height);
+    b.clearRect(minx - buffx, miny - buffy, width, height);
     
     // Do clipping
     var p = null;
@@ -830,7 +831,10 @@ function DSAUpdateBuffer(clear, minx, miny, width, height)
             }
         }
     }
+    
     b.restore();
+    
+    if (update == false) return;
     
     // Only redraw viewport if this draw's clipping area is intersecting,
     // inside, or completely enclosing the viewport.
@@ -850,11 +854,28 @@ function DSAUpdateBuffer(clear, minx, miny, width, height)
             {
                 if (minx < omaxx || maxx > viewX || 
                     miny < omaxy || maxy > viewY)
+                {
                     return true;
+                }
             }
         }
         
-        viewportDirty = true;
+        // In the following we make a big assumption: the viewport is always
+        // COMPLETELY inside the buffer.  If this is not true, something
+        // might go wrong.
+        
+        var tx = minx > viewX ? minx : viewX;
+        var ty = miny > viewY ? miny : viewY;
+        var tw = tx+width;
+        if (tw > omaxx) tw = omaxx;
+        tw -= tx;
+        var th = ty+height;
+        if (th > omaxy) th = omaxy;
+        th -= ty;
+        
+        canvasContext.drawImage(buffer,
+            tx - bufferX, ty - bufferY, tw, th,
+            tx - viewX, ty - viewY, tw, th);
     }
     
     return true;
