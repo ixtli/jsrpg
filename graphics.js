@@ -90,6 +90,8 @@ function moveBuffer(x, y)
     if (x == bufferX && y == bufferY)
         return false;
     
+    var t0 = new Date();
+    
     var xmagnitude = 0, ymagnitude = 0;
     var xpositive, ypositive;
     var xfrom = 0;
@@ -134,7 +136,7 @@ function moveBuffer(x, y)
     }
     
     // Check to make sure that we've not moved entirely out of bounds of buffer
-    if (xmagnitude > bufferWidth || ymagnitude > bufferHeight)
+    if (xmagnitude >= bufferWidth || ymagnitude >= bufferHeight)
     {
         map.updateBuffer(true, bufferX, bufferY, bufferWidth, bufferHeight);
         return true;
@@ -152,9 +154,11 @@ function moveBuffer(x, y)
     if (xmagnitude > 0)
     {
         if (xpositive == true)
-            map.updateBuffer(true,bufferX+w, bufferY, xmagnitude, bufferHeight);
+            map.updateBuffer(false,bufferX+w, bufferY, xmagnitude, bufferHeight);
         else
-            map.updateBuffer(true, bufferX, bufferY, xmagnitude, bufferHeight);
+            map.updateBuffer(false, bufferX, bufferY, xmagnitude, bufferHeight);
+        
+        //log("redraw: " + xmagnitude +"*"+bufferHeight);
     }
     
     if (ymagnitude > 0)
@@ -164,10 +168,15 @@ function moveBuffer(x, y)
             px += xmagnitude;
         
         if (ypositive == true)
-            map.updateBuffer(true, px, bufferY + h, w, ymagnitude);
+            map.updateBuffer(false, px, bufferY + h, w, ymagnitude);
         else
-            map.updateBuffer(true, px, bufferY, w, ymagnitude);
+            map.updateBuffer(false, px, bufferY, w, ymagnitude);
+        
+        //log("redraw: " + w +"*"+ymagnitude);
     }
+    
+    var t1 = new Date();
+    //log("Move buffer: " + (t1-t0) + "ms");
     
     return true;
 }

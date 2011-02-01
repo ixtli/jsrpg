@@ -687,7 +687,6 @@ function draw()
             moveBuffer(viewX - (viewWidth >> 1), viewY - (viewHeight >> 1));
         }
         
-        // We scrolled
         viewportDirty = true;
     }
     

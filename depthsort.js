@@ -705,20 +705,19 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
     var pr = 0;
     var maxx = minx + width;
     var maxy = miny + height;
-    var buffx = bufferX;
-    var buffy = bufferY;
     var b = this.buffer;
     var obj = null, px = 0, py = 0, omaxx = 0, omaxy = 0;
-    var outside = false;
     var point0 = 0, point1 = 0, point2 = 0, point3 = 0;
+    var prev_context = 0;
+    var min = 0, max = 0;
+    
+    // Ensure that the update hits the buffer
+    if (maxx < bufferX || maxy < bufferY ||
+        minx > bufferX + bufferWidth || miny > bufferY + bufferHeight)
+        return;
     
     // Construct the rectangle representing our viewport
     var rect = {x:minx,y:miny,w:maxx,h:maxy};
-    
-    // Ensure that the update hits the buffer
-    if (maxx < buffx || maxy < buffy ||
-        minx > buffx + bufferWidth || miny > buffy + bufferHeight)
-        return false;
     
     // Push context
     b.save();
@@ -727,15 +726,19 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
     b.beginPath();
     
     // Make clipping rect
-    b.rect(minx - buffx, miny - buffy, width, height);
+    b.rect(minx - bufferX, miny - bufferY, width, height);
+    
+    // close path, even though there's no documentation on if this is necessary
+    b.closePath();
     
     // Clip the area of relevant changes
     b.clip();
     
-    b.clearRect(minx - buffx, miny - buffy, width, height);
+    b.clearRect(minx - bufferX, miny - bufferY, width, height);
     
     // Do clipping
     var p = null;
+    var rects = null;
     for (var z = 0; z < zsets.length; z++)
     {
         p = zgeom[z];
@@ -758,13 +761,14 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
             if (triangleTest(rect, point0, point2, point3) == false)
                 continue;
         
-        
         // TODO: restrict the min value even further by determining
         // the earliest place an x value could start.  This can be done without
         // worrying about the height of the zplane
         
-        var min = zsets[z];
-        var max = (z == zsets.length - 1) ? d.length : zsets[z+1];
+        //for (var j = 0; )
+        
+        min = zsets[z];
+        max = (z == zsets.length - 1) ? d.length : zsets[z+1];
         for (var i = min; i < max; i++)
         {
             obj = d[i];
@@ -779,14 +783,9 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
             if ((minx <= px && maxx >= omaxx &&
                 miny <= py && maxy >= omaxy) == false)
             {
-                outside = false;
-                if ((omaxx < minx || px > maxx) && obj.wide == false)
-                    outside = true;
-                if ((omaxy < miny || py > maxy) && obj.tall == false)
-                    outside = true;
-                
                 // Maybe clipping rect is entirely inside this object?
-                if (outside == true)
+                if (((omaxx < minx || px > maxx) && obj.wide == false) ||
+                    ((omaxy < miny || py > maxy) && obj.tall == false))
                 {
                     // If the clipping rect is not contained entirely inside
                     // the object we can safely skip it
@@ -801,8 +800,8 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
             }
             
             // Adjust location to draw by the top/left of the buffer
-            px -= buffx;
-            py -= buffy;
+            px -= bufferX;
+            py -= bufferY;
             
             // Draw
             if (obj.selected == true)
@@ -815,19 +814,19 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
             // Secondary selection handling
             if (obj.secondary_selection == true)
             {
-                var s = b.globalAlpha;
+                prev_context = b.globalAlpha;
                 b.globalAlpha = secondarySelectionAlpha;
                 b.drawImage(sprites[secondarySelectionSprite].img, px, py);
-                b.globalAlpha = s;
+                b.globalAlpha = prev_context;
             }
             
             // Draw shadow
             if (obj.shadow != 0)
             {
-                var s = b.globalAlpha;
+                prev_context = b.globalAlpha;
                 b.globalAlpha = obj.shadow;
                 b.drawImage(sprites[shadowMaskTile].img, px, py);
-                b.globalAlpha = s;
+                b.globalAlpha = prev_context;
             }
         }
     }
@@ -855,7 +854,7 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
                 if (minx < omaxx || maxx > viewX || 
                     miny < omaxy || maxy > viewY)
                 {
-                    return true;
+                    return;
                 }
             }
         }
@@ -873,12 +872,17 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
         if (th > omaxy) th = omaxy;
         th -= ty;
         
-        canvasContext.drawImage(buffer,
-            tx - bufferX, ty - bufferY, tw, th,
+        var sx = tx - bufferX;
+        if (sx < 0) sx = 0;
+        
+        var sy = ty - bufferY;
+        if (sy < 0) sy = 0;
+        
+        canvasContext.drawImage(buffer, sx, sy, tw, th,
             tx - viewX, ty - viewY, tw, th);
     }
     
-    return true;
+    return;
 }
 
 function DSACull() {
