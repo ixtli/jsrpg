@@ -751,8 +751,7 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
     
     // Do clipping
     var p = null;
-    var rects = null, temp_rect = null;
-    var tmp_index = 0, draw = 0;
+    var rects = null, min_rect = null, max_rect = null;
     for (var z = 0; z < zgeom.length; z++)
     {
         p = zgeom[z];
@@ -778,58 +777,104 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
         
         rects = p.xrects;
         
-        if (point0.x > minx)
-            min = 0;
-        else
-            min = Math.floor((point0.x - minx) / tileWidth);
+        min = 0;
+        if (point0.x < minx)
+            min = Math.floor((minx - point0.x) / tileWidth);
         
-        if (point1.x < maxx)
-            max = rects.length - 1;
-        else
-            max = rects.length - Math.ceil((point1.x - maxx) /tileWidth);
+        min_rect = rects[min];
         
-        
-        
-        for (var i = min; i <= max; i++)
+        if (min_rect != null)
         {
-            temp_rect = rects[i];
-            
-            if (temp_rect == null) continue;
-            if (temp_rect.maxy < miny || temp_rect.miny > maxy) continue;
-            
-            tmp_index = temp_rect.start;
-            
-            for (var j = tmp_index; j < tmp_index + temp_rect.count; j++)
+            if (min_rect.minx + tileGraphicWidth <= minx)
             {
-                obj = d[j];
-                px = obj.px - bufferX;
-                py = obj.py - bufferY;
-                
-                // Draw
-                if (obj.selected == true)
+                min++;
+                min_rect = rects[min];
+            }
+        }
+        
+        if (min_rect == null) 
+        {
+            for (var i = min; i < rects.length; i++)
+            {
+                if (rects[i] != null)
                 {
-                    b.drawImage(sprites[1].img, px, py);
-                } else {
-                    b.drawImage(obj.tile.img, px, py);
+                    min = i;
+                    min_rect = rects[min];
+                    break;
                 }
-                
-                // Secondary selection handling
-                if (obj.secondary_selection == true)
+            }
+            if (min == rects.length) continue;
+        }
+        
+        max = rects.length;
+        if (point1.x > maxx)
+            max -= Math.floor((point1.x - maxx) / tileWidth);
+        
+        max_rect = rects[max - 1];
+        
+        if (max_rect != null)
+        {
+            if (max_rect.minx >= maxx)
+            {
+                max--;
+                max_rect = rects[max-1];
+            }
+        }
+        
+        if (max_rect == null)
+        {
+            for (var i = max; i > min; i--)
+            {
+                if (rects[i-1] != null)
                 {
-                    prev_context = b.globalAlpha;
-                    b.globalAlpha = secondarySelectionAlpha;
-                    b.drawImage(sprites[secondarySelectionSprite].img, px, py);
-                    b.globalAlpha = prev_context;
+                    max = i;
+                    max_rect = rects[max - 1];
+                    break;
                 }
-                
-                // Draw shadow
-                if (obj.shadow != 0)
-                {
-                    prev_context = b.globalAlpha;
-                    b.globalAlpha = obj.shadow;
-                    b.drawImage(sprites[shadowMaskTile].img, px, py);
-                    b.globalAlpha = prev_context;
-                }
+            }
+        }
+        
+        if (max == min) continue;
+        
+        min = min_rect.start;
+        max = max_rect.start + max_rect.count - 1;
+        
+        for (var i = min; i < max; i++)
+        {
+            obj = d[i];
+            px = obj.px;
+            py = obj.py;
+            omaxy = py + tileGraphicHeight;
+            
+            if (omaxy <= miny || py >= maxy) continue;
+            
+            px -= bufferX;
+            py -= bufferY;
+            
+            // Draw
+            if (obj.selected == true)
+            {
+                b.drawImage(sprites[1].img, px, py);
+            } else {
+                b.drawImage(obj.tile.img, px, py);
+            }
+            
+            // Secondary selection handling
+            if (obj.secondary_selection == true)
+            {
+                prev_context = b.globalAlpha;
+                b.globalAlpha = secondarySelectionAlpha;
+                b.drawImage(sprites[secondarySelectionSprite].img, px, py);
+                b.globalAlpha = prev_context;
+            }
+            
+            // Draw shadow
+            if (obj.shadow != 0)
+            {
+                prev_context = b.globalAlpha;
+                b.globalAlpha = obj.shadow;
+                b.drawImage(sprites[shadowMaskTile].img, px, py);
+                b.globalAlpha = prev_context;
             }
         }
     }
@@ -843,47 +888,23 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
     omaxx = viewX + viewWidth;
     omaxy = viewY + viewHeight;
     
-    if ((minx <= viewX && maxx >= omaxx &&
-         miny <= viewY && maxy >= omaxy) == false)
-    {
-        // Maybe clipping rect is entirely inside this object?
-        if (omaxx < minx || viewX > maxx || omaxy < miny || viewY > maxy)
-        {
-            // If the clipping rect is not contained entirely inside
-            // the object we can safely skip it
-            if ((viewX <= minx && omaxx >= maxx &&
-                viewY <= miny && omaxy >= maxy) == false)
-            {
-                if (minx < omaxx || maxx > viewX || 
-                    miny < omaxy || maxy > viewY)
-                {
-                    return;
-                }
-            }
-        }
-        
-        // In the following we make a big assumption: the viewport is always
-        // COMPLETELY inside the buffer.  If this is not true, something
-        // might go wrong.
-        
-        var tx = minx > viewX ? minx : viewX;
-        var ty = miny > viewY ? miny : viewY;
-        var tw = tx+width;
-        if (tw > omaxx) tw = omaxx;
-        tw -= tx;
-        var th = ty+height;
-        if (th > omaxy) th = omaxy;
-        th -= ty;
-        
-        var sx = tx - bufferX;
-        if (sx < 0) sx = 0;
-        
-        var sy = ty - bufferY;
-        if (sy < 0) sy = 0;
-        
-        canvasContext.drawImage(buffer, sx, sy, tw, th,
-            tx - viewX, ty - viewY, tw, th);
-    }
+    var tx = minx > viewX ? minx : viewX;
+    var ty = miny > viewY ? miny : viewY;
+    var tw = tx+width;
+    if (tw > omaxx) tw = omaxx;
+    tw -= tx;
+    var th = ty+height;
+    if (th > omaxy) th = omaxy;
+    th -= ty;
+    
+    var sx = tx - bufferX;
+    if (sx < 0) sx = 0;
+    
+    var sy = ty - bufferY;
+    if (sy < 0) sy = 0;
+    
+    canvasContext.drawImage(buffer, sx, sy, tw, th,
+        tx - viewX, ty - viewY, tw, th);
     
     return;
 }

@@ -50,7 +50,7 @@ function init()
     canvasContext.globalCompositeOperation = "copy";
     
     // set this for the fps counter
-    // canvasContext.font = "bold 14px sans-serif";
+    canvasContext.font = "bold 14px sans-serif";
     
     // Create a buffer to draw to and initialize it
     buffer = $('<canvas>')[0];
@@ -640,10 +640,7 @@ function draw()
         {
             bufferX = viewX - (viewWidth >> 1);
             bufferY = viewY - (viewHeight >> 1);
-            var t0 = new Date();
             map.updateBuffer(false, bufferX, bufferY, bufferWidth, bufferHeight);
-            var t1 = new Date();
-            //log((t1-t0));
         }
         
         viewportDirty = true;
