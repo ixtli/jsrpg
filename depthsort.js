@@ -249,8 +249,12 @@ function DSASnap(x,y,z,stairs)
         // climb
         while (mid <= max)
         {
+            if (d[mid + 1] == null)
+                return d[mid];
+                
             if (d[mid + 1].y > d[mid].y + 1)
                 return d[mid];
+            
             mid++
         }
         
@@ -747,7 +751,8 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
     
     // Do clipping
     var p = null;
-    var rects = null;
+    var rects = null, temp_rect = null;
+    var tmp_index = 0, draw = 0;
     for (var z = 0; z < zgeom.length; z++)
     {
         p = zgeom[z];
@@ -771,73 +776,60 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
             if (triangleTest(rect, point0, point2, point3) == false)
                 continue;
         
-        // TODO: restrict the min value even further by determining
-        // the earliest place an x value could start.  This can be done without
-        // worrying about the height of the zplane
-        
         rects = p.xrects;
         
-        min = rects[0].start;
-        max = rects[rects.length - 1].start + rects[rects.length - 1].count;
+        if (point0.x > minx)
+            min = 0;
+        else
+            min = Math.floor((point0.x - minx) / tileWidth);
         
-        for (var i = min; i < max; i++)
+        if (point1.x < maxx)
+            max = rects.length - 1;
+        else
+            max = rects.length - Math.ceil((point1.x - maxx) /tileWidth);
+        
+        
+        
+        for (var i = min; i <= max; i++)
         {
-            obj = d[i];
-            px = obj.px;
-            py = obj.py;
-            omaxx = px + obj.w;
-            omaxy = py + obj.h;
+            temp_rect = rects[i];
             
-            // Narrow phase collision detection: Treat the object as an AABB
-            // and draw it if it intersects the clipping area OR is contained
-            // entirely within it.
-            if ((minx <= px && maxx >= omaxx &&
-                miny <= py && maxy >= omaxy) == false)
+            if (temp_rect == null) continue;
+            if (temp_rect.maxy < miny || temp_rect.miny > maxy) continue;
+            
+            tmp_index = temp_rect.start;
+            
+            for (var j = tmp_index; j < tmp_index + temp_rect.count; j++)
             {
-                // Maybe clipping rect is entirely inside this object?
-                if (((omaxx < minx || px > maxx) && obj.wide == false) ||
-                    ((omaxy < miny || py > maxy) && obj.tall == false))
+                obj = d[j];
+                px = obj.px - bufferX;
+                py = obj.py - bufferY;
+                
+                // Draw
+                if (obj.selected == true)
                 {
-                    // If the clipping rect is not contained entirely inside
-                    // the object we can safely skip it
-                    if ((px <= minx && omaxx >= maxx &&
-                        py <= miny && omaxy >= maxy) == false)
-                    {
-                        if (minx < omaxx || maxx > px ||
-                            miny < omaxy || maxy > py)
-                            continue;
-                    }
+                    b.drawImage(sprites[1].img, px, py);
+                } else {
+                    b.drawImage(obj.tile.img, px, py);
                 }
-            }
-            
-            // Adjust location to draw by the top/left of the buffer
-            px -= bufferX;
-            py -= bufferY;
-            
-            // Draw
-            if (obj.selected == true)
-            {
-                b.drawImage(sprites[1].img, px, py);
-            } else {
-                b.drawImage(obj.tile.img, px, py);
-            }
-            
-            // Secondary selection handling
-            if (obj.secondary_selection == true)
-            {
-                prev_context = b.globalAlpha;
-                b.globalAlpha = secondarySelectionAlpha;
-                b.drawImage(sprites[secondarySelectionSprite].img, px, py);
-                b.globalAlpha = prev_context;
-            }
-            
-            // Draw shadow
-            if (obj.shadow != 0)
-            {
-                prev_context = b.globalAlpha;
-                b.globalAlpha = obj.shadow;
-                b.drawImage(sprites[shadowMaskTile].img, px, py);
-                b.globalAlpha = prev_context;
+                
+                // Secondary selection handling
+                if (obj.secondary_selection == true)
+                {
+                    prev_context = b.globalAlpha;
+                    b.globalAlpha = secondarySelectionAlpha;
+                    b.drawImage(sprites[secondarySelectionSprite].img, px, py);
+                    b.globalAlpha = prev_context;
+                }
+                
+                // Draw shadow
+                if (obj.shadow != 0)
+                {
+                    prev_context = b.globalAlpha;
+                    b.globalAlpha = obj.shadow;
+                    b.drawImage(sprites[shadowMaskTile].img, px, py);
+                    b.globalAlpha = prev_context;
+                }
             }
         }
     }

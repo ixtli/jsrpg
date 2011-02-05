@@ -42,12 +42,12 @@ function generateTestMap()
 {
     for (var y = 0; y < 1; y++)
     {
-        for (var z = 0; z < 10; z++)
+        for (var z = 0; z < 100; z++)
         {
-            for (var x = 0; x < 10; x++)
+            for (var x = 0; x < 100; x++)
             {
-                //var ind = Math.floor(Math.random() * 3);
-                var ind = 0;
+                var ind = Math.floor(Math.random() * 3);
+                //var ind = 0;
                 map.insert(sprites[ind], x, y, z);
             }
         }

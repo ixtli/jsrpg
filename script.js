@@ -638,7 +638,12 @@ function draw()
         if (viewX < bufferX || viewX + viewWidth > bufferX + bufferWidth ||
             viewY < bufferY || viewY + viewHeight > bufferY + bufferHeight )
         {
-            moveBuffer(viewX - (viewWidth >> 1), viewY - (viewHeight >> 1));
+            bufferX = viewX - (viewWidth >> 1);
+            bufferY = viewY - (viewHeight >> 1);
+            var t0 = new Date();
+            map.updateBuffer(false, bufferX, bufferY, bufferWidth, bufferHeight);
+            var t1 = new Date();
+            //log((t1-t0));
         }
         
         viewportDirty = true;

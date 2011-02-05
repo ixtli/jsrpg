@@ -138,6 +138,8 @@ function moveBuffer(x, y)
     if (xmagnitude >= bufferWidth || ymagnitude >= bufferHeight)
     {
         map.updateBuffer(true, bufferX, bufferY, bufferWidth, bufferHeight);
+        var t1 = new Date();
+        //log("Reinit buffer: " + (t1-t0) + "ms");
         return true;
     }
     
