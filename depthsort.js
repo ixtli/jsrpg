@@ -1103,13 +1103,12 @@ function DSAInsert(tile, x, y, z)
     var index = 0;
     var rects = zplane.xrects;
     var rect = rects[object.x - zplane.minx];
-    
     // Are there no tiles at this z,x value?
     if (rect == null)
     {
         if (object.x >= zplane.maxx)
         {
-            rect = rects[rects.length-1];
+            rect = rects[rects.length - 1];
             index = rect.start + rect.count;
         } else {
             for (var i = object.x - zplane.minx + 1; i < rects.length; i++)
@@ -1141,7 +1140,7 @@ function DSAInsert(tile, x, y, z)
     }
     
     // Alert on duplicates
-    if (this.duplicateDetection == true)
+    if (this.duplicateDetection == true && index < data_length)
     {
         var dup = d[index];
         if (dup.x == x && dup.y == y && dup.z == z)
