@@ -715,14 +715,11 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
 {
     var d = this.data;
     var zgeom = this.z_geom;
-    var pr = 0;
     var maxx = minx + width;
     var maxy = miny + height;
     var b = this.buffer;
     var obj = null, px = 0, py = 0, omaxx = 0, omaxy = 0;
     var point0 = 0, point1 = 0, point2 = 0, point3 = 0;
-    var prev_context = 0;
-    var min = 0, max = 0;
     
     // Ensure that the update hits the buffer
     if (maxx < bufferX || maxy < bufferY ||
@@ -837,7 +834,7 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
         if (max == min) continue;
         
         min = min_rect.start;
-        max = max_rect.start + max_rect.count - 1;
+        max = max_rect.start + max_rect.count;
         
         for (var i = min; i < max; i++)
         {
@@ -888,23 +885,47 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
     omaxx = viewX + viewWidth;
     omaxy = viewY + viewHeight;
     
-    var tx = minx > viewX ? minx : viewX;
-    var ty = miny > viewY ? miny : viewY;
-    var tw = tx+width;
-    if (tw > omaxx) tw = omaxx;
-    tw -= tx;
-    var th = ty+height;
-    if (th > omaxy) th = omaxy;
-    th -= ty;
-    
-    var sx = tx - bufferX;
-    if (sx < 0) sx = 0;
-    
-    var sy = ty - bufferY;
-    if (sy < 0) sy = 0;
-    
-    canvasContext.drawImage(buffer, sx, sy, tw, th,
-        tx - viewX, ty - viewY, tw, th);
+    if ((minx <= viewX && maxx >= omaxx &&
+         miny <= viewY && maxy >= omaxy) == false)
+    {
+        // Maybe clipping rect is entirely inside this object?
+        if (omaxx < minx || viewX > maxx || omaxy < miny || viewY > maxy)
+        {
+            // If the clipping rect is not contained entirely inside
+            // the object we can safely skip it
+            if ((viewX <= minx && omaxx >= maxx &&
+                viewY <= miny && omaxy >= maxy) == false)
+            {
+                if (minx < omaxx || maxx > viewX || 
+                    miny < omaxy || maxy > viewY)
+                {
+                    return;
+                }
+            }
+        }
+        
+        // In the following we make a big assumption: the viewport is always
+        // COMPLETELY inside the buffer.  If this is not true, something
+        // might go wrong.
+        
+        var tx = minx > viewX ? minx : viewX;
+        var ty = miny > viewY ? miny : viewY;
+        var tw = tx+width;
+        if (tw > omaxx) tw = omaxx;
+        tw -= tx;
+        var th = ty+height;
+        if (th > omaxy) th = omaxy;
+        th -= ty;
+        
+        var sx = tx - bufferX;
+        if (sx < 0) sx = 0;
+        
+        var sy = ty - bufferY;
+        if (sy < 0) sy = 0;
+        
+        canvasContext.drawImage(buffer, sx, sy, tw, th,
+            tx - viewX, ty - viewY, tw, th);
+    }
     
     return;
 }
