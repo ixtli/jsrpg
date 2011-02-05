@@ -355,7 +355,7 @@ function DSADeleteObject(obj)
 
 function DSADeleteIndex(index)
 {
-    if (index < 1) return null;
+    if (index < 0) return null;
     
     var d = this.data;
     var zgeom = this.z_geom;
@@ -460,9 +460,6 @@ function DSADeleteIndex(index)
             }
         } else {
             // update the geometry
-            if (index == rect.start)
-                rect.start++;
-            
             rect.update(this, rect.start);
         }
         
@@ -1104,57 +1101,50 @@ function DSAInsert(tile, x, y, z)
     // Insert it into the map array where it needs to go.
     // lowest z value first, lowest x, then lowest y
     var index = 0;
+    var rects = zplane.xrects;
+    var rect = rects[object.x - zplane.minx];
     
-    index = zplane.xrects[0].start;
-    var xstart = index;
-    for (; index < data_length; index++)
+    // Are there no tiles at this z,x value?
+    if (rect == null)
     {
-        // stay in this z value
-        if (d[index].z != object.z)
-            break;
+        if (object.x >= zplane.maxx)
+        {
+            rect = rects[rects.length-1];
+            index = rect.start + rect.count;
+        } else {
+            for (var i = object.x - zplane.minx + 1; i < rects.length; i++)
+            {
+                if (rects[i] != null)
+                {
+                    index = rects[i].start;
+                    break;
+                }
+            }
+        }
         
-        if (d[index].x > object.x)
-            break;
+        // Keep z-geometry up to date
+        this.updatePlaneGeometry(object, index);
         
-        if (d[xstart].x != d[index].x)
-            xstart = index;
+        // Insert into data array
+        d.splice(index, 0, object);
+        
+        return index;
     }
     
-    // Does this x value exist in this zval yet?  If so, sort by y
-    if (d[xstart].x == object.x)
+    // There are tiles, so sort by height
+    index = rect.start;
+    var max = rect.start + rect.count;
+    for (; index < max; index++)
     {
-        index = xstart;
-        for (; index < data_length; index++)
-        {
-            // stay in this z and x plane
-            if (d[index].z != object.z ||
-                d[index].x != object.x)
-                break;
-            
-            if (d[index].y > object.y)
-                break;
-        }
+        if (d[index].y > object.y)
+            break;
     }
     
     // Alert on duplicates
     if (this.duplicateDetection == true)
     {
-        var dup = false;
-        
-        if (index != 0)
-        {
-            if (d[index - 1].x == x &&
-                d[index - 1].y == y &&
-                d[index - 1].z == z)
-                dup = true;
-        }
-        if (index != data_length)
-            if (d[index].x == x &&
-                d[index].y == y &&
-                d[index].z == z)
-                dup = true;
-        
-        if (dup == true)
+        var dup = d[index];
+        if (dup.x == x && dup.y == y && dup.z == z)
         {
             var msg = "Warning: Duplicate insertion of ("+x+","+y+","+z+")";
             if (this.allowDuplicates == false)
