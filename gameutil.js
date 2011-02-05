@@ -1,77 +1,21 @@
 function objectCloser(obj)
 {
-    var a = obj.container_array;
-    
-    if (obj.z + 1 > a.maxz)
-        return null;
-    
-    // Find the object at z-1
-    var index = a.indexOfLowestObject(obj.z + 1, obj.x);
-    
-    if (index != null)
-    {
-        index = a.correctHeight(index, obj.y);
-        index = a.data[index];
-    }
-    
-    return index;
+    return map.snap(obj.x, obj.y, obj.z + 1, true);
 }
 
 function objectFurther(obj)
 {
-    var a = obj.container_array;
-    
-    if (obj.z - 1 < 0)
-        return null;
-    
-    // Find the object at z-1
-    var index = a.indexOfLowestObject(obj.z - 1, obj.x);
-    
-    if (index != null)
-    {
-        index = a.correctHeight(index, obj.y);
-        index = a.data[index];
-    }
-    
-    return index;
+    return map.snap(obj.x, obj.y, obj.z - 1, true);
 }
 
 function objectRight(obj)
 {
-    var a = obj.container_array;
-    
-    if (obj.x + 1 > a.maxx)
-        return null;
-    
-    // Find the object at z-1
-    var index = a.indexOfLowestObject(obj.z, obj.x + 1);
-    
-    if (index != null)
-    {
-        index = a.correctHeight(index, obj.y);
-        index = a.data[index];
-    }
-    
-    return index;
+    return map.snap(obj.x + 1, obj.y, obj.z, true);
 }
 
 function objectLeft(obj)
 {
-    var a = obj.container_array;
-    
-    if (obj.x - 1 < 0)
-        return null;
-    
-    // Find the object at z-1
-    var index = a.indexOfLowestObject(obj.z, obj.x - 1);
-    
-    if (index != null)
-    {
-        index = a.correctHeight(index, obj.y);
-        index = a.data[index];
-    }
-    
-    return index;
+    return map.snap(obj.x - 1, obj.y, obj.z, true);
 }
 
 function moveObjectRight(obj)
@@ -98,12 +42,12 @@ function generateTestMap()
 {
     for (var y = 0; y < 1; y++)
     {
-        for (var z = 0; z < 100; z++)
+        for (var z = 0; z < 10; z++)
         {
-            for (var x = 0; x < 100; x++)
+            for (var x = 0; x < 10; x++)
             {
-                var ind = Math.floor(Math.random() * 3);
-                //var ind = 0;
+                //var ind = Math.floor(Math.random() * 3);
+                var ind = 0;
                 map.insert(sprites[ind], x, y, z);
             }
         }

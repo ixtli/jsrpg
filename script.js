@@ -173,6 +173,9 @@ function ericBHandler()
 
 function setSelection(object, keepInViewport)
 {
+    if (object == null)
+        return false;
+    
     if (focussed === object)
         return false;
     
@@ -261,6 +264,7 @@ function clearExtendedSelection()
         map.updateBuffer(true, obj.px, obj.py, obj.w, obj.h);
     }
     
+    delete extendedSelection;
     extendedSelection = [];
 }
 
@@ -269,14 +273,10 @@ function insertAboveExtendedSelection()
     if (extendedSelection.length == 0)
         return;
     
-    var newSelection = [];
+    var newSelection = new Array(extendedSelection.length);
+    
     var tmp = null;
     var obj = null;
-    var clipRect = new Array(2);
-    
-    clipRect[0] = {x: 0, y: 0, w: 0, h: 0};
-    clipRect[1] = {x: 0, y: 0, w: 0, h: 0};
-    
     for (var i = 0; i < extendedSelection.length; i++)
     {
         tmp = map.insertAboveObject(extendedSelection[i],
@@ -284,19 +284,16 @@ function insertAboveExtendedSelection()
         if (tmp != null)
         {
             obj = extendedSelection[i];
-            newSelection.splice(newSelection.length, 0, tmp);
+            newSelection[i] = tmp;
             tmp.secondary_selection = true;
             obj.secondary_selection = false;
-            
-            // Make a rect 
-            map.updateBuffer
             
             map.updateBuffer(true, tmp.px, tmp.py, tmp.w, tmp.h);
             map.updateBuffer(true, obj.px, obj.py, obj.w, obj.h);
         }
     }
     
-    clearExtendedSelection();
+    delete extendedSelection;
     extendedSelection = newSelection;
 }
 
@@ -305,51 +302,27 @@ function deleteExtendedSelection()
     if (extendedSelection.length == 0)
         return false;
     
-    var newSelection = [];
-    var index = 0;
-    var newObj = null;
-    
     for (var i = 0; i < extendedSelection.length; i++)
     {
-        index = map.indexOfLowestObject(extendedSelection[i].z,
-            extendedSelection[i].x);
+        if (extendedSelection[i] === focussed)
+            deleteFocussed();
+        else
+            map.deleteObject(extendedSelection[i]);
+    }
+    
+    var newSelection = [];
+    var newObj = null;
+    for (var i = 0; i < extendedSelection.length; i++)
+    {
+        newObj = map.snap(extendedSelection[i].x, extendedSelection[i].y,
+            extendedSelection[i].z, false);
         
-        if (index != null)
+        if (newObj != null)
         {
-            if (map.data[index] != extendedSelection[i])
-            {
-                while(index++ < map.data.length)
-                {
-                    if (map.data[index].x != extendedSelection[i].x ||
-                        map.data[index].z != extendedSelection[i].z)
-                    {
-                        index--;
-                        break;
-                    }
-                    
-                    if (map.data[index].y >= extendedSelection[i].y)
-                    {
-                        index--;
-                        break;
-                    }
-                }
-            } else {
-                index = null;
-            }
-        }
-        
-        if (index != null)
-        {
-            newObj = map.data[index];
-            newSelection.splice(newSelection.length, 0, newObj);
+            newSelection.push(newObj);
             newObj.secondary_selection = true;
             map.updateBuffer(true, newObj.px, newObj.py, newObj.w, newObj.h);
         }
-        
-        if (extendedSelection[i] === focussed)
-            focussedWasDeleted();
-        
-        map.deleteObject(extendedSelection[i]);
     }
     
     delete extendedSelection;
@@ -358,33 +331,12 @@ function deleteExtendedSelection()
     return true;
 }
 
-function focussedWasDeleted()
-{
-    // TODO: update editor
-    focussed = null;
-    return true;
-}
-
 function deleteFocussed()
 {
-    // This method causes the selection to "fall" to the next lowest object
-    var height = focussed.y;
-    
-    // Find the lowest y values at (z,x)
-    var lowest = map.indexOfLowestObject(focussed.z, focussed.x);
     map.deleteObject(focussed);
-    map.updateBuffer(true, focussed.px, focussed.py, focussed.w, focussed.h);
-    var index = map.correctHeight(lowest, focussed.y);
-    
-    // TODO: the following call to setSelection could redraw the
-    // map twice if delta is set in keypressHandler.  Deal with this.
-    if (index != null)
-    {
-        setSelection(map.data[index], true);
-    } else {
-        focussed = null;
-        tileEditorUpdate();
-    }
+    var obj = map.snap(focussed.x, focussed.y, focussed.z, true);
+    if (obj != null) setSelection(obj, true);
+    tileEditorUpdate();
 }
 
 function keypressHandler(evt)
