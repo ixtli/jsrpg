@@ -39,6 +39,7 @@ function init()
     viewWidth = canvas.width;
     viewHeight = canvas.height;
     
+    // TODO: put this somewhere else
     // Adjust ticker height based on type size setting
     $('#msg')[0].height = msgTypeSize + (msgBorder << 1);
     
@@ -49,7 +50,7 @@ function init()
     canvasContext.globalCompositeOperation = "copy";
     
     // set this for the fps counter
-    canvasContext.font = "bold 14px sans-serif";
+    // canvasContext.font = "bold 14px sans-serif";
     
     // Create a buffer to draw to and initialize it
     buffer = $('<canvas>')[0];
@@ -86,7 +87,8 @@ function init()
     bufferY = viewY;
     
     //Initialize the buffer
-    map.updateBuffer(true, bufferX, bufferY, bufferWidth, bufferHeight);
+    map.updateBuffer(false, bufferX, bufferY, bufferWidth, bufferHeight);
+    viewportDirty = true;
     
     var msg = "Terrain DSA insertion time: "+ (t1-t0) +"ms"
     msg += " (" + map.data.length + " tiles)";
@@ -695,6 +697,7 @@ function draw()
     {
         canvasContext.drawImage(buffer, viewX - bufferX, viewY - bufferY,
             viewWidth,viewHeight,0,0,viewWidth,viewHeight);
+        
         viewportDirty = false;
     }
     
