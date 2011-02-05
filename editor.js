@@ -53,8 +53,8 @@ function tileEditorUpdate()
 {
     var height = tileEditorCanvas.height;
     var width = tileEditorCanvas.width;
-    var midx = (width >> 1) - tileHeight;
-    var midy = (height >> 1) - tileHeight;
+    var midx = (width >> 1) - (tileGraphicWidth >> 1);
+    var midy = (height >> 1) - (tileGraphicHeight >> 1);
     
     tileEditorCtx.clearRect(0,0,width, height);
     
