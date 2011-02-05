@@ -102,13 +102,13 @@ function DSAZGOProject()
     i++;
     
     r = pixelProjection(this.maxx, this.miny, this.z);
-    this.points[i].x = r.px + tileWidth;
+    this.points[i].x = r.px + tileGraphicWidth;
     this.points[i].y = r.py + tileGraphicHeight + (tileGraphicWidth >> 1);
     
     i++;
     
     r = pixelProjection(this.maxx, this.maxy, this.z);
-    this.points[i].x = r.px + tileWidth;
+    this.points[i].x = r.px + tileGraphicWidth;
     this.points[i].y = r.py;
     
     i++;
@@ -841,8 +841,6 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
             }
         }
     }
-    
-    
     
     b.restore();
     
