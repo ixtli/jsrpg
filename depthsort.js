@@ -54,7 +54,6 @@ function DSAXGOUpdate(map, index)
     this.start = index;
     this.minx = obj.px;
     this.miny = obj.py;
-    this.maxx = this.minx + obj.w;
     this.maxy = this.miny + obj.h;
     
     for (var i = index + 1; i < d.length; i++)
@@ -67,7 +66,6 @@ function DSAXGOUpdate(map, index)
         // Geometry
         if (obj.px < this.minx) this.minx = obj.px;
         if (obj.py < this.miny) this.miny = obj.py;
-        if (obj.w + obj.px > this.maxx) this.maxx = obj.px + obj.w;
         if (obj.h + obj.py > this.maxy) this.maxy = obj.py + obj.h;
     }
 }
@@ -974,6 +972,10 @@ function DSAUpdatePlaneGeometry(obj, index)
         // Add description for the new one
         xr.splice(0,0,new DSAXGeometryObject(index, obj));
         
+        // gotta increase the start of every other DSAXGeom object
+        for (var i = 1; i < xr.length; i++)
+            if (xr[i] != null) xr[i].start++;
+        
         plane.minx = x;
     } else {
         // It's in the middle
@@ -1050,15 +1052,14 @@ function DSAInsert(tile, x, y, z)
         
         // Update maxz value
         this.maxz = z;
-        
         return;
     } else if (z < this.minz) {
         // blank zgeoms
         for (var i = z + 1; i < this.minz; i++)
             zgeom.splice(0,0,null);
         
-        // Push object
-        d.splice(data_length, 0, object);
+        // Add object to FRONT
+        d.splice(0, 0, object);
         
         // update geometry
         zgeom.splice(0,0,new DSAZGeometryObject(z));
@@ -1084,7 +1085,8 @@ function DSAInsert(tile, x, y, z)
         
         if (index == null)
         {
-            log("Something broke.");
+            // Can probably remove this check:  it never occurs.
+            log("ZPlane consistency error.");
             return;
         }
         
@@ -1100,32 +1102,33 @@ function DSAInsert(tile, x, y, z)
     
     // Insert it into the map array where it needs to go.
     // lowest z value first, lowest x, then lowest y
-    var index = 0;
+    var index = -1;
     var rects = zplane.xrects;
-    var rect = rects[object.x - zplane.minx];
+    var rect = rects[x - zplane.minx];
     // Are there no tiles at this z,x value?
     if (rect == null)
     {
-        if (object.x >= zplane.maxx)
+        if (x >= zplane.maxx)
         {
             rect = rects[rects.length - 1];
             index = rect.start + rect.count;
         } else {
-            for (var i = object.x - zplane.minx + 1; i < rects.length; i++)
+            for (var i = x - zplane.minx + 1; i < rects.length; i++)
             {
-                if (rects[i] != null)
+                rect = rects[i];
+                if (rect != null)
                 {
-                    index = rects[i].start;
+                    index = rect.start;
                     break;
                 }
             }
         }
         
-        // Keep z-geometry up to date
-        this.updatePlaneGeometry(object, index);
-        
         // Insert into data array
         d.splice(index, 0, object);
+        
+        // Keep z-geometry up to date
+        this.updatePlaneGeometry(object, index);
         
         return index;
     }
@@ -1133,16 +1136,15 @@ function DSAInsert(tile, x, y, z)
     // There are tiles, so sort by height
     index = rect.start;
     var max = rect.start + rect.count;
+    
     for (; index < max; index++)
-    {
         if (d[index].y > object.y)
             break;
-    }
     
     // Alert on duplicates
-    if (this.duplicateDetection == true && index < data_length)
+    if (this.duplicateDetection == true && index > 0)
     {
-        var dup = d[index];
+        var dup = d[index - 1];
         if (dup.x == x && dup.y == y && dup.z == z)
         {
             var msg = "Warning: Duplicate insertion of ("+x+","+y+","+z+")";
@@ -1156,11 +1158,11 @@ function DSAInsert(tile, x, y, z)
         }
     }
     
-    // Keep z-geometry up to date
-    this.updatePlaneGeometry(object, index);
-    
     // Insert into data array
     d.splice(index, 0, object);
+    
+    // Keep z-geometry up to date
+    this.updatePlaneGeometry(object, index);
     
     return index;
 }
