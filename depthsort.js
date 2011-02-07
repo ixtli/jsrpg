@@ -493,8 +493,6 @@ function DSADeleteIndex(index)
         zg.updatePixelProjection();
     }
     
-    this.updateBuffer(true, deleted.px, deleted.py, deleted.w, deleted.h);
-    
     return deleted;
 }
 
@@ -578,9 +576,6 @@ function DSAInsertBelowIndex(index, tile)
     }
     
     this.castShadow(index - 1);
-    
-    // Update buffer
-    this.updateBuffer(true, n.px, n.py, n.w, n.h);
     
     return n;
 }
