@@ -537,9 +537,6 @@ function DSAInsertAboveIndex(index, tile)
     // recast a shadow
     this.castShadow(index);
     
-    // Update buffer
-    this.updateBuffer(true, n.px, n.py, n.w, n.h);
-    
     return n;
 }
 
@@ -880,47 +877,30 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
     omaxx = viewX + viewWidth;
     omaxy = viewY + viewHeight;
     
-    if ((minx <= viewX && maxx >= omaxx &&
-         miny <= viewY && maxy >= omaxy) == false)
-    {
-        // Maybe clipping rect is entirely inside this object?
-        if (omaxx < minx || viewX > maxx || omaxy < miny || viewY > maxy)
-        {
-            // If the clipping rect is not contained entirely inside
-            // the object we can safely skip it
-            if ((viewX <= minx && omaxx >= maxx &&
-                viewY <= miny && omaxy >= maxy) == false)
-            {
-                if (minx < omaxx || maxx > viewX || 
-                    miny < omaxy || maxy > viewY)
-                {
-                    return;
-                }
-            }
-        }
-        
-        // In the following we make a big assumption: the viewport is always
-        // COMPLETELY inside the buffer.  If this is not true, something
-        // might go wrong.
-        
-        var tx = minx > viewX ? minx : viewX;
-        var ty = miny > viewY ? miny : viewY;
-        var tw = tx+width;
-        if (tw > omaxx) tw = omaxx;
-        tw -= tx;
-        var th = ty+height;
-        if (th > omaxy) th = omaxy;
-        th -= ty;
-        
-        var sx = tx - bufferX;
-        if (sx < 0) sx = 0;
-        
-        var sy = ty - bufferY;
-        if (sy < 0) sy = 0;
-        
-        canvasContext.drawImage(buffer, sx, sy, tw, th,
-            tx - viewX, ty - viewY, tw, th);
-    }
+    // In the following we make a big assumption: the viewport is always
+    // COMPLETELY inside the buffer.  If this is not true, something
+    // might go wrong.
+    
+    if (maxx <= viewX || minx >= omaxx) return;
+    if (maxy <= viewY || miny >= omaxy) return;
+    
+    var tx = minx > viewX ? minx : viewX;
+    var ty = miny > viewY ? miny : viewY;
+    var tw = tx+width;
+    if (tw > omaxx) tw = omaxx;
+    tw -= tx;
+    var th = ty+height;
+    if (th > omaxy) th = omaxy;
+    th -= ty;
+    
+    var sx = tx - bufferX;
+    if (sx < 0) sx = 0;
+    
+    var sy = ty - bufferY;
+    if (sy < 0) sy = 0;
+    
+    canvasContext.drawImage(buffer, sx, sy, tw, th,
+        tx - viewX, ty - viewY, tw, th);
     
     return;
 }
