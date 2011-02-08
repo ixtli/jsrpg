@@ -186,6 +186,7 @@ function DepthSortedArray()
     this.findIndexForObjectAt = DSAFindIndexForObjectAt;
     this.findIndexForObject = DSAFindIndexForObject;
     this.snap = DSASnap;
+    this.fall = DSAFall;
     this.updatePlaneGeometry = DSAUpdatePlaneGeometry;
     this.drawPlaneBounds = DSADrawZPlaneBounds;
     
@@ -198,6 +199,51 @@ function DepthSortedArray()
     
     // Always return true from constructors
     return true;
+}
+
+function DSAFall(x,y,z)
+{
+    // Fall from height Y at (x,z) and return the first object found.
+    // Return null if nothing
+    
+    if (z > this.maxz || z < this.minz)
+        return null;
+    
+    var d = this.data;
+    var plane = this.z_geom[z - this.minz];
+    if (plane == null)
+        return null;
+    
+    var xrect = plane.xrects[x - plane.minx];
+    if (xrect == null)
+        return null;
+    
+    // Try to find the Y value we're looking for via binary search
+    var min = xrect.start;
+    var max = min + xrect.count - 1;
+    var mid = 0;
+    var cury = 0;
+    do {
+        mid = min + ((max - min) >> 1);
+        if (y > d[mid].y )
+            min = mid + 1;
+        else
+            max = mid - 1;
+        cury = d[mid].y;
+    } while (cury != y && min <= max);
+    
+    // Is the y value present?
+    if (d[mid].y == y) return d[mid];
+    
+    // If it's not, go down by reseting min and max
+    min = xrect.start;
+    max = min + xrect.count - 1;
+    
+    // TODO: This could choose a start location in a smarter way
+    for (var i = max; i >= min; i--)
+        if (d[i].y < y) return d[i];
+    
+    return null;
 }
 
 function DSASnap(x,y,z,stairs)
@@ -271,6 +317,9 @@ function DSAFindIndexForObject(obj)
 {
     // This method returns the the index of the object passed.
     // Returns null of not present.
+    
+    if (obj == null)
+        return;
     
     // out of zbounds?
     if (obj.z > this.maxz || obj.z < this.minz)
