@@ -749,18 +749,21 @@ function DSADrawZPlaneBounds()
 
 function DSAUpdateBuffer(update, minx, miny, width, height)
 {
-    var d = this.data;
-    var zgeom = this.z_geom;
     var maxx = minx + width;
     var maxy = miny + height;
-    var b = this.buffer;
-    var obj = null, px = 0, py = 0, omaxx = 0, omaxy = 0;
-    var point0 = 0, point1 = 0, point2 = 0, point3 = 0;
     
     // Ensure that the update hits the buffer
     if (maxx < bufferX || maxy < bufferY ||
         minx > bufferX + bufferWidth || miny > bufferY + bufferHeight)
         return;
+    
+    var d = this.data;
+    var zgeom = this.z_geom;
+    var b = this.buffer;
+    var px = 0, py = 0, omaxx = 0, omaxy = 0, p1x = 0, p3x = 0;
+    var point0 = null, point1 = null, point2 = null, point3 = null;
+    var p = null, obj = null;
+    var rects = null, min_rect = null, max_rect = null;
     
     // Construct the rectangle representing our viewport
     var rect = {x:minx,y:miny,w:maxx,h:maxy};
@@ -782,9 +785,6 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
     
     b.clearRect(minx - bufferX, miny - bufferY, width, height);
     
-    // Do clipping
-    var p = null;
-    var rects = null, min_rect = null, max_rect = null;
     for (var z = 0; z < zgeom.length; z++)
     {
         p = zgeom[z];
@@ -796,9 +796,12 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
         point2 = p.points[2];
         point3 = p.points[3];
         
+        p1x = point1.x; // minx of zplane
+        p3x = point3.x; // maxx of zplane 
+        
         // Broad phase clipping by treating the plane as a box
         if (point3.y > maxy || point1.y < miny ||
-            point3.x > maxx || point1.x < minx)
+            p3x > maxx || p1x < minx)
             continue;
         
         // Do more detailed plane collision test by splitting the zplane
@@ -809,10 +812,9 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
                 continue;
         
         rects = p.xrects;
-        
         min = 0;
-        if (point0.x < minx)
-            min = Math.floor((minx - point0.x) / tileWidth);
+        if (p3x < minx)
+            min = Math.floor((minx - p3x) / tileWidth);
         
         min_rect = rects[min];
         
@@ -840,8 +842,8 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
         }
         
         max = rects.length;
-        if (point1.x > maxx)
-            max -= Math.floor((point1.x - maxx) / tileWidth);
+        if (p1x > maxx)
+            max -= Math.floor((p1x - maxx) / tileWidth);
         
         max_rect = rects[max - 1];
         
@@ -945,8 +947,6 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
     
     canvasContext.drawImage(buffer, sx, sy, tw, th,
         tx - viewX, ty - viewY, tw, th);
-    
-    return;
 }
 
 function DSACull() {
