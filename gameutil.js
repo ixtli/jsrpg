@@ -40,14 +40,18 @@ function moveObjectCloser(obj)
 
 function generateTestMap()
 {
-    for (var y = 0; y < 1; y++)
+    var ind = 0;
+    var zg = null, rect = null;
+    for (var z = 0; z < 100; z++)
     {
-        for (var z = 0; z < 100; z++)
+        for (var x = 0; x < 100; x++)
         {
-            for (var x = 0; x < 100; x++)
+            for (var y = 0; y < 1; y++)
             {
-                var ind = Math.floor(Math.random() * 3);
-                //var ind = 0;
+                //if (Math.floor(Math.random() * 3) == 0) continue;
+                
+                //ind = Math.floor(Math.random() * 3);
+                ind = 0;
                 map.insert(sprites[ind], x, y, z);
             }
         }
