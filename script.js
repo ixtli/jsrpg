@@ -250,7 +250,7 @@ function addToExtendedSelection(obj)
     // since this could be called many times in a loop
     map.updateBuffer(false, obj.px, obj.py, obj.w, obj.h);
     
-    // Return it's index
+    // Return its index
     return extendedSelection.length - 1;
 }
 
@@ -273,7 +273,7 @@ function insertAboveExtendedSelection()
     if (extendedSelection.length == 0)
         return;
     
-    var newSelection = new Array(extendedSelection.length);
+    var newSelection = [];
     
     var tmp = null;
     var obj = null;
@@ -333,10 +333,20 @@ function deleteExtendedSelection()
 
 function deleteFocussed()
 {
-    map.deleteObject(focussed);
-    var obj = map.snap(focussed.x, focussed.y, focussed.z, true);
+    if (focussed == null) return false;
+    
+    var old = map.deleteObject(focussed);
+    map.updateBuffer(true, old.px, old.py, old.w, old.h);
+    focussed = null;
+    
+    // Move selection down
+    obj = map.fall(old.x, old.y, old.z);
+    if (obj == null) obj = map.snap(old.x, old.y, old.z, false);
     if (obj != null) setSelection(obj, true);
+    
     tileEditorUpdate();
+    
+    return true;
 }
 
 function keypressHandler(evt)
@@ -463,6 +473,29 @@ function keypressHandler(evt)
         }
         break;
         
+        case key_refresh:
+        delete map;
+        map = new DepthSortedArray(0);
+        
+        // generate terrain
+        t0 = new Date();
+        generateTestMap();
+        t1 = new Date();
+        
+        map.buffer = bufferCtx;
+        
+        // Configure the buffer
+        bufferX = viewX;
+        bufferY = viewY;
+        
+        //Initialize the buffer
+        map.updateBuffer(true, bufferX, bufferY, bufferWidth, bufferHeight);
+        
+        var msg = "Terrain DSA insertion time: "+ (t1-t0) +"ms";
+        msg += " (" + map.data.length + " tiles)";
+        log(msg);
+        break;
+        
         default:
         log("Unhandled keycode: " + code);
         return true;
@@ -501,19 +534,19 @@ function mouseClickHandler(ev)
         if (ev.shiftKey)
         {
             if (obj === focussed)
+            {
                 deleteFocussed();
-            else
+            } else {
                 map.deleteObject(obj);
+                map.updateBuffer(true, obj.px, obj.py, obj.w, obj.h);
+            }
         } else {
             setSelection(obj, false);
         }
-        
     } else {
-        
         if (ev.shiftKey)
         {
-            obj = map.deleteObject(focussed);
-            if (obj != null) focussed = null;
+            deleteFocussed();
         } else {
             obj = map.insertAboveObject(focussed, focussed.tile);
         }
