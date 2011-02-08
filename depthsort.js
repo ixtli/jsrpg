@@ -963,7 +963,8 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
         tx - viewX, ty - viewY, tw, th);
 }
 
-function DSACull() {
+function DSACull()
+{
     
 }
 
@@ -1067,7 +1068,7 @@ function DSAInsert(tile, x, y, z)
     var zgeom = this.z_geom;
     var object = new DSAObject(tile, x, y, z);
     
-    // This might resize arrays or change geometry
+    // This adds to arrays
     this.optimized = false;
     
     // Initial case
