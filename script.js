@@ -677,12 +677,11 @@ function draw()
         {
             bufferX = viewX - (viewWidth >> 1);
             bufferY = viewY - (viewHeight >> 1);
-            map.updateBuffer(true, bufferX, bufferY, bufferWidth, bufferHeight);
-        } else {
-        
-            canvasContext.drawImage(buffer, viewX - bufferX, viewY - bufferY,
-                viewWidth,viewHeight,0,0,viewWidth,viewHeight);
+            map.updateBuffer(false, bufferX, bufferY, bufferWidth, bufferHeight);
         }
+        
+        canvasContext.drawImage(buffer, viewX - bufferX, viewY - bufferY,
+            viewWidth,viewHeight,0,0,viewWidth,viewHeight);
     }
     
     // Redraw the subimage if dirty

@@ -645,32 +645,29 @@ function DSAInsertBelowIndex(index, tile)
 
 function DSASelectObject(x, y)
 {
-    // return the front-most tile at absolute pixel position (x,y) on the map
-    
+    // return the front-most tile at absolute pixel position (x,y) on the max
     var d = this.data;
     var zgeom = this.z_geom;
     var outside = false;
     var min = 0, max = 0;
     var obj = null, px = 0, py = 0, omaxx = 0, omaxy = 0;
-    var poly = null;
-    var zlist = [];
+    var poly = null, p = null;
     
     // Multiple zplanes will probably overlap the point, so find all of them
-    var j = 3;
     var inside = false;
-    var pi = null, pj = null, pix = 0, piy = 0, pjx = 0, pjy = 0;
-    for (var z = 0; z <= zgeom.length; z++)
+    var pi = null, pj = null, pix = 0, piy = 0, pjx = 0, pjy = 0, j = 3;
+    for (var z = zgeom.length; z > 0 ; z--)
     {
-        p = zgeom[z];
-        
+        p = zgeom[z - 1];
         if (p == null) continue;
         
+        // is the point inside this z plane? reset state for pip test
         poly = p.points;
         
-        // is the point inside this z plane?
+        // This is the point-in-poly test done four times.  It's optimized
+        // because it gets done every mouse event, so it's not pretty.
         j = 3;
         inside = false;
-        pi = null, pj = null, pix = 0, piy = 0, pjx = 0, pjy = 0;
         for (var i = -1; ++i < 4; j = i)
         {
             pi = poly[i];
@@ -684,52 +681,53 @@ function DSASelectObject(x, y)
             }
         }
         
-        // add this plane to the list of sets to consider
-        if (inside == true) zlist.push(z);
-    }
-    
-    // Bounds checking
-    if (zlist.length == 0)
-        return null;
-    
-    // Check each selected z plane
-    var min = 0, max = 0, dx = 0, dy = 0, pixeldata = null, current = null;
-    for (var set_index = zlist.length - 1; set_index >= 0; set_index--)
-    {
-        current = zlist[set_index];
-        min = zgeom[current].xrects[0].start;
-        max = min + zgeom[current].xrects[0].count;
-        if (current == zgeom.length - 1)
+        if (inside == false) continue;
+        
+        min = ((x - poly[0].x) >> 5) - 1;
+        max = 0;
+        
+        p = p.xrects;
+        
+        // scan xrects for the LAST possible rect it could be in
+        for (var i = min + 1; i < p.length; i++)
         {
-            max = d.length;
-        } else {
-            for (var i = current + 1; i <= zgeom.length - 1; i++)
+           if (p[i] == null) continue;
+           if (p[i].minx > x) break;
+           if (p[i].minx < x) max = i;
+        }
+        
+        if (p[min] == null)
+        {
+            if (max == 0) continue;
+            
+            for (var i = min + 1; i <= max; i++)
             {
-                if (zgeom[i] != null)
+                if (p[i] != null)
                 {
-                    max = zgeom[i].xrects[0].start;
+                    min = i;
                     break;
                 }
             }
+        } else if (max == 0){
+            max = min;
         }
         
-        for (var i = max - 1; i >= min; i--)
+        min = p[min].start;
+        max = p[max].start + p[max].count - 1;
+        
+        for (var i = max; i >= min; i--)
         {
             obj = d[i];
             px = obj.px;
             py = obj.py;
-            omaxx = px + obj.w;
             omaxy = py + obj.h;
             
-            if (px < x && py < y && omaxx > x && omaxy > y)
-            {
-                dx = Math.floor(x - px);
-                dy = Math.floor(y - py);
-                pixeldata = obj.tile.img.getContext('2d').getImageData(dx,dy,1,1);
-                if (pixeldata.data[3] > alphaSelectionThreshold) {
-                    return obj;
-                }
-            }
+            if (py > y || omaxy < y) continue;
+            
+            px = Math.floor(x - px);
+            py = Math.floor(y - py);
+            pixeldata = obj.tile.img.getContext('2d').getImageData(px,py,1,1);
+            if (pixeldata.data[3] > alphaSelectionThreshold) return obj;
         }
     }
     
@@ -827,8 +825,9 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
         
         rects = p.xrects;
         min = 0;
+        // TODO: This division assumed a tile graphic width of 64
         if (p3x < minx)
-            min = Math.floor((minx - p3x) / tileWidth);
+            min = ((minx - p3x) >> 5 ) - 1;
         
         min_rect = rects[min];
         
@@ -856,8 +855,9 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
         }
         
         max = rects.length;
+        // TODO: this optimization assumes tile graphic width of 64
         if (p1x > maxx)
-            max -= Math.floor((p1x - maxx) / tileWidth);
+            max -= ((p1x - maxx) >> 5) - 1;
         
         max_rect = rects[max - 1];
         
