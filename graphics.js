@@ -38,7 +38,7 @@ function pixelProjection(x, y, z)
     px -= z * tileHeight;
     py += z * (tileHeight >> 1);
     
-    py -= y * (tileHeight >> 1);
+    py -= y * ((tileHeight >> 1) + 1);
     
     return {px: px, py: py};
 }
