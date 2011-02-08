@@ -56,8 +56,8 @@ function generateTestMap()
             }
         }
     }
-    /*
     
+    /*
     for (var i = 25; i >= 0; i--)
     {
         for (var j = 25; j >= 0; j--)

@@ -190,6 +190,10 @@ function DepthSortedArray()
     this.updatePlaneGeometry = DSAUpdatePlaneGeometry;
     this.drawPlaneBounds = DSADrawZPlaneBounds;
     
+    // optimization
+    this.optimized = false;
+    this.optimize = DSAOptimize;
+    
     // Debugging
     this.duplicateDetection = true;
     this.allowDuplicates = false;
@@ -417,6 +421,10 @@ function DSADeleteIndex(index)
     }
     
     var deleted = d.splice(index, 1)[0];
+    
+    // No longer optimized
+    this.optimized = false;
+    
     var zg_index = deleted.z - this.minz;
     var zg = zgeom[zg_index];
     var rects = zg.xrects;
@@ -578,6 +586,9 @@ function DSAInsertAboveIndex(index, tile)
     
     d.splice(index + 1, 0, n);
     
+    // No longer optimized
+    this.optimized = false;
+    
     // update geometry
     this.updatePlaneGeometry(n, index);
     
@@ -609,6 +620,9 @@ function DSAInsertBelowIndex(index, tile)
     
     var n = new DSAObject(tile, obj.x, obj.y - 1, obj.z);
     d.splice(index, 0, n);
+    
+    // No longer optimized
+    this.optimized = false;
     
     // zset has increased in length, so increase all following zset indicies
     for (var i = n.z + 1; i < zsets.length ; i++)
@@ -987,6 +1001,9 @@ function DSAUpdatePlaneGeometry(obj, index)
         // ad new description
         xr.push(new DSAXGeometryObject(index, obj));
         
+        // No longer optimized
+        this.optimized = false;
+        
         plane.maxx = x;
     } else if (x < plane.minx) {
         // Add the space between the old minx and the new minx
@@ -1000,14 +1017,21 @@ function DSAUpdatePlaneGeometry(obj, index)
         for (var i = 1; i < xr.length; i++)
             if (xr[i] != null) xr[i].start++;
         
+        // No longer optimized
+        this.optimized = false;
+        
         plane.minx = x;
     } else {
         // It's in the middle
         var cur = x - plane.minx;
         if (xr[cur] == null)
+        {
             xr[cur] = new DSAXGeometryObject(index, obj);
-        else
+            // No longer optimized
+            this.optimized = false;
+        } else {
             xr[cur].addObject(obj, index);
+        }
         
         // gotta increase the start of every other DSAXGeom object
         for (var i = cur + 1; i < xr.length; i++)
@@ -1042,6 +1066,9 @@ function DSAInsert(tile, x, y, z)
     var data_length = d.length;
     var zgeom = this.z_geom;
     var object = new DSAObject(tile, x, y, z);
+    
+    // This might resize arrays or change geometry
+    this.optimized = false;
     
     // Initial case
     if (data_length == 0)
@@ -1189,6 +1216,58 @@ function DSAInsert(tile, x, y, z)
     this.updatePlaneGeometry(object, index);
     
     return index;
+}
+
+function DSAOptimize()
+{
+    if (this.optimized == true)
+        return true;
+    
+    // This function should do any time-consuming optimizations and set
+    // the optimized flag.  For instance, big arrays can be replaced with
+    // ones that have been explicitly allocated.
+    
+    var t0 = new Date();
+    
+    // explicitly allocate space for zgeom
+    var zg = this.z_geom;
+    var temp = new Array(zg.length);
+    for (var i = 0; i < zg.length; i++)
+        temp[i] = zg[i];
+    
+    delete this.z_geom;
+    this.z_geom = temp;
+    zg = this.z_geom;
+    
+    // explicitly allocate space for xrects
+    var xr = null;
+    for (var i = 0; i < zg.length; i++)
+    {
+        if (zg[i] == null) continue;
+        
+        xr = zg[i].xrects;
+        temp = new Array(xr.length);
+        for (var j = 0; j < xr.length; j++)
+            temp[j] = xr[j];
+        
+        delete zg[i].xrects;
+        zg[i].xrects = temp;
+    }
+    
+    // explicitly allocate space for tiles
+    var d = this.data;
+    temp = new Array(d.length);
+    for (var i = 0; i < d.length; i++)
+        temp[i] = d[i];
+    
+    delete this.data;
+    this.data = temp;
+    
+    var t1 = new Date();
+    log("Map optimized: " + (t1 - t0) + "ms");
+    
+    this.optimized = true;
+    return true;
 }
 
 function triangleTest(rect, vertex0, vertex1, vertex2)

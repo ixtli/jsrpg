@@ -496,6 +496,10 @@ function keypressHandler(evt)
         log(msg);
         break;
         
+        case key_optimize:
+        map.optimize();
+        break;
+        
         default:
         log("Unhandled keycode: " + code);
         return true;

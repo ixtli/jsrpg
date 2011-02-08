@@ -9,7 +9,7 @@ const tickerMessages = ["Click to add a block, shift+click to delete.",
 const key_w = 87, key_a = 65, key_s = 83, key_d = 68, key_e = 69, key_f = 70,
     key_up = 38, key_down = 40, key_left = 37, key_right = 39, key_plus = 187,
     key_minus = 189, key_delete = 8, key_space = 32, key_shift = 16,
-    key_refresh = 82;
+    key_refresh = 82, key_optimize = 79;
 
 // Engine constants.  Things here require restart to change
 const FPS = 60;
