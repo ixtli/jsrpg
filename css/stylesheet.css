@@ -237,6 +237,7 @@ canvas {
 
 .gameview {
     width: 800px; height: 400px;
+    overflow: hidden;
 }
 
 #bg {
@@ -245,6 +246,7 @@ canvas {
 
 #display {
     z-index: 1;
+    position: relative;
 }
 
 #fg {

@@ -36,8 +36,8 @@ function init()
 {
     // Get the canvas element to display the game in.
     canvas = document.getElementById('display');
-    viewWidth = canvas.width;
-    viewHeight = canvas.height;
+    canvas.width = bufferWidth;
+    canvas.height = bufferHeight;
     
     // TODO: put this somewhere else
     // Adjust ticker height based on type size setting
@@ -47,7 +47,7 @@ function init()
     canvasContext = canvas.getContext("2d");
     // Do the following so we don't have to clearrect each time we copy
     // from the buffer
-    canvasContext.globalCompositeOperation = "copy";
+    // canvasContext.globalCompositeOperation = "copy";
     
     // set this for the fps counter
     canvasContext.font = "bold 14px sans-serif";
@@ -89,7 +89,7 @@ function init()
     //Initialize the buffer
     map.optimize();
     map.markBufferCollision();
-    map.updateBuffer(false, bufferX, bufferY, bufferWidth, bufferHeight);
+    map.updateBuffer(false, bufferX, bufferY, bufferWidth, bufferHeight, true);
     viewportDirty = true;
     
     var msg = "Terrain DSA insertion time: "+ (t1-t0) +"ms"
@@ -676,10 +676,11 @@ function draw()
             bufferY = viewY - (viewHeight >> 1);
             map.markBufferCollision(direction);
             map.updateBuffer(false, bufferX, bufferY, bufferWidth, bufferHeight, true);
+            canvasContext.drawImage(buffer,0,0);
         }
         
-        canvasContext.drawImage(buffer, viewX - bufferX, viewY - bufferY,
-            viewWidth,viewHeight,0,0,viewWidth,viewHeight);
+        canvas.style.top = (viewY - bufferY) * -1;
+        canvas.style.left = (viewX - bufferX) * -1;
         
         viewportDirty = false;
     }

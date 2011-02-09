@@ -48,7 +48,7 @@ function generateTestMap()
         {
             for (var y = 0; y < 1; y++)
             {
-                if (Math.floor(Math.random() * 3) == 0) continue;
+                //if (Math.floor(Math.random() * 3) == 0) continue;
                 
                 //ind = Math.floor(Math.random() * 3);
                 //ind = 0;
