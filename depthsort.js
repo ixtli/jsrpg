@@ -826,8 +826,7 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
         rects = p.xrects;
         min = 0;
         // TODO: This division assumed a tile graphic width of 64
-        if (p3x < minx)
-            min = ((minx - p3x) >> 5 ) - 1;
+        if (p3x < minx) min = ((minx - p3x) >> 5 ) - 1;
         
         min_rect = rects[min];
         
@@ -851,39 +850,31 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
                     break;
                 }
             }
+            
             if (min == rects.length) continue;
         }
         
-        max = rects.length;
         // TODO: this optimization assumes tile graphic width of 64
-        if (p1x > maxx)
-            max -= ((p1x - maxx) >> 5) - 1;
+        max = rects.length - 1;
+        if (p1x > maxx) max -= ((p1x - maxx) >> 5 ) - 1;
         
-        max_rect = rects[max - 1];
-        
-        if (max_rect != null)
-        {
-            if (max_rect.minx >= maxx)
-            {
-                max--;
-                max_rect = rects[max-1];
-            }
-        }
+        max_rect = rects[max];
         
         if (max_rect == null)
         {
-            for (var i = max; i > min; i--)
+            for (var i = max - 1; i >= min; i--)
             {
-                if (rects[i-1] != null)
+                max_rect = rects[i];
+                if (max_rect != null)
                 {
                     max = i;
-                    max_rect = rects[max - 1];
                     break;
                 }
             }
+            
+            if (max_rect == null)
+                max_rect = rects[min];
         }
-        
-        if (max == min) continue;
         
         min = min_rect.start;
         max = max_rect.start + max_rect.count;
