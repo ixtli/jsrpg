@@ -237,26 +237,24 @@ canvas {
 
 .gameview {
     width: 800px; height: 400px;
+    position: relative;
     overflow: hidden;
+    z-index:6;
 }
 
 #bg {
-    top: 0px; left: 0px;
     z-index: -4;
 }
 
 #display {
-    top: 0px; left: 0px;
     z-index: -3;
 }
 
 #fg {
-    top: 0px; left: 0px;
-    z-index: -1;
+    z-index: 0;
 }
 
 #msg {
-    top: 0px; left: 0px;
     letter-spacing:-20px;
     z-index: -2;
 }

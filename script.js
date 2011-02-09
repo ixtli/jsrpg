@@ -91,6 +91,8 @@ function init()
     map.markBufferCollision();
     map.updateBuffer(false, bufferX, bufferY, bufferWidth, bufferHeight, true);
     viewportDirty = true;
+    canvas.style.left = bufferX - viewX;
+    canvas.style.top = bufferY - viewY;
     
     var msg = "Terrain DSA insertion time: "+ (t1-t0) +"ms"
     msg += " (" + map.data.length + " tiles)";
@@ -679,8 +681,8 @@ function draw()
             canvasContext.drawImage(buffer,0,0);
         }
         
-        canvas.style.left = (viewX - bufferX) * -1; 
-        canvas.style.top = (viewY - bufferY) * -1;
+        canvas.style.left = bufferX - viewX;
+        canvas.style.top = bufferY - viewY;
         
         viewportDirty = false;
     }
