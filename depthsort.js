@@ -661,10 +661,12 @@ function DSASelectObject(x, y)
     // Multiple zplanes will probably overlap the point, so find all of them
     var inside = false;
     var pi = null, pj = null, pix = 0, piy = 0, pjx = 0, pjy = 0, j = 3;
-    for (var z = zgeom.length; z > 0 ; z--)
+    for (var z = this.highest_z; z >= this.lowest_z ; z--)
     {
         p = zgeom[z - 1];
+        
         if (p == null) continue;
+        if (p.insideClippingArea == false) continue;
         
         // is the point inside this z plane? reset state for pip test
         poly = p.points;
