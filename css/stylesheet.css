@@ -241,21 +241,24 @@ canvas {
 }
 
 #bg {
-    z-index: 0;
+    top: 0px; left: 0px;
+    z-index: -4;
 }
 
 #display {
-    z-index: 1;
-    position: relative;
+    top: 0px; left: 0px;
+    z-index: -3;
 }
 
 #fg {
-    z-index: 2;
+    top: 0px; left: 0px;
+    z-index: -1;
 }
 
 #msg {
+    top: 0px; left: 0px;
     letter-spacing:-20px;
-    z-index: 3;
+    z-index: -2;
 }
 
 .editorview {

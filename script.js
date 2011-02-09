@@ -47,7 +47,7 @@ function init()
     canvasContext = canvas.getContext("2d");
     // Do the following so we don't have to clearrect each time we copy
     // from the buffer
-    // canvasContext.globalCompositeOperation = "copy";
+    canvasContext.globalCompositeOperation = "copy";
     
     // set this for the fps counter
     canvasContext.font = "bold 14px sans-serif";
@@ -83,8 +83,8 @@ function init()
     map.buffer = bufferCtx;
     
     // Configure the buffer
-    bufferX = viewX;
-    bufferY = viewY;
+    bufferX = viewX - (viewWidth >> 1);
+    bufferY = viewY - (viewHeight >> 1);
     
     //Initialize the buffer
     map.optimize();
@@ -679,8 +679,8 @@ function draw()
             canvasContext.drawImage(buffer,0,0);
         }
         
+        canvas.style.left = (viewX - bufferX) * -1; 
         canvas.style.top = (viewY - bufferY) * -1;
-        canvas.style.left = (viewX - bufferX) * -1;
         
         viewportDirty = false;
     }
