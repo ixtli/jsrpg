@@ -81,6 +81,8 @@ function DSAZGeometryObject(z)
     this.points = new Array(4);
     this.xrects = [];
     
+    this.insideClippingArea = true;
+    
     for (var i = 0; i < 4; i++)
         this.points[i] = {x:0, y:0};
     
@@ -170,6 +172,8 @@ function DepthSortedArray()
     
     // ZGeometryObjects that keep track of array index and geometry metrics
     this.z_geom = [];
+    this.lowest_z = null;
+    this.highest_z = null;
     
     // Member functions
     this.insert = DSAInsert;
@@ -187,6 +191,7 @@ function DepthSortedArray()
     this.findIndexForObject = DSAFindIndexForObject;
     this.snap = DSASnap;
     this.fall = DSAFall;
+    this.markBufferCollision = DSAMarkBufferCollision;
     this.updatePlaneGeometry = DSAUpdatePlaneGeometry;
     this.drawPlaneBounds = DSADrawZPlaneBounds;
     
@@ -759,8 +764,78 @@ function DSADrawZPlaneBounds()
     }
 }
 
-function DSAUpdateBuffer(update, minx, miny, width, height)
+function DSAMarkBufferCollision(direction)
 {
+    var zg = this.z_geom;
+    var maxx = bufferX + bufferWidth;
+    var maxy = bufferY + bufferHeight;
+    var rect = {x: bufferX, y:bufferY, w:maxx, h:maxy};
+    var p = null, point0 = null, point1 = null, point2 = null, point3 = null;
+    var min = 0, max = 0;
+    
+    // Which direction has the buffer moved in?
+    switch (direction)
+    {
+        case 1:
+        // Up or right
+        max = this.highest_z + 1;
+        break;
+        
+        case 2:
+        // Down or left
+        min = this.lowest_z;
+        max = zg.length;
+        break;
+        
+        case 0:
+        default:
+        // Don't assume anything
+        this.lowest_z = zg.length + 1
+        this.highest_z = -1;
+        max = zg.length;
+        break;
+    }
+    
+    for (var i = min; i < max; i++)
+    {
+        p = zg[i];
+        
+        if (p == null) continue;
+        
+        point0 = p.points[0];
+        point1 = p.points[1];
+        point2 = p.points[2];
+        point3 = p.points[3];
+        
+        if (point3.y > maxy || point1.y < bufferY ||
+            point3.x > maxx || point1.x < bufferX)
+        {
+            p.insideClippingArea = false;
+            continue;
+        }
+        
+        if (triangleTest(rect, point0, point1, point2) == false)
+        {
+            if (triangleTest(rect, point0, point2, point3) == false)
+            {
+                p.insideClippingArea = false;
+                continue;
+            }
+        }
+        
+        if (i > this.highest_z) this.highest_z = i;
+        if (i < this.lowest_z) this.lowest_z = i;
+        
+        p.insideClippingArea = true;
+    }
+}
+
+function DSAUpdateBuffer(update, minx, miny, width, height, noCheck)
+{
+    // If update == true, redraw any portion of the visible canvas effected
+    // by this call.  If noCheck == false, do all intersection testing.
+    // Otherwise, simply trust the already given values of insideClippingArea.
+    
     var maxx = minx + width;
     var maxy = miny + height;
     
@@ -797,31 +872,38 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
     
     b.clearRect(minx - bufferX, miny - bufferY, width, height);
     
-    for (var z = 0; z < zgeom.length; z++)
+    for (var z = this.lowest_z; z <= this.highest_z; z++)
     {
         p = zgeom[z];
         
         if (p == null) continue;
+        if (p.insideClippingArea == false) continue;
         
-        point0 = p.points[0];
-        point1 = p.points[1];
-        point2 = p.points[2];
-        point3 = p.points[3];
-        
-        p1x = point1.x; // minx of zplane
-        p3x = point3.x; // maxx of zplane 
-        
-        // Broad phase clipping by treating the plane as a box
-        if (point3.y > maxy || point1.y < miny ||
-            p3x > maxx || p1x < minx)
-            continue;
-        
-        // Do more detailed plane collision test by splitting the zplane
-        // in to two triangles and testing whether or not they intersect
-        // the viewport, represented as an AABB
-        if (triangleTest(rect, point0, point1, point2) == false)
-            if (triangleTest(rect, point0, point2, point3) == false)
+        if (noCheck == false)
+        {
+            point0 = p.points[0];
+            point1 = p.points[1];
+            point2 = p.points[2];
+            point3 = p.points[3];
+            
+            p1x = point1.x; // minx of zplane
+            p3x = point3.x; // maxx of zplane 
+            
+            // Broad phase clipping by treating the plane as a box
+            if (point3.y > maxy || point1.y < miny ||
+                p3x > maxx || p1x < minx)
                 continue;
+            
+            // Do more detailed plane collision test by splitting the zplane
+            // in to two triangles and testing whether or not they intersect
+            // the viewport, represented as an AABB
+            if (triangleTest(rect, point0, point1, point2) == false)
+                if (triangleTest(rect, point0, point2, point3) == false)
+                    continue;
+        } else {
+            p1x = p.points[1].x;
+            p3x = p.points[3].x;
+        }
         
         rects = p.xrects;
         min = 0;
@@ -839,9 +921,12 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
             }
         }
         
-        if (min_rect == null) 
+        max = rects.length - 1;
+        if (p1x > maxx) max -= ((p1x - maxx) >> 5 ) - 1;
+        
+        if (min_rect == null)
         {
-            for (var i = min; i < rects.length; i++)
+            for (var i = min; i <= max; i++)
             {
                 if (rects[i] != null)
                 {
@@ -851,12 +936,10 @@ function DSAUpdateBuffer(update, minx, miny, width, height)
                 }
             }
             
-            if (min == rects.length) continue;
+            if (min_rect == null) continue;
         }
         
         // TODO: this optimization assumes tile graphic width of 64
-        max = rects.length - 1;
-        if (p1x > maxx) max -= ((p1x - maxx) >> 5 ) - 1;
         
         max_rect = rects[max];
         

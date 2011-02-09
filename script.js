@@ -87,6 +87,8 @@ function init()
     bufferY = viewY;
     
     //Initialize the buffer
+    map.optimize();
+    map.markBufferCollision();
     map.updateBuffer(false, bufferX, bufferY, bufferWidth, bufferHeight);
     viewportDirty = true;
     
@@ -669,24 +671,24 @@ function draw()
         delta = true;
     }
     
-    if (delta == true)
+    if (delta == true || viewportDirty == true)
     {
+        var direction = 0;
+        
         // Check map bounds
-        if (viewX < bufferX || viewX + viewWidth > bufferX + bufferWidth ||
-            viewY < bufferY || viewY + viewHeight > bufferY + bufferHeight )
+        if (viewX < bufferX || viewY + viewHeight > bufferY + bufferHeight)
+            direction = 2;
+        else if (viewY < bufferY || viewX + viewWidth > bufferX + bufferWidth)
+            direction = 1;
+        
+        if (direction != 0)
         {
             bufferX = viewX - (viewWidth >> 1);
             bufferY = viewY - (viewHeight >> 1);
-            map.updateBuffer(false, bufferX, bufferY, bufferWidth, bufferHeight);
+            map.markBufferCollision(direction);
+            map.updateBuffer(false, bufferX, bufferY, bufferWidth, bufferHeight, true);
         }
         
-        canvasContext.drawImage(buffer, viewX - bufferX, viewY - bufferY,
-            viewWidth,viewHeight,0,0,viewWidth,viewHeight);
-    }
-    
-    // Redraw the subimage if dirty
-    if (viewportDirty == true)
-    {
         canvasContext.drawImage(buffer, viewX - bufferX, viewY - bufferY,
             viewWidth,viewHeight,0,0,viewWidth,viewHeight);
         
