@@ -239,7 +239,6 @@ canvas {
     width: 800px; height: 400px;
     position: relative;
     overflow: hidden;
-    z-index:6;
 }
 
 #bg {
@@ -248,6 +247,7 @@ canvas {
 
 #display {
     z-index: -3;
+    overflow:hidden;
 }
 
 #fg {
