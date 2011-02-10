@@ -663,7 +663,7 @@ function DSASelectObject(x, y)
     var pi = null, pj = null, pix = 0, piy = 0, pjx = 0, pjy = 0, j = 3;
     for (var z = this.highest_z; z >= this.lowest_z ; z--)
     {
-        p = zgeom[z - 1];
+        p = zgeom[z];
         
         if (p == null) continue;
         if (p.insideClippingArea == false) continue;
