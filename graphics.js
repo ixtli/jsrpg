@@ -13,6 +13,8 @@ var viewHeight = null;
 var bufferX = null;
 var bufferY = null;
 
+var lightDistance = 5;
+
 // Sprites
 var sprites = [];
 
@@ -240,4 +242,65 @@ function initTiles()
             sprites.push(s);
         }
     }
+}
+
+function applyShader(obj, front, shader)
+{
+    // return false if not added
+    if (obj == null) return false;
+    
+    var slist = obj.shaderList;
+    for (var i = 0; i < slist.length; i++)
+        if (slist[i] === shader) return false;
+    
+    if (front == true)
+        slist.splice(0,0,shader);
+    else
+        slist.push(shader);
+    
+    obj.modified = true;
+    
+    return true; 
+}
+
+function removeShader(obj, shader)
+{
+    // Return false if shader not added
+    if (obj == null || obj.modified == false)
+        return false;
+    
+    var slist = obj.shaderList;
+    for (var i = 0; i < slist.length; i++)
+    {
+        if (slist[i] === shader)
+        {
+            if (slist.length == 1) obj.modified = false;
+            return slist.splice(i,1);
+        }
+    }
+    
+    return false;
+}
+
+function secondaryTile(obj, buffer, px, py)
+{
+    prev_context = buffer.globalAlpha;
+    buffer.globalAlpha = secondarySelectionAlpha;
+    buffer.drawImage(sprites[secondarySelectionSprite].img, px, py);
+    buffer.globalAlpha = prev_context;
+}
+
+function primarySelection(obj, buffer, px, py)
+{
+    buffer.drawImage(sprites[1].img, px, py);
+}
+
+function shadow(obj, buffer, px, py)
+{
+    if (obj.shadow == 0) return;
+    
+    prev_context = b.globalAlpha;
+    b.globalAlpha = obj.shadow;
+    b.drawImage(sprites[shadowMaskTile].img, px, py);
+    b.globalAlpha = prev_context;
 }

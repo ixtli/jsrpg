@@ -133,14 +133,17 @@ function DSAObject(tile, x, y, z)
     this.tile = tile;
     this.w = this.tile.w;
     this.h = this.tile.h;
+    
+    // Do we draw the tile's sprite?  Or do some extra work?
+    this.modified = false;
+    this.shaderList = [];
+    
+    // Shader stuff
     this.shadow = 0;
-    this.selected = false;
-    this.secondary_selection = false;
     
     // this needs to be set to see if we can count this object as a 'wall'
     // when doing our modified backface culling
     this.transparent = false;
-    
     this.invisible = false;
     
     // The following notify the update algorithm that this object's graphics
@@ -851,7 +854,7 @@ function DSAUpdateBuffer(update, minx, miny, width, height, noCheck)
     var b = this.buffer;
     var px = 0, py = 0, omaxx = 0, omaxy = 0, p1x = 0, p3x = 0;
     var point0 = null, point1 = null, point2 = null, point3 = null;
-    var p = null, obj = null;
+    var p = null, obj = null, sList = null;
     var rects = null, min_rect = null, max_rect = null;
     
     // Construct the rectangle representing our viewport
@@ -909,6 +912,7 @@ function DSAUpdateBuffer(update, minx, miny, width, height, noCheck)
         
         rects = p.xrects;
         min = 0;
+        
         // TODO: This division assumed a tile graphic width of 64
         if (p3x < minx) min = ((minx - p3x) >> 5 ) - 1;
         
@@ -923,9 +927,11 @@ function DSAUpdateBuffer(update, minx, miny, width, height, noCheck)
             }
         }
         
+        // TODO: this dificion also assumes tile width of 64
         max = rects.length - 1;
         if (p1x > maxx) max -= ((p1x - maxx) >> 5 ) - 1;
         
+        // Correct max and min for possible null entries in the rects array
         if (min_rect == null)
         {
             for (var i = min; i <= max; i++)
@@ -940,8 +946,6 @@ function DSAUpdateBuffer(update, minx, miny, width, height, noCheck)
             
             if (min_rect == null) continue;
         }
-        
-        // TODO: this optimization assumes tile graphic width of 64
         
         max_rect = rects[max];
         
@@ -977,29 +981,14 @@ function DSAUpdateBuffer(update, minx, miny, width, height, noCheck)
             py -= bufferY;
             
             // Draw
-            if (obj.selected == true)
+            if (obj.modified == false)
             {
-                b.drawImage(sprites[1].img, px, py);
-            } else {
                 b.drawImage(obj.tile.img, px, py);
-            }
-            
-            // Secondary selection handling
-            if (obj.secondary_selection == true)
-            {
-                prev_context = b.globalAlpha;
-                b.globalAlpha = secondarySelectionAlpha;
-                b.drawImage(sprites[secondarySelectionSprite].img, px, py);
-                b.globalAlpha = prev_context;
-            }
-            
-            // Draw shadow
-            if (obj.shadow != 0)
-            {
-                prev_context = b.globalAlpha;
-                b.globalAlpha = obj.shadow;
-                b.drawImage(sprites[shadowMaskTile].img, px, py);
-                b.globalAlpha = prev_context;
+            } else {
+                sList = obj.shaderList;
+                for (var j = sList.length; j < 0; j--)
+                    sList[j](obj, b, px, py);
+                sList[0](obj, b, px, py);
             }
         }
     }

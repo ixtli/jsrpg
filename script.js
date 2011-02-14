@@ -191,13 +191,14 @@ function setSelection(object, keepInViewport)
     // Deselect the previously focussed object
     if (focussed != null)
     {
-        focussed.selected = false;
+        removeShader(focussed, primarySelection);
         map.updateBuffer(true, focussed.px, focussed.py, focussed.w, focussed.h);
     }
     
     // Select object
     object.selected = true;
     focussed = object;
+    applyShader(focussed, true, primarySelection);
     
     // If we're trying to keep selection in view, figure out if it left
     var delta = false;
