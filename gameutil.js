@@ -46,7 +46,7 @@ function generateTestMap()
     {
         for (var x = 0; x < 100; x++)
         {
-            for (var y = 0; y < 1; y++)
+            for (var y = 0; y < 2; y++)
             {
                 if (Math.floor(Math.random() * 3) == 0) continue;
                 

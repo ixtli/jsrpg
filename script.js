@@ -7,6 +7,11 @@ var previousFrameTime = 0;
 // Map
 var map = null;
 var viewX = 0, viewY = 0;
+var bufferWidth = 0;
+var bufferHeight = 0;
+var halfViewWidth = 0;
+var halfViewHeight = 0;
+var redrawFlags = 0; // Serious business
 
 // Sprite selection
 var focussed = null;
@@ -38,6 +43,10 @@ function init()
     canvas = document.getElementById('display');
     viewWidth = canvas.width;
     viewHeight = canvas.height;
+    bufferHeight = viewHeight << 1;
+    bufferWidth = viewWidth << 1;
+    halfViewHeight = viewHeight >> 1;
+    halfViewWidth = viewWidth >> 1;
     
     // TODO: put this somewhere else
     // Adjust ticker height based on type size setting
@@ -72,12 +81,14 @@ function init()
     var t1 = new Date();
     log("Tilegen: "+(t1-t0)+" ms");
     
-    map = new DepthSortedArray(0);
-    
     // generate terrain
+    map = new DepthSortedArray(0);
     t0 = new Date();
     generateTestMap();
     t1 = new Date();
+    var msg = "Terrain DSA insertion time: "+ (t1-t0) +"ms";
+    msg += " (" + map.data.length + " tiles)";
+    log(msg);
     
     // Associate the buffer context with the map DSA
     map.buffer = bufferCtx;
@@ -91,10 +102,6 @@ function init()
     map.markBufferCollision();
     map.updateBuffer(false, bufferX, bufferY, bufferWidth, bufferHeight);
     viewportDirty = true;
-    
-    var msg = "Terrain DSA insertion time: "+ (t1-t0) +"ms"
-    msg += " (" + map.data.length + " tiles)";
-    log(msg);
     
     // Bind event handlers
     configureEventBindings();
@@ -639,25 +646,51 @@ function toggleAnimation()
 function draw()
 {
     var delta = false;
+    var above = false;
+    var below = false;
+    var left = false;
+    var right = false;
     
     if (horizontalScrollSpeed > 0)
     {
         if (viewportScrollLeft == true)
+        {
             viewX -= horizontalScrollSpeed;
-        else
+            if (viewX-bufferX < halfViewWidth)
+                left = true;
+        } else {
             viewX += horizontalScrollSpeed;
+            if (viewX - bufferX + viewWidth > bufferWidth - halfViewWidth)
+                right = true;
+        }
         
         delta = true;
+    } else {
+        if (viewX - bufferX < halfViewWidth)
+            left = true;
+        else if (viewX - bufferX + viewWidth > bufferWidth - halfViewWidth)
+            right = true;
     }
     
     if (verticalScrollSpeed > 0)
     {
         if (viewportScrollUp == true)
+        {
             viewY -= verticalScrollSpeed;
-        else
+            if (viewY - bufferY < halfViewHeight)
+                above = true;
+        } else { 
             viewY += verticalScrollSpeed;
+            if (viewY - bufferY + viewHeight > bufferHeight - halfViewHeight)
+                below = true;
+        }
         
         delta = true;
+    } else {
+        if (viewY - bufferY < halfViewHeight)
+            above = true;
+        else if (viewY - bufferY + viewHeight > bufferHeight - halfViewHeight)
+            below = true;
     }
     
     if (delta == true || viewportDirty == true)
@@ -673,9 +706,118 @@ function draw()
         if (direction != 0)
         {
             bufferX = viewX - (viewWidth >> 1);
-            bufferY = viewY - (viewHeight >> 1);
+            bufferY = viewY - halfViewHeight;
             map.markBufferCollision(direction);
-            map.updateBuffer(false, bufferX, bufferY, bufferWidth, bufferHeight, true);
+            map.updateBuffer(false, bufferX + halfViewWidth,
+                bufferY + halfViewHeight, viewWidth, viewHeight, true);
+            
+            // reset sections
+            redrawFlags = 0;
+            
+        } else {
+            // The following is some long, but necessary, logic to detect
+            // which portion of the buffer the viewport has moved in to and
+            // redraw that portion only.  In practice this greatly increases
+            // the smoothness of panning across a large.
+            
+            if (left == true)
+            {
+                if ((redrawFlags & 8) == 0)
+                {
+                    map.updateBuffer(false, bufferX, bufferY +
+                        halfViewHeight, halfViewWidth, viewHeight);
+                    redrawFlags |= 8;
+                }
+                if (above == true)
+                {
+                    if ((redrawFlags & 2) > 0)
+                    {
+                        if ((redrawFlags & 1) == 0)
+                        {
+                            map.updateBuffer(false, bufferX, bufferY,
+                                halfViewWidth, halfViewHeight);
+                            redrawFlags |= 1;
+                        }
+                    } else {
+                        map.updateBuffer(false, bufferX, bufferY,
+                            bufferWidth - halfViewWidth, halfViewHeight);
+                        redrawFlags |= 3;
+                    }
+                } else if (below == true) {
+                    if ((redrawFlags & 64) > 0)
+                    {
+                        if ((redrawFlags & 32) == 0)
+                        {
+                            map.updateBuffer(false, bufferX,
+                                bufferY + bufferHeight - halfViewHeight,
+                                halfViewWidth,halfViewHeight);
+                            redrawFlags |= 32;
+                        }
+                    } else {
+                        map.updateBuffer(false, bufferX,
+                            bufferY + bufferHeight - halfViewHeight,
+                            bufferWidth - halfViewWidth, halfViewHeight);
+                        redrawFlags |= 96;
+                    }
+                }
+            } else if (right == true) {
+                if ((redrawFlags & 16) == 0)
+                {
+                    map.updateBuffer(false,
+                        bufferX + bufferWidth - halfViewWidth, bufferY +
+                        halfViewHeight, halfViewWidth, viewHeight);
+                    redrawFlags |= 16;
+                }
+                if (above == true)
+                {
+                    if ((redrawFlags & 2) > 0)
+                    {
+                        if ((redrawFlags & 4) == 0)
+                        {
+                            map.updateBuffer(false,
+                                bufferX + bufferWidth - halfViewWidth,
+                                bufferY, halfViewWidth, halfViewHeight);
+                            redrawFlags |= 4;
+                        }
+                    } else {
+                        map.updateBuffer(false, bufferX + halfViewWidth,
+                            bufferY,bufferWidth - halfViewWidth, halfViewHeight);
+                        redrawFlags |= 6;
+                    }
+                } else if (below == true) {
+                    if ((redrawFlags & 64) > 0)
+                    {
+                        if ((redrawFlags & 128) == 0)
+                        {
+                            map.updateBuffer(false,
+                                bufferX + bufferWidth - halfViewWidth,
+                                bufferY + bufferHeight - halfViewHeight,
+                                halfViewWidth, halfViewHeight);
+                            redrawFlags |= 128;
+                        }
+                    } else {
+                        map.updateBuffer(false, bufferX + halfViewWidth,
+                            bufferY + bufferHeight - halfViewHeight,
+                            bufferWidth - halfViewWidth, halfViewHeight);
+                        redrawFlags |= 192;
+                    }
+                }
+            } else if (above == true) {
+                if ((redrawFlags & 2) == 0)
+                {
+                    map.updateBuffer(false, bufferX + halfViewWidth, bufferY,
+                        viewWidth,halfViewHeight);
+                    redrawFlags |= 2;
+                }
+            } else if (below == true) {
+                if ((redrawFlags & 64) == 0)
+                {
+                    map.updateBuffer(false, bufferX + halfViewWidth,
+                        bufferY + bufferHeight - halfViewHeight,
+                        viewWidth, halfViewHeight);
+                    redrawFlags |= 64;
+                }
+            }
         }
         
         canvasContext.drawImage(buffer, viewX - bufferX, viewY - bufferY,
