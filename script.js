@@ -573,6 +573,7 @@ function mouseClickHandler(ev)
             deleteFocussed();
         } else {
             obj = map.insertAboveObject(focussed, focussed.tile);
+            map.updateBuffer(true, obj.px, obj.py, obj.w, obj.h);
         }
     }
     
