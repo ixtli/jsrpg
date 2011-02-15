@@ -282,9 +282,10 @@ function removeShader(obj, shader)
     return false;
 }
 
-function secondaryTile(obj, buffer, px, py)
+function secondarySelection(obj, buffer, px, py)
 {
-    prev_context = buffer.globalAlpha;
+    buffer.drawImage(obj.tile.img, px, py);
+    var prev_context = buffer.globalAlpha;
     buffer.globalAlpha = secondarySelectionAlpha;
     buffer.drawImage(sprites[secondarySelectionSprite].img, px, py);
     buffer.globalAlpha = prev_context;
@@ -299,8 +300,9 @@ function shadow(obj, buffer, px, py)
 {
     if (obj.shadow == 0) return;
     
-    prev_context = b.globalAlpha;
+    var prev_context = b.globalAlpha;
     b.globalAlpha = obj.shadow;
     b.drawImage(sprites[shadowMaskTile].img, px, py);
     b.globalAlpha = prev_context;
 }
+

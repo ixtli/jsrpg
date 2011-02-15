@@ -99,9 +99,16 @@ function init()
     
     //Initialize the buffer
     map.optimize();
+    t0 = new Date();
     map.markBufferCollision();
     map.updateBuffer(false, bufferX, bufferY, bufferWidth, bufferHeight);
+    t1 = new Date();
+    redrawFlags = 0xFFFFFFFF;
     viewportDirty = true;
+    
+    msg = "Buffer initial draw time: "+ (t1-t0) +"ms";
+    msg += " (" + bufferWidth + " by " + bufferHeight + " pixels)";
+    log(msg);
     
     // Bind event handlers
     configureEventBindings();
@@ -258,6 +265,7 @@ function addToExtendedSelection(obj)
     
     // We rely on the caller to decide to update the map or not,
     // since this could be called many times in a loop
+    applyShader(obj, false, secondarySelection);
     map.updateBuffer(false, obj.px, obj.py, obj.w, obj.h);
     
     // Return its index
@@ -270,7 +278,7 @@ function clearExtendedSelection()
     for (var i = 0; i < extendedSelection.length; i++)
     {
         obj = extendedSelection[i];
-        obj.secondary_selection = false;
+        removeShader(obj, secondarySelection);
         map.updateBuffer(true, obj.px, obj.py, obj.w, obj.h);
     }
     
@@ -289,17 +297,16 @@ function insertAboveExtendedSelection()
     var obj = null;
     for (var i = 0; i < extendedSelection.length; i++)
     {
-        tmp = map.insertAboveObject(extendedSelection[i],
-            extendedSelection[i].tile);
+        obj = extendedSelection[i];
+        removeShader(obj, secondarySelection);
+        tmp = map.insertAboveObject(obj, obj.tile);
         if (tmp != null)
         {
-            obj = extendedSelection[i];
             newSelection[i] = tmp;
-            tmp.secondary_selection = true;
-            obj.secondary_selection = false;
-            
-            map.updateBuffer(true, tmp.px, tmp.py, tmp.w, tmp.h);
-            map.updateBuffer(true, obj.px, obj.py, obj.w, obj.h);
+            applyShader(tmp, false, secondarySelection);
+            map.updateBuffer(true, obj.px, obj.py - obj.h, tmp.w, obj.h * 2);
+        } else {
+            map.updateBuffer(true, obj.px, obj.py, tmp.w, obj.h);
         }
     }
     
@@ -331,9 +338,13 @@ function deleteExtendedSelection()
         {
             newSelection.push(newObj);
             newObj.secondary_selection = true;
-            map.updateBuffer(true, newObj.px, newObj.py, newObj.w, newObj.h);
         }
     }
+    
+    for (var i = 0; i < extendedSelection.length; i++)
+        map.updateBuffer(true, extendedSelection[i].px,
+            extendedSelection[i].py - extendedSelection[i].h,
+            extendedSelection[i].w, extendedSelection[i].h * 2);
     
     delete extendedSelection;
     extendedSelection = newSelection;
@@ -491,18 +502,28 @@ function keypressHandler(evt)
         generateTestMap();
         t1 = new Date();
         
+        focussed = null;
         map.buffer = bufferCtx;
-        
-        // Configure the buffer
-        bufferX = viewX;
-        bufferY = viewY;
-        
-        //Initialize the buffer
-        map.updateBuffer(true, bufferX, bufferY, bufferWidth, bufferHeight);
         
         var msg = "Terrain DSA insertion time: "+ (t1-t0) +"ms";
         msg += " (" + map.data.length + " tiles)";
         log(msg);
+        
+        viewX = 0;
+        viewY = 0;
+        bufferX = viewX;
+        bufferY = viewY;
+        map.optimize();
+        map.markBufferCollision();
+        map.updateBuffer(false, bufferX, bufferY, bufferWidth, bufferHeight);
+        viewportDirty = true;
+        
+        canvasContext.drawImage(buffer, viewX - bufferX, viewY - bufferY,
+            viewWidth,viewHeight,0,0,viewWidth,viewHeight);
+        
+        // reset sections
+        redrawFlags = 0;
+        
         break;
         
         case key_optimize:
