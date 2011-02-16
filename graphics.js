@@ -291,18 +291,27 @@ function secondarySelection(obj, buffer, px, py)
     buffer.globalAlpha = prev_context;
 }
 
+function transparentShader(obj, buffer, px, py)
+{
+    var prev_context = buffer.globalAlpha;
+    buffer.globalAlpha = .75;
+    buffer.drawImage(obj.tile.img, px, py);
+    buffer.globalAlpha = prev_context;
+}
+
 function primarySelection(obj, buffer, px, py)
 {
     buffer.drawImage(sprites[1].img, px, py);
 }
 
-function shadow(obj, buffer, px, py)
+function shadowShader(obj, buffer, px, py)
 {
     if (obj.shadow == 0) return;
     
-    var prev_context = b.globalAlpha;
-    b.globalAlpha = obj.shadow;
-    b.drawImage(sprites[shadowMaskTile].img, px, py);
-    b.globalAlpha = prev_context;
+    buffer.drawImage(obj.tile.img, px, py);
+    var prev_context = buffer.globalAlpha;
+    buffer.globalAlpha = obj.shadow;
+    buffer.drawImage(sprites[shadowMaskTile].img, px, py);
+    buffer.globalAlpha = prev_context;
 }
 

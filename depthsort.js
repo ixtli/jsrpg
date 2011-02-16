@@ -402,8 +402,13 @@ function DSACastShadow(index)
     
     below.shadow = 1 - ((d[index].y - below.y) * shadowStep);
     
-    if (below.shadow < 0)
+    if (below.shadow <= 0)
+    {
         below.shadow = 0;
+        removeShader(below, shadowShader);
+    } else {
+        applyShader(below, false, shadowShader);
+    }
 }
 
 function DSADeleteObject(obj)
@@ -447,7 +452,10 @@ function DSADeleteIndex(index)
         {
             if (d[index - 1].x == deleted.x &&
                 d[index - 1].z == deleted.z)
+            {
                 d[index - 1].shadow = 0;
+                removeShader(d[index - 1], shadowShader);
+            }
         }
     }
     

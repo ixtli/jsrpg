@@ -306,7 +306,7 @@ function insertAboveExtendedSelection()
             applyShader(tmp, false, secondarySelection);
             map.updateBuffer(true, obj.px, obj.py - obj.h, tmp.w, obj.h * 2);
         } else {
-            map.updateBuffer(true, obj.px, obj.py, tmp.w, obj.h);
+            map.updateBuffer(true, obj.px, obj.py, obj.w, obj.h);
         }
     }
     
