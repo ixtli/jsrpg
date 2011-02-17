@@ -738,7 +738,7 @@ function draw()
             // reset sections
             redrawFlags = 0;
             
-        } else {
+        } else if (redrawFlags != 255) {
             // The following is some long, but necessary, logic to detect
             // which portion of the buffer the viewport has moved in to and
             // redraw that portion only.  In practice this greatly increases
