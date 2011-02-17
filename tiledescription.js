@@ -21,3 +21,7 @@ const tileGraphicHeight = 50;
 const tileSheetWidth = 4;
 const tileSheetHeight = 3;
 
+var kirbyImage = new Image();
+kirbyImage.src = "img/kirby.png";
+const kirbySheetWidth = 8;
+const kirbySheetHeight = 1;

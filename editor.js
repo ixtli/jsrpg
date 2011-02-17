@@ -23,16 +23,16 @@ function bindTileEditorEventHandlers()
         tileEditorUpdate();
     });
     
-    $('#tindex').slider({max: sprites.length-1,slide: tileIndexInputDidChange});
+    $('#tindex').slider({max: terrainNames.length-1,slide: tileIndexInputDidChange});
 }
 
 function tileIndexInputDidChange(event, ui)
 {
     var val = ui.value;
-    var selectedSprite = sprites[val];
+    var spriteName = terrainNames[val];
     if (focussed != null)
     {
-        focussed.tile = selectedSprite;
+        focussed.setTerrain(terrain[spriteName]);
         map.updateBuffer(true, focussed.px, focussed.py, focussed.w, focussed.h);
         tileEditorUpdate();
     }
@@ -43,7 +43,7 @@ function tileIndexInputDidChange(event, ui)
         for (var i = 0; i < extendedSelection.length; i++)
         {
             t = extendedSelection[i];
-            t.tile = selectedSprite;
+            t.setTerrain(terrain[spriteName]);
             redrawObject(t);
         }
     }
@@ -67,13 +67,13 @@ function tileEditorUpdate()
     // Draw bottom message
     tileEditorCtx.fillStyle = 'rgba(0,0,0,.75)';
     if (focussed != null) {
-        
-        tileEditorCtx.drawImage(focussed.tile.img, midx, midy);
+        tileEditorCtx.drawImage(focussed.img, midx, midy);
         var msg = "("+focussed.x +","+ focussed.y+","+focussed.z+")";
         tileEditorCtx.fillText(msg, 5, height - 6);
-        tileEditorCtx.fillText(focussed.tile.name, 5, height - 23);
-        $('#tindex').slider("value", focussed.tile.i);
+        tileEditorCtx.fillText(focussed.terrain.name, 5, height - 23);
+        $('#tindex').slider("value", 0);
     } else {
         tileEditorCtx.fillText(tileEditorMsg[0], 5, height - 6);
     }
 }
+

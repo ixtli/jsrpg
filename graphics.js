@@ -16,15 +16,62 @@ var bufferY = null;
 var lightDistance = 5;
 
 // Sprites
-var sprites = [];
+var terrainSprites = [];
+var characterSprites = [];
+var sheets = [];
 
-function Sprite(name, canv, w, h)
+function SpriteSheet(img, name, w, h, array)
 {
     this.name = name;
-    this.img = canv;
-    this.w = w;
-    this.h = h;
-    this.i = 0; // The index into the sprite array
+    this.start = -1;
+    this.count = -1;
+    this.array = array;
+    
+    this.initSprites = function(img, w, h) {
+        var start = this.array.length;
+        var wide = img.width / w;
+        var high = img.height / h;
+        var x = 0, y = 0, p = null, ctx = null;
+        var count = 0;
+        while (y < h)
+        {
+            p = $('<canvas>')[0];
+            p.width = wide;
+            p.height = high;
+            ctx = p.getContext('2d');
+            ctx.drawImage(img,x*wide,y*high,wide,high,0,0,wide,high);
+            array.push(p);
+            count++;
+            if ( ++x == w)
+            {
+                x = 0;
+                y++;
+            }
+        }
+        
+        if (count > 0)
+        {
+            this.start = start;
+            this.count = count;
+            sheets[this.name] = self;
+        }
+    }
+    
+    this.destroy = function () {
+        var tmp = null;
+        for (var i = this.start; i - this.start < this.count; i++)
+        {
+            tmp = this.array[i];
+            this.array[i] = null;
+            if (tmp != null) delete tmp;
+        }
+        
+        this.start = -1;
+        this.count = -1;
+        this.name = null;
+    }
+    
+    this.initSprites(img, w, h);
 }
 
 function pixelProjection(x, y, z)
@@ -209,39 +256,16 @@ function setMessage(string)
     msgCtx.fillText(string, msgLeftPadding, msgy);
 }
 
-function initTiles()
+function initGraphics()
 {
-    // eventually this should only build tiles that the map needs...
+    // TODO: eventually this should only build tiles that the map needs...
+    var tmp = new SpriteSheet(terrainImage, "Terrain",
+        tileSheetWidth, tileSheetHeight, terrainSprites);
     
-    // Make a new canvas
-    for (var y = 0; y < tileSheetHeight; y++)
-    {
-        for (var x = 0; x < tileSheetWidth; x++)
-        {
-            var c = $('<canvas>')[0];
-            c.width = tileGraphicWidth;
-            c.height = tileGraphicHeight;
-            
-            // Assemble sprite
-            var ctx = c.getContext('2d');
-            // Draw a red border to see if there are any gaps anywhere.
-            if (tileBorderDebug)
-            {
-                ctx.fillStyle = "rgba(255,0,0,0.25)";
-                ctx.fillRect(0,0,tileGraphicWidth, tileGraphicHeight);
-            }
-            ctx.drawImage(terrainImage, x * tileGraphicWidth,
-                y * tileGraphicHeight, tileGraphicWidth, tileGraphicHeight, 0,0,
-                c.width, c.height);
-            
-            // make a sprite object
-            var s = new Sprite(terrainNames[sprites.length], c,
-                tileGraphicWidth, tileGraphicHeight);
-            s.i = sprites.length;
-            // Set up the mapSprites data structure
-            sprites.push(s);
-        }
-    }
+    initTerrain(terrainNames, tmp);
+    
+    tmp = new SpriteSheet(kirbyImage, "Kirby",
+        kirbySheetWidth, kirbySheetHeight, characterSprites);
 }
 
 function applyShader(obj, front, shader)
@@ -284,10 +308,10 @@ function removeShader(obj, shader)
 
 function secondarySelection(obj, buffer, px, py)
 {
-    buffer.drawImage(obj.tile.img, px, py);
+    buffer.drawImage(obj.img, px, py);
     var prev_context = buffer.globalAlpha;
     buffer.globalAlpha = secondarySelectionAlpha;
-    buffer.drawImage(sprites[secondarySelectionSprite].img, px, py);
+    buffer.drawImage(terrainSprites[secondarySelectionSprite], px, py);
     buffer.globalAlpha = prev_context;
 }
 
@@ -295,23 +319,23 @@ function transparentShader(obj, buffer, px, py)
 {
     var prev_context = buffer.globalAlpha;
     buffer.globalAlpha = .75;
-    buffer.drawImage(obj.tile.img, px, py);
+    buffer.drawImage(obj.img, px, py);
     buffer.globalAlpha = prev_context;
 }
 
 function primarySelection(obj, buffer, px, py)
 {
-    buffer.drawImage(sprites[1].img, px, py);
+    buffer.drawImage(terrainSprites[1], px, py);
 }
 
 function shadowShader(obj, buffer, px, py)
 {
     if (obj.shadow == 0) return;
     
-    buffer.drawImage(obj.tile.img, px, py);
+    buffer.drawImage(obj.img, px, py);
     var prev_context = buffer.globalAlpha;
     buffer.globalAlpha = obj.shadow;
-    buffer.drawImage(sprites[shadowMaskTile].img, px, py);
+    buffer.drawImage(terrainSprites[shadowMaskTile], px, py);
     buffer.globalAlpha = prev_context;
 }
 

@@ -52,7 +52,7 @@ function generateTestMap()
                 
                 //ind = Math.floor(Math.random() * 3);
                 //ind = 0;
-                map.insert(sprites[0], x, y, z);
+                map.insert(terrain['grass'], x, y, z);
             }
         }
     }

@@ -118,21 +118,22 @@ function DSAZGOProject()
     this.points[i].y = r.py - (tileGraphicWidth >> 1);
 }
 
-function DSAObject(tile, x, y, z)
+function DSAObject(terrain, x, y, z)
 {
     // Member values
     this.x = x;
     this.y = y;
     this.z = z;
     
-    // Drawing-related members
-    this.px = 0;
-    this.py = 0;
+    // Terrain members
+    this.terrain = terrain;
     
     // graphics related members
-    this.tile = tile;
-    this.w = this.tile.w;
-    this.h = this.tile.h;
+    this.img = null;
+    this.w = 0;
+    this.h = 0;
+    this.px = 0;
+    this.py = 0;
     
     // Do we draw the tile's sprite?  Or do some extra work?
     this.modified = false;
@@ -141,16 +142,6 @@ function DSAObject(tile, x, y, z)
     // Shader stuff
     this.shadow = 0;
     
-    // this needs to be set to see if we can count this object as a 'wall'
-    // when doing our modified backface culling
-    this.transparent = false;
-    this.invisible = false;
-    
-    // The following notify the update algorithm that this object's graphics
-    // are going to be drawn outside of the bounds defined by (px,py,w,h)
-    this.wide = false;
-    this.tall = false;
-    
     // Member functions
     this.genPixelValues = function () {
         var r = pixelProjection(this.x, this.y, this.z);
@@ -158,9 +149,22 @@ function DSAObject(tile, x, y, z)
         this.py = r.py;
     };
     
+    this.setTerrain = function(terrain) {
+        if (terrain == null) return;
+        
+        // Terrain members
+        this.terrain = terrain;
+        
+        // graphics related members
+        this.img = this.terrain.sprite;
+        this.w = this.img.width;
+        this.h = this.img.height;
+    }
+    
     // Initial setup of object
     // Generate absolute pixel locations
     this.genPixelValues();
+    this.setTerrain(terrain);
     
     // Always return true
     return true;
@@ -569,13 +573,13 @@ function DSADeleteIndex(index)
     return deleted;
 }
 
-function DSAInsertAboveObject(object, tile)
+function DSAInsertAboveObject(object, terrain)
 {
     var index = this.findIndexForObject(object);
-    return this.insertAboveIndex(index, tile);
+    return this.insertAboveIndex(index, terrain);
 }
 
-function DSAInsertAboveIndex(index, tile)
+function DSAInsertAboveIndex(index, terrain)
 {
     var d = this.data;
     
@@ -590,7 +594,7 @@ function DSAInsertAboveIndex(index, tile)
             return null;
     }
     
-    var n = new DSAObject(tile, obj.x, obj.y + 1, obj.z);
+    var n = new DSAObject(terrain, obj.x, obj.y + 1, obj.z);
     
     if (obj.shadow == 1)
     {
@@ -614,13 +618,13 @@ function DSAInsertAboveIndex(index, tile)
     return n;
 }
 
-function DSAInsertBelowObject(object, tile)
+function DSAInsertBelowObject(object, terrain)
 {
     var index = this.findIndexForObject(object);
-    return this.insertBelowIndex(index, tile);
+    return this.insertBelowIndex(index, terrain);
 }
 
-function DSAInsertBelowIndex(index, tile)
+function DSAInsertBelowIndex(index, terrain)
 {
     var d = this.data;
     var obj = d[index];
@@ -634,7 +638,7 @@ function DSAInsertBelowIndex(index, tile)
             return null;
     }
     
-    var n = new DSAObject(tile, obj.x, obj.y - 1, obj.z);
+    var n = new DSAObject(terrain, obj.x, obj.y - 1, obj.z);
     d.splice(index, 0, n);
     
     // No longer optimized
@@ -744,7 +748,7 @@ function DSASelectObject(x, y)
             
             px = Math.floor(x - px);
             py = Math.floor(y - py);
-            pixeldata = obj.tile.img.getContext('2d').getImageData(px,py,1,1);
+            pixeldata = obj.img.getContext('2d').getImageData(px,py,1,1);
             if (pixeldata.data[3] > alphaSelectionThreshold) return obj;
         }
     }
@@ -991,10 +995,10 @@ function DSAUpdateBuffer(update, minx, miny, width, height, noCheck)
             // Draw
             if (obj.modified == false)
             {
-                b.drawImage(obj.tile.img, px, py);
+                b.drawImage(obj.img, px, py);
             } else {
                 sList = obj.shaderList;
-                for (var j = sList.length; j < 0; j--)
+                for (var j = sList.length - 1; j > 0; j--)
                     sList[j](obj, b, px, py);
                 sList[0](obj, b, px, py);
             }

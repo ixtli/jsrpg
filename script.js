@@ -77,9 +77,9 @@ function init()
     
     // Initialize the tiles based on the map
     var t0 = new Date();
-    initTiles();
+    initGraphics();
     var t1 = new Date();
-    log("Tilegen: "+(t1-t0)+" ms");
+    log("Graphics init: "+(t1-t0)+" ms");
     
     // generate terrain
     map = new DepthSortedArray(0);
@@ -299,7 +299,7 @@ function insertAboveExtendedSelection()
     {
         obj = extendedSelection[i];
         removeShader(obj, secondarySelection);
-        tmp = map.insertAboveObject(obj, obj.tile);
+        tmp = map.insertAboveObject(obj, obj.terrain);
         if (tmp != null)
         {
             newSelection[i] = tmp;
@@ -487,7 +487,7 @@ function keypressHandler(evt)
         {
             insertAboveExtendedSelection();
         } else if (focussed != null) {
-            obj = map.insertAboveObject(focussed, focussed.tile);
+            obj = map.insertAboveObject(focussed, focussed.terrain);
             if (obj)
                 setSelection(obj, true);
         }
@@ -572,8 +572,9 @@ function mouseClickHandler(ev)
         {
             deleteFocussed();
         } else {
-            obj = map.insertAboveObject(focussed, focussed.tile);
-            map.updateBuffer(true, obj.px, obj.py, obj.w, obj.h);
+            obj = map.insertAboveObject(focussed, focussed.terrain);
+            if (obj != null )
+                map.updateBuffer(true, obj.px, obj.py, obj.w, obj.h);
         }
     }
     
@@ -728,7 +729,7 @@ function draw()
         
         if (direction != 0)
         {
-            bufferX = viewX - (viewWidth >> 1);
+            bufferX = viewX - halfViewWidth;
             bufferY = viewY - halfViewHeight;
             map.markBufferCollision(direction);
             map.updateBuffer(false, bufferX + halfViewWidth,
@@ -847,6 +848,15 @@ function draw()
             viewWidth,viewHeight,0,0,viewWidth,viewHeight);
         
         viewportDirty = false;
+    } else if (redrawFlags != 255) {
+        // draw the entire buffer
+        bufferX = viewX - halfViewWidth;
+        bufferY = viewY - halfViewHeight;
+        map.markBufferCollision(direction);
+        map.updateBuffer(false, bufferX, bufferY, bufferWidth, bufferHeight, true);
+        
+        // mark everything as drawn
+        redrawFlags = 255;
     }
     
     // TODO: Make this report some sort of reasonable "FPS"
