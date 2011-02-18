@@ -37,6 +37,8 @@ var fpsVal = FPS;
 
 window.onload = init;
 
+var kirby = null;
+
 function init()
 {
     // Get the canvas element to display the game in.
@@ -121,6 +123,12 @@ function init()
     
     // Start drawing
     toggleAnimation();
+    
+    // Make a character
+    kirby = new GameObject("kirby", animations);
+    kirby.setTile(map.data[0]);
+    kirby.setAnimation('kirby_walking', kirby.facing);
+    kirby.animate();
 }
 
 function configureEventBindings()
@@ -655,13 +663,14 @@ function toggleAnimation()
     {
         clearInterval(interval);
         clearInterval(tickerInterval);
+        clearInterval(spriteAnimationInterval);
         interval = null;
         animationOn = false;
     } else {
         tickerInterval = setInterval( function() {
             setRandomTickerMessage();
         },1000 * tickerChangeRate);
-        
+        spriteAnimationInterval = setInterval(animate, 1000 / FPS);
         interval = setInterval(draw, 1000 / FPS);
         animationOn = true;
     }

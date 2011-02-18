@@ -25,3 +25,5 @@ var kirbyImage = new Image();
 kirbyImage.src = "img/kirby.png";
 const kirbySheetWidth = 8;
 const kirbySheetHeight = 1;
+const kirbyWalkingSpeed = 2;
+

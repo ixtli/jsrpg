@@ -19,6 +19,46 @@ var lightDistance = 5;
 var terrainSprites = [];
 var characterSprites = [];
 var sheets = [];
+var animations = [];
+
+// Animations
+var animated = [];
+
+function Animation(array, start, count, quantum)
+{
+    this.array = array;
+    this.start = start;
+    this.count = count;
+    this.quantum = quantum;
+    
+    // The following is based on the assumption that all sprites in one sheet
+    // must have the same dimensions
+    this.width = array[start].width;
+    this.height = array[start].height;
+    
+    this.xOffset = 0;
+    this.yOffset = 0;
+}
+
+function animate()
+{
+    var tmp = null;
+    var anim = null;
+    var t0 = new Date();
+    for (var i = animated.length - 1; i >= 0; i--)
+    {
+        tmp = animated[i];
+        anim = tmp.currentAnimation;
+        if (t0 - tmp.lastUpdate > anim.quantum)
+        {
+            if (++tmp.animationIndex >= anim.start + anim.count)
+                tmp.animationIndex = anim.start;
+            tmp.img = anim.array[tmp.animationIndex];
+            map.updateBuffer(true, tmp.px, tmp.py, tmp.w, tmp.h);
+            tmp.lastUpdate = t0;
+        }
+    }
+}
 
 function SpriteSheet(img, name, w, h, array)
 {
@@ -266,6 +306,16 @@ function initGraphics()
     
     tmp = new SpriteSheet(kirbyImage, "Kirby",
         kirbySheetWidth, kirbySheetHeight, characterSprites);
+    
+    animations['kirby_walking'] = new Array(4);
+    animations['kirby_walking'][DIR_CLOSER] = new Animation(
+        characterSprites, 6, 2, kirbyWalkingSpeed);
+    animations['kirby_walking'][DIR_FURTHER] = new Animation(
+        characterSprites, 4, 2, kirbyWalkingSpeed);
+    animations['kirby_walking'][DIR_LEFT] = new Animation(
+        characterSprites, 2, 2, kirbyWalkingSpeed);
+    animations['kirby_walking'][DIR_RIGHT] = new Animation(
+        characterSprites, 0, 2, kirbyWalkingSpeed);
 }
 
 function applyShader(obj, front, shader)

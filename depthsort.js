@@ -128,6 +128,9 @@ function DSAObject(terrain, x, y, z)
     // Terrain members
     this.terrain = terrain;
     
+    // Object members
+    this.obj = null;
+    
     // graphics related members
     this.img = null;
     this.w = 0;
@@ -159,6 +162,38 @@ function DSAObject(terrain, x, y, z)
         this.img = this.terrain.sprite;
         this.w = this.img.width;
         this.h = this.img.height;
+    }
+    
+    this.addObject = function(obj) {
+        if (this.obj == null) this.obj = [];
+        this.obj.push(obj);
+        return true;
+    }
+    
+    this.removeObject = function(obj) {
+        var o = this.obj;
+        if (o == null) return false;
+        if (o.length == 1)
+        {
+            if (o[0] === obj)
+            {
+                this.obj = null;
+                return true;
+            } else {
+                return false;
+            }
+        }
+        
+        for (var i = o.length - 1; i >= 0; i--)
+        {
+            if (o[i] === obj)
+            {
+                o.splice(i,1);
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     // Initial setup of object
@@ -706,6 +741,7 @@ function DSASelectObject(x, y)
         if (inside == false) continue;
         
         min = ((x - poly[0].x) >> 5) - 1;
+        if (min == -1) min = 0;
         max = 0;
         
         p = p.xrects;
@@ -730,7 +766,7 @@ function DSASelectObject(x, y)
                     break;
                 }
             }
-        } else if (max == 0){
+        } else if (max == 0) {
             max = min;
         }
         
@@ -868,6 +904,7 @@ function DSAUpdateBuffer(update, minx, miny, width, height, noCheck)
     var point0 = null, point1 = null, point2 = null, point3 = null;
     var p = null, obj = null, sList = null;
     var rects = null, min_rect = null, max_rect = null;
+    var tileObj = null;
     
     // Construct the rectangle representing our viewport
     var rect = {x:minx,y:miny,w:maxx,h:maxy};
@@ -1001,6 +1038,16 @@ function DSAUpdateBuffer(update, minx, miny, width, height, noCheck)
                 for (var j = sList.length - 1; j > 0; j--)
                     sList[j](obj, b, px, py);
                 sList[0](obj, b, px, py);
+            }
+            
+            sList = obj.obj;
+            if (sList != null)
+            {
+                for (var j = sList.length - 1; j >= 0; j--)
+                {
+                    tileObj = sList[j];
+                    b.drawImage(tileObj.img,tileObj.px - bufferX,tileObj.py - bufferY);
+                }
             }
         }
     }

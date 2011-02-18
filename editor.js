@@ -72,6 +72,11 @@ function tileEditorUpdate()
         tileEditorCtx.fillText(msg, 5, height - 6);
         tileEditorCtx.fillText(focussed.terrain.name, 5, height - 23);
         $('#tindex').slider("value", 0);
+        if (focussed.obj != null)
+        {
+            tileEditorCtx.drawImage(focussed.obj[0].img,
+                midx + (tileWidth >> 1),midy);
+        }
     } else {
         tileEditorCtx.fillText(tileEditorMsg[0], 5, height - 6);
     }
