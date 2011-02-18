@@ -206,14 +206,14 @@ function setSelection(object, keepInViewport)
     // Deselect the previously focussed object
     if (focussed != null)
     {
-        removeShader(focussed, primarySelection);
+        focussed.removeShader(primarySelection);
         map.updateBuffer(true, focussed.px, focussed.py, focussed.w, focussed.h);
     }
     
     // Select object
     object.selected = true;
     focussed = object;
-    applyShader(focussed, true, primarySelection);
+    focussed.addShader(true, primarySelection);
     
     // If we're trying to keep selection in view, figure out if it left
     var delta = false;
@@ -273,7 +273,7 @@ function addToExtendedSelection(obj)
     
     // We rely on the caller to decide to update the map or not,
     // since this could be called many times in a loop
-    applyShader(obj, false, secondarySelection);
+    obj.addShader(false, secondarySelection);
     map.updateBuffer(false, obj.px, obj.py, obj.w, obj.h);
     
     // Return its index
@@ -286,7 +286,7 @@ function clearExtendedSelection()
     for (var i = 0; i < extendedSelection.length; i++)
     {
         obj = extendedSelection[i];
-        removeShader(obj, secondarySelection);
+        obj.removeShader(secondarySelection);
         map.updateBuffer(true, obj.px, obj.py, obj.w, obj.h);
     }
     
@@ -306,12 +306,12 @@ function insertAboveExtendedSelection()
     for (var i = 0; i < extendedSelection.length; i++)
     {
         obj = extendedSelection[i];
-        removeShader(obj, secondarySelection);
+        obj.removeShader(secondarySelection);
         tmp = map.insertAboveObject(obj, obj.terrain);
         if (tmp != null)
         {
             newSelection[i] = tmp;
-            applyShader(tmp, false, secondarySelection);
+            tmp.addShader(false, secondarySelection);
             map.updateBuffer(true, obj.px, obj.py - obj.h, tmp.w, obj.h * 2);
         } else {
             map.updateBuffer(true, obj.px, obj.py, obj.w, obj.h);

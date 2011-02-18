@@ -139,20 +139,29 @@ function DSAObject(terrain, x, y, z)
     this.py = 0;
     
     // Do we draw the tile's sprite?  Or do some extra work?
-    this.modified = false;
-    this.shaderList = [];
+    this.shaderList = null;
     
     // Shader stuff
     this.shadow = 0;
     
-    // Member functions
-    this.genPixelValues = function () {
+    // Initial setup of object
+    // Generate absolute pixel locations
+    this.genPixelValues();
+    this.setTerrain(terrain);
+    
+    // Always return true
+    return true;
+}
+
+DSAObject.prototype = {
+    
+    genPixelValues: function () {
         var r = pixelProjection(this.x, this.y, this.z);
         this.px = r.px;
         this.py = r.py;
-    };
+    },
     
-    this.setTerrain = function(terrain) {
+    setTerrain: function(terrain) {
         if (terrain == null) return;
         
         // Terrain members
@@ -162,15 +171,15 @@ function DSAObject(terrain, x, y, z)
         this.img = this.terrain.sprite;
         this.w = this.img.width;
         this.h = this.img.height;
-    }
+    },
     
-    this.addObject = function(obj) {
+    addObject: function(obj) {
         if (this.obj == null) this.obj = [];
         this.obj.push(obj);
         return true;
-    }
+    },
     
-    this.removeObject = function(obj) {
+    removeObject: function(obj) {
         var o = this.obj;
         if (o == null) return false;
         if (o.length == 1)
@@ -194,16 +203,48 @@ function DSAObject(terrain, x, y, z)
         }
         
         return false;
+    },
+    
+    addShader: function (front, shader)
+    {
+        // return false if not added
+        var slist = this.shaderList;
+        
+        if (slist == null)
+        {
+            this.shaderList = [shader];
+            return true;
+        }
+        
+        for (var i = 0; i < slist.length; i++)
+            if (slist[i] === shader) return false;
+        
+        if (front == true)
+            slist.splice(0,0,shader);
+        else
+            slist.push(shader);
+        
+        return true;
+    },
+    
+    removeShader: function (shader)
+    {
+        var slist = this.shaderList;
+        if (slist == null) return false;
+        
+        for (var i = 0; i < slist.length; i++)
+        {
+            if (slist[i] === shader)
+            {
+                if (slist.length == 1) this.shaderList = null;
+                return slist.splice(i,1);
+            }
+        }
+        
+        return false;
     }
     
-    // Initial setup of object
-    // Generate absolute pixel locations
-    this.genPixelValues();
-    this.setTerrain(terrain);
-    
-    // Always return true
-    return true;
-}
+};
 
 function DepthSortedArray()
 {
@@ -444,9 +485,9 @@ function DSACastShadow(index)
     if (below.shadow <= 0)
     {
         below.shadow = 0;
-        removeShader(below, shadowShader);
+        below.removeShader(shadowShader);
     } else {
-        applyShader(below, false, shadowShader);
+        below.addShader(false, shadowShader);
     }
 }
 
@@ -493,7 +534,7 @@ function DSADeleteIndex(index)
                 d[index - 1].z == deleted.z)
             {
                 d[index - 1].shadow = 0;
-                removeShader(d[index - 1], shadowShader);
+                d[index - 1].removeShader(shadowShader);
             }
         }
     }
@@ -1028,13 +1069,13 @@ function DSAUpdateBuffer(update, minx, miny, width, height, noCheck)
             
             px -= bufferX;
             py -= bufferY;
+            sList = obj.shaderList;
             
             // Draw
-            if (obj.modified == false)
+            if (sList == null)
             {
                 b.drawImage(obj.img, px, py);
             } else {
-                sList = obj.shaderList;
                 for (var j = sList.length - 1; j > 0; j--)
                     sList[j](obj, b, px, py);
                 sList[0](obj, b, px, py);
@@ -1046,7 +1087,8 @@ function DSAUpdateBuffer(update, minx, miny, width, height, noCheck)
                 for (var j = sList.length - 1; j >= 0; j--)
                 {
                     tileObj = sList[j];
-                    b.drawImage(tileObj.img,tileObj.px - bufferX,tileObj.py - bufferY);
+                    b.drawImage(tileObj.img,
+                        tileObj.px - bufferX, tileObj.py - bufferY);
                 }
             }
         }

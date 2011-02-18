@@ -318,44 +318,6 @@ function initGraphics()
         characterSprites, 0, 2, kirbyWalkingSpeed);
 }
 
-function applyShader(obj, front, shader)
-{
-    // return false if not added
-    if (obj == null) return false;
-    
-    var slist = obj.shaderList;
-    for (var i = 0; i < slist.length; i++)
-        if (slist[i] === shader) return false;
-    
-    if (front == true)
-        slist.splice(0,0,shader);
-    else
-        slist.push(shader);
-    
-    obj.modified = true;
-    
-    return true; 
-}
-
-function removeShader(obj, shader)
-{
-    // Return false if shader not added
-    if (obj == null || obj.modified == false)
-        return false;
-    
-    var slist = obj.shaderList;
-    for (var i = 0; i < slist.length; i++)
-    {
-        if (slist[i] === shader)
-        {
-            if (slist.length == 1) obj.modified = false;
-            return slist.splice(i,1);
-        }
-    }
-    
-    return false;
-}
-
 function secondarySelection(obj, buffer, px, py)
 {
     buffer.drawImage(obj.img, px, py);
