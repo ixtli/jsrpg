@@ -5,11 +5,23 @@ const tickerMessages = ["Click to add a block, shift+click to delete.",
     "Use the + and -, or delete and space keys to add and remove selection.",
     "武器による攻撃や魔法の発動を行います 。", "Now with smoother scrolling!"];
 
-// Convenience
-const key_w = 87, key_a = 65, key_s = 83, key_d = 68, key_e = 69, key_f = 70,
-    key_up = 38, key_down = 40, key_left = 37, key_right = 39, key_plus = 187,
-    key_minus = 189, key_delete = 8, key_space = 32, key_shift = 16,
-    key_refresh = 82, key_optimize = 79;
+// * using arrays for attributes to allow multiple bindings to one action
+// * TODO user editable eventually? otherwise go back to const
+keys = {
+    'move_left':       [37],    // left arrow 
+    'move_up':         [38],    // up arrow
+    'move_right':      [39],    // right arrow
+    'move_down':       [40],    // down arrow
+    'scroll_left':     [65],    // a
+    'scroll_right':    [68],    // d
+    'scroll_down':     [83],    // s
+    'scroll_up':       [87],    // w
+    'subtract': [109, 189, 46], // subtract, -, delete
+    'add':      [107, 187, 32], // add, = (nothing to denote shift state for = ?,
+                                // space
+    'refresh':  [82],           // r
+    'optimize': [79]            // o
+};
 
 // Engine constants.  Things here require restart to change
 const FPS = 60;
