@@ -2,29 +2,50 @@ function DSAXGeometryObject(start, obj)
 {
     this.x = obj.x;
     
-    this.minx = 0;
-    this.miny = 0;
-    this.maxy = 0;
+    this.minx = obj.px;
+    this.miny = obj.py;
+    this.maxy = this.miny + tileGraphicHeight;
     
-    this.count = 0;
-    this.start = null;
-    
-    this.update = DSAXGOUpdate;
-    this.addObject = DSAXGOAddObject;
-    
-    this.addObject(obj, start);
+    this.count = 1;
+    this.start = start;
 }
 
-function DSAXGOAddObject(obj, index)
-{
-    // Special case
-    if (this.start == null)
+DSAXGeometryObject.prototype = {
+    
+    update: function (map, index)
     {
+        // This is only called if something has changed that requires the entire
+        // x value to be rescanned such as deletion or a tile's metric being changed.
+        // Therefore we have to treat everything as invalidated and scan the
+        // entire x value again.
+        
+        var d = map.data;
+        var obj = d[index];
+        var z = obj.z;
+        var x = obj.x;
+        
+        // reinit
         this.start = index;
         this.minx = obj.px;
         this.miny = obj.py;
-        this.maxy = this.miny + tileGraphicHeight;
-    } else {
+        this.maxy = this.miny + obj.h;
+        
+        for (var i = index + 1; i < d.length; i++)
+        {
+            obj = d[i];
+            
+            // don't change x or z
+            if (obj.z != z || obj.x != x) return;
+            
+            // Geometry
+            if (obj.px < this.minx) this.minx = obj.px;
+            if (obj.py < this.miny) this.miny = obj.py;
+            if (obj.h + obj.py > this.maxy) this.maxy = obj.py + obj.h;
+        }
+    },
+    
+    addObject: function (object, index)
+    {
         // Start index in the map array
         if (index < this.start) this.start = index;
         
@@ -32,43 +53,12 @@ function DSAXGOAddObject(obj, index)
         if (obj.px < this.minx) this.minx = obj.px;
         if (obj.py < this.miny) this.miny = obj.py;
         if (obj.h + obj.py > this.maxy) this.maxy = obj.py + tileGraphicHeight;
-    }
-    
-    this.count++;
-    return true;
-}
-
-function DSAXGOUpdate(map, index)
-{
-    // This is only called if something has changed that requires the entire
-    // x value to be rescanned such as deletion or a tile's metric being changed.
-    // Therefore we have to treat everything as invalidated and scan the
-    // entire x value again.
-    
-    var d = map.data;
-    var obj = d[index];
-    var z = obj.z;
-    var x = obj.x;
-    
-    // reinit
-    this.start = index;
-    this.minx = obj.px;
-    this.miny = obj.py;
-    this.maxy = this.miny + obj.h;
-    
-    for (var i = index + 1; i < d.length; i++)
-    {
-        obj = d[i];
         
-        // don't change x or z
-        if (obj.z != z || obj.x != x) return;
-        
-        // Geometry
-        if (obj.px < this.minx) this.minx = obj.px;
-        if (obj.py < this.miny) this.miny = obj.py;
-        if (obj.h + obj.py > this.maxy) this.maxy = obj.py + obj.h;
-    }
-}
+        this.count++;
+        return true;
+    },
+    
+};
 
 function DSAZGeometryObject(z)
 {
@@ -86,37 +76,37 @@ function DSAZGeometryObject(z)
     for (var i = 0; i < 4; i++)
         this.points[i] = {x:0, y:0};
     
-    this.updatePixelProjection = DSAZGOProject;
-    
     return true;
 }
 
-function DSAZGOProject()
-{
-    var i = 0;
+DSAZGeometryObject.prototype = {
     
-    var r = pixelProjection(this.minx, this.miny, this.z);
-    this.points[i].x = r.px;
-    this.points[i].y = r.py + tileGraphicHeight;
+    updatePixelProjection: function ()
+    {
+        var i = 0, r = null
+        minx = this.minx, maxx = this.maxx,
+        miny = this.miny, maxy = this.maxy
+        z = this.z,
+        p = this.points;
+        
+        r = pixelProjection(minx, miny, z);
+        p[i].x = r.px;
+        p[i++].y = r.py + tileGraphicHeight;
+        
+        r = pixelProjection(maxx, miny, z);
+        p[i].x = r.px + tileGraphicWidth;
+        p[i++].y = r.py + tileGraphicHeight + (tileGraphicWidth >> 1);
+        
+        r = pixelProjection(maxx, maxy, z);
+        p[i].x = r.px + tileGraphicWidth;
+        p[i++].y = r.py;
+        
+        r = pixelProjection(minx, maxy, z);
+        p[i].x = r.px;
+        p[i].y = r.py - (tileGraphicWidth >> 1);
+    },
     
-    i++;
-    
-    r = pixelProjection(this.maxx, this.miny, this.z);
-    this.points[i].x = r.px + tileGraphicWidth;
-    this.points[i].y = r.py + tileGraphicHeight + (tileGraphicWidth >> 1);
-    
-    i++;
-    
-    r = pixelProjection(this.maxx, this.maxy, this.z);
-    this.points[i].x = r.px + tileGraphicWidth;
-    this.points[i].y = r.py;
-    
-    i++;
-    
-    r = pixelProjection(this.minx, this.maxy, this.z);
-    this.points[i].x = r.px;
-    this.points[i].y = r.py - (tileGraphicWidth >> 1);
-}
+};
 
 function DSAObject(terrain, x, y, z)
 {
@@ -155,13 +145,15 @@ function DSAObject(terrain, x, y, z)
 
 DSAObject.prototype = {
     
-    genPixelValues: function () {
+    genPixelValues: function ()
+    {
         var r = pixelProjection(this.x, this.y, this.z);
         this.px = r.px;
         this.py = r.py;
     },
     
-    setTerrain: function(terrain) {
+    setTerrain: function(terrain)
+    {
         if (terrain == null) return;
         
         // Terrain members
@@ -173,13 +165,15 @@ DSAObject.prototype = {
         this.h = this.img.height;
     },
     
-    addObject: function(obj) {
+    addObject: function(obj)
+    {
         if (this.obj == null) this.obj = [];
         this.obj.push(obj);
         return true;
     },
     
-    removeObject: function(obj) {
+    removeObject: function(obj)
+    {
         var o = this.obj;
         if (o == null) return false;
         if (o.length == 1)
@@ -258,29 +252,8 @@ function DepthSortedArray()
     this.lowest_z = null;
     this.highest_z = null;
     
-    // Member functions
-    this.insert = DSAInsert;
-    this.updateBuffer = DSAUpdateBuffer;
-    this.cull = DSACull;
-    this.selectObject = DSASelectObject;
-    this.insertAboveObject = DSAInsertAboveObject;
-    this.insertAboveIndex = DSAInsertAboveIndex;
-    this.insertBelowObject = DSAInsertBelowObject;
-    this.insertBelowIndex = DSAInsertBelowIndex;
-    this.castShadow = DSACastShadow;
-    this.deleteObject = DSADeleteObject;
-    this.deleteIndex = DSADeleteIndex;
-    this.findIndexForObjectAt = DSAFindIndexForObjectAt;
-    this.findIndexForObject = DSAFindIndexForObject;
-    this.snap = DSASnap;
-    this.fall = DSAFall;
-    this.markBufferCollision = DSAMarkBufferCollision;
-    this.updatePlaneGeometry = DSAUpdatePlaneGeometry;
-    this.drawPlaneBounds = DSADrawZPlaneBounds;
-    
     // optimization
     this.optimized = false;
-    this.optimize = DSAOptimize;
     
     // Debugging
     this.duplicateDetection = true;
@@ -293,1052 +266,152 @@ function DepthSortedArray()
     return true;
 }
 
-function DSAFall(x,y,z)
-{
-    // Fall from height Y at (x,z) and return the first object found.
-    // Return null if nothing
+DepthSortedArray.prototype = {
     
-    if (z > this.maxz || z < this.minz)
-        return null;
-    
-    var d = this.data;
-    var plane = this.z_geom[z - this.minz];
-    if (plane == null)
-        return null;
-    
-    var xrect = plane.xrects[x - plane.minx];
-    if (xrect == null)
-        return null;
-    
-    // Try to find the Y value we're looking for via binary search
-    var min = xrect.start;
-    var max = min + xrect.count - 1;
-    var mid = 0;
-    var cury = 0;
-    do {
-        mid = min + ((max - min) >> 1);
-        if (y > d[mid].y )
-            min = mid + 1;
-        else
-            max = mid - 1;
-        cury = d[mid].y;
-    } while (cury != y && min <= max);
-    
-    // Is the y value present?
-    if (d[mid].y == y) return d[mid];
-    
-    // If it's not, go down by reseting min and max
-    min = xrect.start;
-    max = min + xrect.count - 1;
-    
-    // TODO: This could choose a start location in a smarter way
-    for (var i = max; i >= min; i--)
-        if (d[i].y < y) return d[i];
-    
-    return null;
-}
-
-function DSASnap(x,y,z,stairs)
-{
-    // If this function is given the coordinates of an existing tile, it returns
-    // the object at the first tile above that one with nothing above it.
-    // Otherwise, it returns the object at the first tile below the given coords
-    
-    // It returns null if there is no object below the coordinates in the latter
-    
-    // The 'stairs' argument is a boolean which, if set, will cause the algo
-    // look for an object at (x,y,z) AND (x,y+1,z) 
-    
-    if (z > this.maxz || z < this.minz)
-        return null;
-    
-    var d = this.data;
-    var plane = this.z_geom[z - this.minz];
-    if (plane == null)
-        return null;
-    
-    var xrect = plane.xrects[x - plane.minx];
-    if (xrect == null)
-        return null;
-    
-    // Try to find the Y value we're looking for via binary search
-    var min = xrect.start;
-    var max = min + xrect.count - 1;
-    var mid = 0;
-    var cury = 0;
-    do {
-        mid = min + ((max - min) >> 1);
-        if (y > d[mid].y )
-            min = mid + 1;
-        else
-            max = mid - 1;
-        cury = d[mid].y;
-    } while ((cury != y || (stairs == true && cury != y + 1)) && min <= max);
-    
-    // reset min and max
-    min = xrect.start
-    max = min + xrect.count - 1;
-    
-    // is the y value present?
-    if (cury != y || (stairs == true && cury != y + 1))
+    insert: function (terrain, x, y, z)
     {
-        // climb
-        while (mid <= max)
-        {
-            if (d[mid + 1] == null)
-                return d[mid];
-                
-            if (d[mid + 1].y > d[mid].y + 1)
-                return d[mid];
-            
-            mid++
-        }
+        var d = this.data;
+        var data_length = d.length;
+        var zgeom = this.z_geom;
+        var object = new DSAObject(terrain, x, y, z);
         
-        return d[max];
-    } else {
-        // fall (TODO: this could be smarter, with hill climbing or something)
-        for (var i = max; i >= min; i--)
-            if (d[i].y < y) return d[i];
-    }
-    
-    // Otherwise there's nothing below
-    return null;
-}
-
-function DSAFindIndexForObject(obj)
-{
-    // This method returns the the index of the object passed.
-    // Returns null of not present.
-    
-    if (obj == null)
-        return;
-    
-    // out of zbounds?
-    if (obj.z > this.maxz || obj.z < this.minz)
-        return null;
-    
-    var zgeom = this.z_geom;
-    var zg = zgeom[obj.z - this.minz];
-    
-    // Anything in this zplane?
-    if (zg == null)
-        return null;
-    
-    // Out of x bounds for this plane?
-    if (obj.x > zg.maxx || obj.x < zg.minx)
-        return null;
-    
-    // Anything at this x value?
-    var rects = zg.xrects;
-    var rect = rects[obj.x - zg.minx];
-    if (rect == null)
-        return null;
-    
-    var min = rect.start;
-    var d = this.data;
-    
-    // Figure out the max value
-    var max = min + rect.count - 1;
-    
-    // Binary search for y (wikipedia has psuedocode)
-    var mid = 0;
-    do {
-        mid = min + ((max - min) >> 1);
-        if (obj.y > d[mid].y )
-            min = mid + 1;
-        else
-            max = mid - 1;
-    } while (d[mid].y != obj.y && min <= max);
-    
-    // is the y value present?
-    if (d[mid].y != obj.y)
-        return null;
-    
-    // Success!
-    return mid;
-}
-
-function DSAFindIndexForObjectAt(x, y, z)
-{
-    var temp = new DSAObject(null, x, y, z);
-    return this.findIndexForObject(temp);
-}
-
-function DSACastShadow(index)
-{
-    if (index == 0)
-        return;
-    
-    var d = this.data;
-    
-    var below = d[index - 1];
-    
-    if (below.x != d[index].x || below.z != d[index].z )
-        return;
-    
-    // Don't cast a shadow on something directly below.
-    if (below.y == d[index].y - 1)
-        return;
-    
-    below.shadow = 1 - ((d[index].y - below.y) * shadowStep);
-    
-    if (below.shadow <= 0)
-    {
-        below.shadow = 0;
-        below.removeShader(shadowShader);
-    } else {
-        below.addShader(false, shadowShader);
-    }
-}
-
-function DSADeleteObject(obj)
-{
-    var index = this.findIndexForObject(obj);
-    return this.deleteIndex(index);
-}
-
-function DSADeleteIndex(index)
-{
-    if (index < 0) return null;
-    
-    var d = this.data;
-    var zgeom = this.z_geom;
-    
-    // Figure out if there is a block spacially above us or not
-    var above = null;
-    
-    if (index + 1 < d.length)
-    {
-        if (d[index + 1].x == d[index].x && d[index + 1].z == d[index].z)
-            above = d[index+1];
-    }
-    
-    var deleted = d.splice(index, 1)[0];
-    
-    // No longer optimized
-    this.optimized = false;
-    
-    var zg_index = deleted.z - this.minz;
-    var zg = zgeom[zg_index];
-    var rects = zg.xrects;
-    
-    // Handle shadow
-    if (above != null)
-    {
-        this.castShadow(index);
-    } else {
-        // If nothing is above us, remove shadow
-        if (index - 1 >= 0)
-        {
-            if (d[index - 1].x == deleted.x &&
-                d[index - 1].z == deleted.z)
-            {
-                d[index - 1].shadow = 0;
-                d[index - 1].removeShader(shadowShader);
-            }
-        }
-    }
-    
-    // Lower the start index of all xrects in all zplanes ahead of us
-    var tmp = null;
-    for (var i = zg_index + 1; i < zgeom.length; i++)
-    {
-        if (zgeom[i] == null)
-            continue;
-        
-        tmp = zgeom[i].xrects;
-        
-        for (var j = 0; j < tmp.length; j++)
-        {
-            if (tmp[j] != null)
-                tmp[j].start--;
-        }
-    }
-    
-    var set_index = rects[0].start;
-    var rect_index = deleted.x - zg.minx;
-    var rect = rects[rect_index];
-    
-    // Were we the last object in this zplane?
-    if (rects.length == 1 && rect.count == 1)
-    {
-        zgeom[deleted.z] = null;
-        
-        // Trim all empty tail sets
-        while (zgeom.length > 0)
-        {
-            if (zgeom[zgeom.length - 1] == null)
-                zgeom.pop();
-            else
-                break;
-        }
-        
-        // Trim all beginning sets
-        while (zgeom.length > 0)
-        {
-            if (zgeom[0] == null)
-                zgeom.shift();
-            else
-                break;
-        }
-        
-        this.minz = zgeom[0].z;
-        this.maxz = zgeom[zgeom.length - 1].z;
-        
-    } else {
-        // decrement count
-        rect.count--;
-        
-        // were we the last object in this xplane?
-        if (rect.count < 1)
-        {
-            // this column is gone, delete it
-            rects[rect_index] = null;
-            
-            if (rect_index == 0)
-            {
-                // delete rects from the front until we find something not null
-                while (rects[0] == null)
-                    rects.shift();
-                
-                // update rect index so that the decriment happens to every
-                // rect in the set
-                rect_index = -1;
-            } else if (rect_index == rects.length - 1) {
-                // delete rects from the back until we get to something not null
-                while (rects[rects.length - 1] == null)
-                    rects.pop();
-            }
-        } else {
-            // update the geometry
-            rect.update(this, rect.start);
-        }
-        
-        // decrement the start index of all rects ahead of this
-        var tmp = null
-        for (var i = rect_index + 1; i < rects.length; i++)
-        {
-            tmp = rects[i];
-            if (tmp != null) tmp.start--;
-        }
-        
-        // reset max and min x in constant time
-        zg.maxx = rects[rects.length - 1].x;
-        zg.minx = rects[0].x;
-        
-        // Finding the highest yvalue requires scanning the entire zset
-        if (deleted.y == zg.miny || deleted.y == zg.maxy)
-        {
-            zg.maxy = d[set_index].y;
-            zg.miny = d[set_index].y;
-            
-            var max = rect.start + rect.count - 1;
-            
-            for (var i = set_index + 1; i < max; i++)
-            {
-                if (d[i].y > zg.maxy)
-                    zg.maxy = d[i].y;
-                else if (d[i].y < zg.miny)
-                    zg.miny = d[i].y;
-            }
-        }
-        
-        zg.updatePixelProjection();
-    }
-    
-    return deleted;
-}
-
-function DSAInsertAboveObject(object, terrain)
-{
-    var index = this.findIndexForObject(object);
-    return this.insertAboveIndex(index, terrain);
-}
-
-function DSAInsertAboveIndex(index, terrain)
-{
-    var d = this.data;
-    
-    var obj = d[index];
-    
-    // Make sure there's nothing above us already
-    if (d.length > index + 1)
-    {
-        if (d[index+1].z == obj.z &&
-            d[index+1].x == obj.x &&
-            d[index+1].y == obj.y + 1)
-            return null;
-    }
-    
-    var n = new DSAObject(terrain, obj.x, obj.y + 1, obj.z);
-    
-    if (obj.shadow == 1)
-    {
-        obj.shadow = 0;
-    } else if (obj.shadow != 0) {
-        n.shadow = obj.shadow + shadowStep;
-        obj.shadow = 0;
-    }
-    
-    d.splice(index + 1, 0, n);
-    
-    // No longer optimized
-    this.optimized = false;
-    
-    // update geometry
-    this.updatePlaneGeometry(n, index);
-    
-    // recast a shadow
-    this.castShadow(index);
-    
-    return n;
-}
-
-function DSAInsertBelowObject(object, terrain)
-{
-    var index = this.findIndexForObject(object);
-    return this.insertBelowIndex(index, terrain);
-}
-
-function DSAInsertBelowIndex(index, terrain)
-{
-    var d = this.data;
-    var obj = d[index];
-    
-    // Make sure there's nothing below us already
-    if (index - 1 >= 0)
-    {
-        if (d[index-1].z == obj.z &&
-            d[index-1].x == obj.x &&
-            d[index-1].y == obj.y - 1)
-            return null;
-    }
-    
-    var n = new DSAObject(terrain, obj.x, obj.y - 1, obj.z);
-    d.splice(index, 0, n);
-    
-    // No longer optimized
-    this.optimized = false;
-    
-    // zset has increased in length, so increase all following zset indicies
-    for (var i = n.z + 1; i < zsets.length ; i++)
-        zsets[i] += 1;
-    
-    this.updatePlaneGeometry(n, index);
-    
-    // We might be the new first block in the zset
-    if (index > 0)
-    {
-        if (d[index - 1].z != d[index].z )
-            // we're the new first index in the zset
-            zsets[d[index].z] = index;
-    }
-    
-    this.castShadow(index - 1);
-    
-    return n;
-}
-
-function DSASelectObject(x, y)
-{
-    // return the front-most tile at absolute pixel position (x,y) on the max
-    var d = this.data;
-    var zgeom = this.z_geom;
-    var outside = false;
-    var min = 0, max = 0;
-    var obj = null, px = 0, py = 0, omaxx = 0, omaxy = 0;
-    var poly = null, p = null;
-    
-    // Multiple zplanes will probably overlap the point, so find all of them
-    var inside = false;
-    var pi = null, pj = null, pix = 0, piy = 0, pjx = 0, pjy = 0, j = 3;
-    for (var z = this.highest_z; z >= this.lowest_z ; z--)
-    {
-        p = zgeom[z];
-        
-        if (p == null) continue;
-        if (p.insideClippingArea == false) continue;
-        
-        // is the point inside this z plane? reset state for pip test
-        poly = p.points;
-        
-        // This is the point-in-poly test done four times.  It's optimized
-        // because it gets done every mouse event, so it's not pretty.
-        j = 3;
-        inside = false;
-        for (var i = -1; ++i < 4; j = i)
-        {
-            pi = poly[i];
-            pj = poly[j];
-            pix = pi.x; pjx = pj.x;
-            piy = pi.y; pjy = pj.y;
-            if ((piy <= y && y < pjy) || (pjy <= y && y < piy))
-            {
-                if (x < (pjx - pix) * (y - piy) / (pjy - piy) + pix)
-                    inside = !inside;
-            }
-        }
-        
-        if (inside == false) continue;
-        
-        min = ((x - poly[0].x) >> 5) - 1;
-        if (min == -1) min = 0;
-        max = 0;
-        
-        p = p.xrects;
-        
-        // scan xrects for the LAST possible rect it could be in
-        for (var i = min + 1; i < p.length; i++)
-        {
-           if (p[i] == null) continue;
-           if (p[i].minx > x) break;
-           if (p[i].minx < x) max = i;
-        }
-        
-        if (p[min] == null)
-        {
-            if (max == 0) continue;
-            
-            for (var i = min + 1; i <= max; i++)
-            {
-                if (p[i] != null)
-                {
-                    min = i;
-                    break;
-                }
-            }
-        } else if (max == 0) {
-            max = min;
-        }
-        
-        min = p[min].start;
-        max = p[max].start + p[max].count - 1;
-        
-        for (var i = max; i >= min; i--)
-        {
-            obj = d[i];
-            px = obj.px;
-            py = obj.py;
-            omaxy = py + obj.h;
-            
-            if (py > y || omaxy < y) continue;
-            
-            px = Math.floor(x - px);
-            py = Math.floor(y - py);
-            pixeldata = obj.img.getContext('2d').getImageData(px,py,1,1);
-            if (pixeldata.data[3] > alphaSelectionThreshold) return obj;
-        }
-    }
-    
-    return null;
-}
-
-function DSADrawZPlaneBounds()
-{
-    var d = this.data;
-    var b = this.buffer;
-    var zgeom = this.z_geom;
-    
-    var p = null, r = null;
-    var t = null;
-    for (var z = 0; z < zgeom.length; z++)
-    {
-        p = zgeom[z];
-        
-        if (p == null) continue;
-        
-        b.strokeStyle = "red";
-        b.beginPath();
-        b.moveTo(p.points[0].x - bufferX, p.points[0].y - bufferY);
-        b.lineTo(p.points[1].x - bufferX, p.points[1].y - bufferY);
-        b.lineTo(p.points[2].x - bufferX, p.points[2].y - bufferY);
-        b.lineTo(p.points[3].x - bufferX, p.points[3].y - bufferY);
-        b.closePath();
-        b.stroke();
-    }
-}
-
-function DSAMarkBufferCollision(direction)
-{
-    var zg = this.z_geom;
-    var maxx = bufferX + bufferWidth;
-    var maxy = bufferY + bufferHeight;
-    var rect = {x: bufferX, y:bufferY, w:maxx, h:maxy};
-    var p = null, point0 = null, point1 = null, point2 = null, point3 = null;
-    var min = 0, max = 0;
-    
-    // Which direction has the buffer moved in?
-    switch (direction)
-    {
-        case 1:
-        // Up or right
-        max = this.highest_z + 1;
-        break;
-        
-        case 2:
-        // Down or left
-        min = this.lowest_z;
-        max = zg.length;
-        break;
-        
-        case 0:
-        default:
-        // Don't assume anything
-        this.lowest_z = zg.length + 1
-        this.highest_z = -1;
-        max = zg.length;
-        break;
-    }
-    
-    for (var i = min; i < max; i++)
-    {
-        p = zg[i];
-        
-        if (p == null) continue;
-        
-        point0 = p.points[0];
-        point1 = p.points[1];
-        point2 = p.points[2];
-        point3 = p.points[3];
-        
-        if (point3.y > maxy || point1.y < bufferY ||
-            point3.x > maxx || point1.x < bufferX)
-        {
-            p.insideClippingArea = false;
-            continue;
-        }
-        
-        if (triangleTest(rect, point0, point1, point2) == false)
-        {
-            if (triangleTest(rect, point0, point2, point3) == false)
-            {
-                p.insideClippingArea = false;
-                continue;
-            }
-        }
-        
-        if (i > this.highest_z) this.highest_z = i;
-        if (i < this.lowest_z) this.lowest_z = i;
-        
-        p.insideClippingArea = true;
-    }
-}
-
-function DSAUpdateBuffer(update, minx, miny, width, height, noCheck)
-{
-    // If update == true, redraw any portion of the visible canvas effected
-    // by this call.  If noCheck == false, do all intersection testing.
-    // Otherwise, simply trust the already given values of insideClippingArea.
-    
-    var maxx = minx + width;
-    var maxy = miny + height;
-    
-    // Ensure that the update hits the buffer
-    if (maxx < bufferX || maxy < bufferY ||
-        minx > bufferX + bufferWidth || miny > bufferY + bufferHeight)
-        return;
-    
-    var d = this.data;
-    var zgeom = this.z_geom;
-    var b = this.buffer;
-    var px = 0, py = 0, omaxx = 0, omaxy = 0, p1x = 0, p3x = 0;
-    var point0 = null, point1 = null, point2 = null, point3 = null;
-    var p = null, obj = null, sList = null;
-    var rects = null, min_rect = null, max_rect = null;
-    var tileObj = null;
-    
-    // Construct the rectangle representing our viewport
-    var rect = {x:minx,y:miny,w:maxx,h:maxy};
-    
-    // Push context
-    b.save();
-    
-    // Bigin definition of new clipping path
-    b.beginPath();
-    
-    // Make clipping rect
-    b.rect(minx - bufferX, miny - bufferY, width, height);
-    
-    // close path, even though there's no documentation on if this is necessary
-    b.closePath();
-    
-    // Clip the area of relevant changes
-    b.clip();
-    
-    b.clearRect(minx - bufferX, miny - bufferY, width, height);
-    
-    for (var z = this.lowest_z; z <= this.highest_z; z++)
-    {
-        p = zgeom[z];
-        
-        if (p == null) continue;
-        if (p.insideClippingArea == false) continue;
-        
-        if (noCheck == false)
-        {
-            point0 = p.points[0];
-            point1 = p.points[1];
-            point2 = p.points[2];
-            point3 = p.points[3];
-            
-            p1x = point1.x; // minx of zplane
-            p3x = point3.x; // maxx of zplane 
-            
-            // Broad phase clipping by treating the plane as a box
-            if (point3.y > maxy || point1.y < miny ||
-                p3x > maxx || p1x < minx)
-                continue;
-            
-            // Do more detailed plane collision test by splitting the zplane
-            // in to two triangles and testing whether or not they intersect
-            // the viewport, represented as an AABB
-            if (triangleTest(rect, point0, point1, point2) == false)
-                if (triangleTest(rect, point0, point2, point3) == false)
-                    continue;
-        } else {
-            p1x = p.points[1].x;
-            p3x = p.points[3].x;
-        }
-        
-        rects = p.xrects;
-        min = 0;
-        
-        // TODO: This division assumed a tile graphic width of 64
-        if (p3x < minx) min = ((minx - p3x) >> 5 ) - 1;
-        
-        min_rect = rects[min];
-        
-        if (min_rect != null)
-        {
-            if (min_rect.minx + tileGraphicWidth <= minx)
-            {
-                min++;
-                min_rect = rects[min];
-            }
-        }
-        
-        // TODO: this dificion also assumes tile width of 64
-        max = rects.length - 1;
-        if (p1x > maxx) max -= ((p1x - maxx) >> 5 ) - 1;
-        
-        // Correct max and min for possible null entries in the rects array
-        if (min_rect == null)
-        {
-            for (var i = min; i <= max; i++)
-            {
-                if (rects[i] != null)
-                {
-                    min = i;
-                    min_rect = rects[min];
-                    break;
-                }
-            }
-            
-            if (min_rect == null) continue;
-        }
-        
-        max_rect = rects[max];
-        
-        if (max_rect == null)
-        {
-            for (var i = max - 1; i >= min; i--)
-            {
-                max_rect = rects[i];
-                if (max_rect != null)
-                {
-                    max = i;
-                    break;
-                }
-            }
-            
-            if (max_rect == null)
-                max_rect = rects[min];
-        }
-        
-        min = min_rect.start;
-        max = max_rect.start + max_rect.count;
-        
-        for (var i = min; i < max; i++)
-        {
-            obj = d[i];
-            px = obj.px;
-            py = obj.py;
-            omaxy = py + tileGraphicHeight;
-            
-            if (omaxy <= miny || py >= maxy) continue;
-            
-            px -= bufferX;
-            py -= bufferY;
-            sList = obj.shaderList;
-            
-            // Draw
-            if (sList == null)
-            {
-                b.drawImage(obj.img, px, py);
-            } else {
-                for (var j = sList.length - 1; j > 0; j--)
-                    sList[j](obj, b, px, py);
-                sList[0](obj, b, px, py);
-            }
-            
-            sList = obj.obj;
-            if (sList != null)
-            {
-                for (var j = sList.length - 1; j >= 0; j--)
-                {
-                    tileObj = sList[j];
-                    b.drawImage(tileObj.img,
-                        tileObj.px - bufferX, tileObj.py - bufferY);
-                }
-            }
-        }
-    }
-    
-    b.restore();
-    
-    if (update == false) return;
-    
-    // Only redraw viewport if this draw's clipping area is intersecting,
-    // inside, or completely enclosing the viewport.
-    omaxx = viewX + viewWidth;
-    omaxy = viewY + viewHeight;
-    
-    // In the following we make a big assumption: the viewport is always
-    // COMPLETELY inside the buffer.  If this is not true, something
-    // might go wrong.
-    
-    if (maxx <= viewX || minx >= omaxx) return;
-    if (maxy <= viewY || miny >= omaxy) return;
-    
-    var tx = minx > viewX ? minx : viewX;
-    var ty = miny > viewY ? miny : viewY;
-    var tw = tx+width;
-    if (tw > omaxx) tw = omaxx;
-    tw -= tx;
-    var th = ty+height;
-    if (th > omaxy) th = omaxy;
-    th -= ty;
-    
-    var sx = tx - bufferX;
-    if (sx < 0) sx = 0;
-    
-    var sy = ty - bufferY;
-    if (sy < 0) sy = 0;
-    
-    canvasContext.drawImage(buffer, sx, sy, tw, th,
-        tx - viewX, ty - viewY, tw, th);
-}
-
-function DSACull()
-{
-    
-}
-
-function DSAUpdatePlaneGeometry(obj, index)
-{
-    // This function updates the zgeometry assuming that obj at index has
-    // just been added to the DSA.
-    
-    // Is this the biggest xval?
-    var zg = this.z_geom;
-    var plane = zg[obj.z - this.minz];
-    var delta = false;
-    var x = obj.x;
-    var y = obj.y;
-    
-    // Test for null values, which would mean the ZPlaneObject has not been used
-    if (plane.maxx == null)
-    {
-        plane.maxx = x;
-        plane.minx = x;
-        plane.miny = y;
-        plane.maxy = y;
-        plane.xrects[0] = new DSAXGeometryObject(index, obj);
-        plane.updatePixelProjection();
-        return;
-    }
-    
-    var xr = plane.xrects;
-    if (x > plane.maxx)
-    {
-        // add space between old maxx and new one
-        for (var i = 0; i < x - plane.maxx - 1; i++)
-            xr.push(null);
-        
-        // ad new description
-        xr.push(new DSAXGeometryObject(index, obj));
-        
-        // No longer optimized
+        // This adds to arrays
         this.optimized = false;
         
-        plane.maxx = x;
-    } else if (x < plane.minx) {
-        // Add the space between the old minx and the new minx
-        for (var i = 0; i < plane.minx - x - 1; i++)
-            xr.splice(0,0,null);
-        
-        // Add description for the new one
-        xr.splice(0,0,new DSAXGeometryObject(index, obj));
-        
-        // gotta increase the start of every other DSAXGeom object
-        for (var i = 1; i < xr.length; i++)
-            if (xr[i] != null) xr[i].start++;
-        
-        // No longer optimized
-        this.optimized = false;
-        
-        plane.minx = x;
-    } else {
-        // It's in the middle
-        var cur = x - plane.minx;
-        if (xr[cur] == null)
+        // Initial case
+        if (data_length == 0)
         {
-            xr[cur] = new DSAXGeometryObject(index, obj);
-            // No longer optimized
-            this.optimized = false;
-        } else {
-            xr[cur].addObject(obj, index);
-        }
-        
-        // gotta increase the start of every other DSAXGeom object
-        for (var i = cur + 1; i < xr.length; i++)
-            if (xr[i] != null) xr[i].start++;
-    }
-    
-    // increase the start of every other DSAXGeom object in every other zgeom
-    var rects = null;
-    for (var i = (obj.z - this.minz) + 1; i <= zg.length; i++)
-    {
-        if (zg[i] == null) continue;
-        
-        rects = zg[i].xrects;
-        for (var j = 0; j < rects.length; j++)
-            if (rects[j] != null) rects[j].start++;
-    }
-    
-    // Is this the biggest or smallest yval?
-    if (y > plane.maxy)
-    {
-        plane.maxy = y;
-    } else if (y < plane.miny) {
-        plane.miny = y;
-    }
-    
-    plane.updatePixelProjection();
-}
-
-function DSAInsert(tile, x, y, z)
-{
-    var d = this.data;
-    var data_length = d.length;
-    var zgeom = this.z_geom;
-    var object = new DSAObject(tile, x, y, z);
-    
-    // This adds to arrays
-    this.optimized = false;
-    
-    // Initial case
-    if (data_length == 0)
-    {
-        this.minz = z;
-        this.maxz = z;
-        
-        // Push the actual object
-        d.splice(0, 0, object);
-        
-        // Push the index of the new set
-        zgeom.push(new DSAZGeometryObject(z));
-        this.updatePlaneGeometry(object, 0);
-        
-        return;
-    }
-    
-    // We want to keep track of the start indexes of z sets, so treat
-    // the following as a special condition
-    if (z > this.maxz)
-    {
-        // Make blank zgeoms until we get to the new one
-        while (zgeom.length < (z - 1) - this.minz)
-            zgeom.push(null);
-        
-        // Push object
-        d.splice(data_length, 0, object);
-        
-        // Push the index of the new set
-        zgeom.push(new DSAZGeometryObject(z));
-        this.updatePlaneGeometry(object, data_length);
-        
-        // Update maxz value
-        this.maxz = z;
-        return;
-    } else if (z < this.minz) {
-        // blank zgeoms
-        for (var i = z + 1; i < this.minz; i++)
-            zgeom.splice(0,0,null);
-        
-        // Add object to FRONT
-        d.splice(0, 0, object);
-        
-        // update geometry
-        zgeom.splice(0,0,new DSAZGeometryObject(z));
-        this.updatePlaneGeometry(object, 0);
-        
-        // update min value
-        this.minz = z;
-        return;
-    }
-    
-    // Are we the first tile in a middle zplane?
-    var zgeom_index = z - this.minz;
-    var zplane = zgeom[zgeom_index];
-    if (zplane == null) {
-        // First object for this z value
-        
-        var index = null;
-        for (var i = zgeom_index + 1; i < zgeom.length; i++)
-        {
-            if (zgeom[i] != null)
-                index = zgeom[i].xrects[0].start;
-        }
-        
-        if (index == null)
-        {
-            // Can probably remove this check:  it never occurs.
-            log("ZPlane consistency error.");
+            this.minz = z;
+            this.maxz = z;
+            
+            // Push the actual object
+            d.splice(0, 0, object);
+            
+            // Push the index of the new set
+            zgeom.push(new DSAZGeometryObject(z));
+            this.updatePlaneGeometry(object, 0);
+            
             return;
         }
         
-        // Push object
-        d.splice(index, 0, object);
-        
-        // update geometry
-        zgeom[zgeom_index] = new DSAZGeometryObject(z);
-        this.updatePlaneGeometry(object, index);
-        
-        return;
-    }
-    
-    // Insert it into the map array where it needs to go.
-    // lowest z value first, lowest x, then lowest y
-    var index = -1;
-    var rects = zplane.xrects;
-    var rect = rects[x - zplane.minx];
-    // Are there no tiles at this z,x value?
-    if (rect == null)
-    {
-        if (x >= zplane.maxx)
+        // We want to keep track of the start indexes of z sets, so treat
+        // the following as a special condition
+        if (z > this.maxz)
         {
-            rect = rects[rects.length - 1];
-            index = rect.start + rect.count;
-        } else {
-            for (var i = x - zplane.minx + 1; i < rects.length; i++)
+            // Make blank zgeoms until we get to the new one
+            while (zgeom.length < (z - 1) - this.minz)
+                zgeom.push(null);
+            
+            // Push object
+            d.splice(data_length, 0, object);
+            
+            // Push the index of the new set
+            zgeom.push(new DSAZGeometryObject(z));
+            this.updatePlaneGeometry(object, data_length);
+            
+            // Update maxz value
+            this.maxz = z;
+            return;
+        }
+        
+        if (z < this.minz)
+        {
+            // blank zgeoms
+            for (var i = z + 1; i < this.minz; i++)
+                zgeom.splice(0,0,null);
+            
+            // Add object to FRONT
+            d.splice(0, 0, object);
+            
+            // update geometry
+            zgeom.splice(0,0,new DSAZGeometryObject(z));
+            this.updatePlaneGeometry(object, 0);
+            
+            // update min value
+            this.minz = z;
+            return;
+        }
+        
+        // Are we the first tile in a middle zplane?
+        var zgeom_index = z - this.minz;
+        var zplane = zgeom[zgeom_index];
+        
+        if (zplane == null)
+        {
+            // First object for this z value
+            
+            var index = null;
+            for (var i = zgeom_index + 1; i < zgeom.length; i++)
             {
-                rect = rects[i];
-                if (rect != null)
+                if (zgeom[i] != null)
+                    index = zgeom[i].xrects[0].start;
+            }
+            
+            // Push object
+            d.splice(index, 0, object);
+            
+            // update geometry
+            zgeom[zgeom_index] = new DSAZGeometryObject(z);
+            this.updatePlaneGeometry(object, index);
+            
+            return;
+        }
+        
+        // Insert it into the map array where it needs to go.
+        // lowest z value first, lowest x, then lowest y
+        var index = -1;
+        var rects = zplane.xrects;
+        var rect = rects[x - zplane.minx];
+        // Are there no tiles at this z,x value?
+        if (rect == null)
+        {
+            if (x >= zplane.maxx)
+            {
+                rect = rects[rects.length - 1];
+                index = rect.start + rect.count;
+            } else {
+                for (var i = x - zplane.minx + 1; i < rects.length; i++)
                 {
-                    index = rect.start;
-                    break;
+                    rect = rects[i];
+                    if (rect != null)
+                    {
+                        index = rect.start;
+                        break;
+                    }
                 }
+            }
+            
+            // Insert into data array
+            d.splice(index, 0, object);
+            
+            // Keep z-geometry up to date
+            this.updatePlaneGeometry(object, index);
+            
+            return index;
+        }
+        
+        // There are tiles, so sort by height
+        index = rect.start;
+        var max = rect.start + rect.count;
+        
+        for (; index < max; index++)
+            if (d[index].y > object.y)
+                break;
+        
+        // Alert on duplicates
+        if (this.duplicateDetection == true && index > 0)
+        {
+            var dup = d[index - 1];
+            if (dup.x == x && dup.y == y && dup.z == z)
+            {
+                var msg = "Warning: Duplicate insertion of ("+x+","+y+","+z+")";
+                if (this.allowDuplicates == false)
+                {
+                    msg += "  Ignoring.";
+                    log(msg);
+                    return null;
+                }
+                log(msg);
             }
         }
         
@@ -1349,93 +422,986 @@ function DSAInsert(tile, x, y, z)
         this.updatePlaneGeometry(object, index);
         
         return index;
-    }
+    },
     
-    // There are tiles, so sort by height
-    index = rect.start;
-    var max = rect.start + rect.count;
-    
-    for (; index < max; index++)
-        if (d[index].y > object.y)
-            break;
-    
-    // Alert on duplicates
-    if (this.duplicateDetection == true && index > 0)
+    updateBuffer: function (update, minx, miny, width, height, noCheck)
     {
-        var dup = d[index - 1];
-        if (dup.x == x && dup.y == y && dup.z == z)
+        // If update == true, redraw any portion of the visible canvas effected
+        // by this call.  If noCheck == false, do all intersection testing.
+        // Otherwise, simply trust the already given values of insideClippingArea.
+        
+        var maxx = minx + width;
+        var maxy = miny + height;
+        
+        // Ensure that the update hits the buffer
+        if (maxx < bufferX || maxy < bufferY ||
+            minx > bufferX + bufferWidth || miny > bufferY + bufferHeight)
+            return;
+            
+        var d = this.data;
+        var zgeom = this.z_geom;
+        var b = this.buffer;
+        var px = 0, py = 0, omaxx = 0, omaxy = 0, p1x = 0, p3x = 0;
+        var point0 = null, point1 = null, point2 = null, point3 = null;
+        var p = null, obj = null, sList = null;
+        var rects = null, min_rect = null, max_rect = null;
+        var tileObj = null;
+        
+        // Construct the rectangle representing our viewport
+        var rect = {x:minx,y:miny,w:maxx,h:maxy};
+        
+        // Push context
+        b.save();
+        
+        // Bigin definition of new clipping path
+        b.beginPath();
+        
+        // Make clipping rect
+        b.rect(minx - bufferX, miny - bufferY, width, height);
+        
+        // close path, even though there's no documentation on if this is necessary
+        b.closePath();
+        
+        // Clip the area of relevant changes
+        b.clip();
+        
+        b.clearRect(minx - bufferX, miny - bufferY, width, height);
+        
+        for (var z = this.lowest_z; z <= this.highest_z; z++)
         {
-            var msg = "Warning: Duplicate insertion of ("+x+","+y+","+z+")";
-            if (this.allowDuplicates == false)
+            p = zgeom[z];
+            
+            if (p == null) continue;
+            if (p.insideClippingArea == false) continue;
+            
+            if (noCheck == false)
             {
-                msg += "  Ignoring.";
-                log(msg);
-                return null;
+                point0 = p.points[0];
+                point1 = p.points[1];
+                point2 = p.points[2];
+                point3 = p.points[3];
+                
+                p1x = point1.x; // minx of zplane
+                p3x = point3.x; // maxx of zplane 
+                
+                // Broad phase clipping by treating the plane as a box
+                if (point3.y > maxy || point1.y < miny ||
+                    p3x > maxx || p1x < minx)
+                    continue;
+                    
+                // Do more detailed plane collision test by splitting the zplane
+                // in to two triangles and testing whether or not they intersect
+                // the viewport, represented as an AABB
+                if (triangleTest(rect, point0, point1, point2) == false)
+                    if (triangleTest(rect, point0, point2, point3) == false)
+                        continue;
+            } else {
+                p1x = p.points[1].x;
+                p3x = p.points[3].x;
             }
-            log(msg);
+            
+            rects = p.xrects;
+            min = 0;
+            
+            // TODO: This division assumed a tile graphic width of 64
+            if (p3x < minx) min = ((minx - p3x) >> 5 ) - 1;
+            
+            min_rect = rects[min];
+            
+            if (min_rect != null)
+            {
+                if (min_rect.minx + tileGraphicWidth <= minx)
+                {
+                    min++;
+                    min_rect = rects[min];
+                }
+            }
+            
+            // TODO: this division also assumes tile width of 64
+            max = rects.length - 1;
+            if (p1x > maxx) max -= ((p1x - maxx) >> 5 ) - 1;
+            
+            // Correct max and min for possible null entries in the rects array
+            if (min_rect == null)
+            {
+                for (var i = min; i <= max; i++)
+                {
+                    if (rects[i] != null)
+                    {
+                        min = i;
+                        min_rect = rects[min];
+                        break;
+                    }
+                }
+                
+                if (min_rect == null) continue;
+            }
+            
+            max_rect = rects[max];
+            
+            if (max_rect == null)
+            {
+                for (var i = max - 1; i >= min; i--)
+                {
+                    max_rect = rects[i];
+                    if (max_rect != null)
+                    {
+                        max = i;
+                        break;
+                    }
+                }
+                
+                if (max_rect == null)
+                    max_rect = rects[min];
+            }
+            
+            min = min_rect.start;
+            max = max_rect.start + max_rect.count;
+            
+            for (var i = min; i < max; i++)
+            {
+                obj = d[i];
+                px = obj.px;
+                py = obj.py;
+                omaxy = py + tileGraphicHeight;
+                
+                if (omaxy <= miny || py >= maxy) continue;
+                
+                px -= bufferX;
+                py -= bufferY;
+                sList = obj.shaderList;
+                
+                // Draw
+                if (sList == null)
+                {
+                    b.drawImage(obj.img, px, py);
+                } else {
+                    for (var j = sList.length - 1; j > 0; j--)
+                        sList[j](obj, b, px, py);
+                    sList[0](obj, b, px, py);
+                }
+                
+                sList = obj.obj;
+                if (sList != null)
+                {
+                    for (var j = sList.length - 1; j >= 0; j--)
+                    {
+                        tileObj = sList[j];
+                        b.drawImage(tileObj.img,
+                            tileObj.px - bufferX, tileObj.py - bufferY);
+                    }
+                }
+            }
         }
-    }
+        
+        b.restore();
+        
+        if (update == false) return;
+        
+        // Only redraw viewport if this draw's clipping area is intersecting,
+        // inside, or completely enclosing the viewport.
+        omaxx = viewX + viewWidth;
+        omaxy = viewY + viewHeight;
+        
+        // In the following we make a big assumption: the viewport is always
+        // COMPLETELY inside the buffer.  If this is not true, something
+        // might go wrong.
+        
+        if (maxx <= viewX || minx >= omaxx) return;
+        if (maxy <= viewY || miny >= omaxy) return;
+        
+        var tx = minx > viewX ? minx : viewX;
+        var ty = miny > viewY ? miny : viewY;
+        var tw = tx+width;
+        if (tw > omaxx) tw = omaxx;
+        tw -= tx;
+        var th = ty+height;
+        if (th > omaxy) th = omaxy;
+        th -= ty;
+        
+        var sx = tx - bufferX;
+        if (sx < 0) sx = 0;
+        
+        var sy = ty - bufferY;
+        if (sy < 0) sy = 0;
+        
+        canvasContext.drawImage(buffer, sx, sy, tw, th,
+            tx - viewX, ty - viewY, tw, th);
+    },
     
-    // Insert into data array
-    d.splice(index, 0, object);
-    
-    // Keep z-geometry up to date
-    this.updatePlaneGeometry(object, index);
-    
-    return index;
-}
-
-function DSAOptimize()
-{
-    if (this.optimized == true)
-        return true;
-    
-    // This function should do any time-consuming optimizations and set
-    // the optimized flag.  For instance, big arrays can be replaced with
-    // ones that have been explicitly allocated.
-    
-    var t0 = new Date();
-    
-    // explicitly allocate space for zgeom
-    var zg = this.z_geom;
-    var temp = new Array(zg.length);
-    for (var i = 0; i < zg.length; i++)
-        temp[i] = zg[i];
-    
-    delete this.z_geom;
-    this.z_geom = temp;
-    zg = this.z_geom;
-    
-    // explicitly allocate space for xrects
-    var xr = null;
-    for (var i = 0; i < zg.length; i++)
+    cull: function ()
     {
-        if (zg[i] == null) continue;
+        // TODO: implement
+        log("Map cull function not yet implemented.");
+        return false;
+    },
+    
+    selectObject: function (x, y)
+    {
+        // return the front-most tile at absolute pixel position (x,y) on the max
+        var d = this.data;
+        var zgeom = this.z_geom;
+        var outside = false;
+        var min = 0, max = 0;
+        var obj = null, px = 0, py = 0, omaxx = 0, omaxy = 0;
+        var poly = null, p = null;
         
-        xr = zg[i].xrects;
-        temp = new Array(xr.length);
-        for (var j = 0; j < xr.length; j++)
-            temp[j] = xr[j];
+        // Multiple zplanes will probably overlap the point, so find all of them
+        var inside = false;
+        var pi = null, pj = null, pix = 0, piy = 0, pjx = 0, pjy = 0, j = 3;
+        for (var z = this.highest_z; z >= this.lowest_z ; z--)
+        {
+            p = zgeom[z];
+            
+            if (p == null) continue;
+            if (p.insideClippingArea == false) continue;
+            
+            // is the point inside this z plane? reset state for pip test
+            poly = p.points;
+            
+            // This is the point-in-poly test done four times.  It's optimized
+            // because it gets done every mouse event, so it's not pretty.
+            j = 3;
+            inside = false;
+            for (var i = -1; ++i < 4; j = i)
+            {
+                pi = poly[i];
+                pj = poly[j];
+                pix = pi.x; pjx = pj.x;
+                piy = pi.y; pjy = pj.y;
+                if ((piy <= y && y < pjy) || (pjy <= y && y < piy))
+                {
+                    if (x < (pjx - pix) * (y - piy) / (pjy - piy) + pix)
+                        inside = !inside;
+                }
+            }
+            
+            if (inside == false) continue;
+            
+            min = ((x - poly[0].x) >> 5) - 1;
+            if (min == -1) min = 0;
+            max = 0;
+            
+            p = p.xrects;
+            
+            // scan xrects for the LAST possible rect it could be in
+            for (var i = min + 1; i < p.length; i++)
+            {
+               if (p[i] == null) continue;
+               if (p[i].minx > x) break;
+               if (p[i].minx < x) max = i;
+            }
+            
+            if (p[min] == null)
+            {
+                if (max == 0) continue;
+                
+                for (var i = min + 1; i <= max; i++)
+                {
+                    if (p[i] != null)
+                    {
+                        min = i;
+                        break;
+                    }
+                }
+            } else if (max == 0) {
+                max = min;
+            }
+            
+            min = p[min].start;
+            max = p[max].start + p[max].count - 1;
+            
+            for (var i = max; i >= min; i--)
+            {
+                obj = d[i];
+                px = obj.px;
+                py = obj.py;
+                omaxy = py + obj.h;
+                
+                if (py > y || omaxy < y) continue;
+                
+                px = Math.floor(x - px);
+                py = Math.floor(y - py);
+                pixeldata = obj.img.getContext('2d').getImageData(px,py,1,1);
+                if (pixeldata.data[3] > alphaSelectionThreshold) return obj;
+            }
+        }
         
-        delete zg[i].xrects;
-        zg[i].xrects = temp;
+        return null;
+    },
+    
+    insertAboveObject: function (obj, terrain)
+    {
+        return this.insertAboveIndex(this.findIndexForObject(obj), terrain);
+    },
+    
+    insertAboveIndex: function (index, terrain)
+    {
+        var d = this.data;
+        
+        var obj = d[index];
+        
+        // Make sure there's nothing above us already
+        if (d.length > index + 1)
+        {
+            if (d[index+1].z == obj.z &&
+                d[index+1].x == obj.x &&
+                d[index+1].y == obj.y + 1)
+                return null;
+        }
+        
+        var n = new DSAObject(terrain, obj.x, obj.y + 1, obj.z);
+        
+        if (obj.shadow == 1)
+        {
+            obj.shadow = 0;
+        } else if (obj.shadow != 0) {
+            n.shadow = obj.shadow + shadowStep;
+            obj.shadow = 0;
+        }
+        
+        d.splice(index + 1, 0, n);
+        
+        // No longer optimized
+        this.optimized = false;
+        
+        // update geometry
+        this.updatePlaneGeometry(n, index);
+        
+        // recast a shadow
+        this.castShadow(index);
+        
+        return n;
+    },
+    
+    insertBelowObject: function (obj, terrain)
+    {
+        return this.insertBelowIndex(this.findIndexForObject(obj), terrain);
+    },
+    
+    insertBelowIndex: function (index, terrain)
+    {
+        var d = this.data;
+        var obj = d[index];
+        
+        // Make sure there's nothing below us already
+        if (index - 1 >= 0)
+        {
+            if (d[index-1].z == obj.z &&
+                d[index-1].x == obj.x &&
+                d[index-1].y == obj.y - 1)
+                return null;
+        }
+        
+        var n = new DSAObject(terrain, obj.x, obj.y - 1, obj.z);
+        d.splice(index, 0, n);
+        
+        // No longer optimized
+        this.optimized = false;
+        
+        // zset has increased in length, so increase all following zset indicies
+        for (var i = n.z + 1; i < zsets.length ; i++)
+            zsets[i] += 1;
+        
+        this.updatePlaneGeometry(n, index);
+        
+        // We might be the new first block in the zset
+        if (index > 0)
+        {
+            if (d[index - 1].z != d[index].z )
+                // we're the new first index in the zset
+                zsets[d[index].z] = index;
+        }
+        
+        this.castShadow(index - 1);
+        
+        return n;
+    },
+    
+    castShadow: function (index)
+    {
+        if (index == 0) return;
+        
+        var d = this.data;
+        
+        var below = d[index - 1];
+        
+        if (below.x != d[index].x || below.z != d[index].z ) return;
+        
+        // Don't cast a shadow on something directly below.
+        if (below.y == d[index].y - 1) return;
+        
+        below.shadow = 1 - ((d[index].y - below.y) * shadowStep);
+        
+        if (below.shadow <= 0)
+        {
+            below.shadow = 0;
+            below.removeShader(shadowShader);
+        } else {
+            below.addShader(false, shadowShader);
+        }
+    },
+    
+    deleteObject: function (obj)
+    {
+        return this.deleteIndex(this.findIndexForObject(obj));
+    },
+    
+    deleteIndex: function (index)
+    {
+        if (index < 0) return null;
+        
+        var d = this.data;
+        var zgeom = this.z_geom;
+        
+        // Figure out if there is a block spacially above us or not
+        var above = null;
+        
+        if (index + 1 < d.length)
+        {
+            if (d[index + 1].x == d[index].x && d[index + 1].z == d[index].z)
+                above = d[index+1];
+        }
+        
+        var deleted = d.splice(index, 1)[0];
+        
+        // No longer optimized
+        this.optimized = false;
+        
+        var zg_index = deleted.z - this.minz;
+        var zg = zgeom[zg_index];
+        var rects = zg.xrects;
+        
+        // Handle shadow
+        if (above != null)
+        {
+            this.castShadow(index);
+        } else {
+            // If nothing is above us, remove shadow
+            if (index - 1 >= 0)
+            {
+                if (d[index - 1].x == deleted.x &&
+                    d[index - 1].z == deleted.z)
+                {
+                    d[index - 1].shadow = 0;
+                    d[index - 1].removeShader(shadowShader);
+                }
+            }
+        }
+        
+        // Lower the start index of all xrects in all zplanes ahead of us
+        var tmp = null;
+        for (var i = zg_index + 1; i < zgeom.length; i++)
+        {
+            if (zgeom[i] == null) continue;
+            
+            tmp = zgeom[i].xrects;
+            
+            for (var j = 0; j < tmp.length; j++)
+            {
+                if (tmp[j] != null)
+                    tmp[j].start--;
+            }
+        }
+        
+        var set_index = rects[0].start;
+        var rect_index = deleted.x - zg.minx;
+        var rect = rects[rect_index];
+        
+        // Were we the last object in this zplane?
+        if (rects.length == 1 && rect.count == 1)
+        {
+            zgeom[deleted.z] = null;
+            
+            // Trim all empty tail sets
+            while (zgeom.length > 0)
+            {
+                if (zgeom[zgeom.length - 1] == null)
+                    zgeom.pop();
+                else
+                    break;
+            }
+            
+            // Trim all beginning sets
+            while (zgeom.length > 0)
+            {
+                if (zgeom[0] == null)
+                    zgeom.shift();
+                else
+                    break;
+            }
+            
+            this.minz = zgeom[0].z;
+            this.maxz = zgeom[zgeom.length - 1].z;
+            
+        } else {
+            // decrement count
+            rect.count--;
+            
+            // were we the last object in this xplane?
+            if (rect.count < 1)
+            {
+                // this column is gone, delete it
+                rects[rect_index] = null;
+                
+                if (rect_index == 0)
+                {
+                    // delete rects from the front until we find something not null
+                    while (rects[0] == null) rects.shift();
+                    
+                    // update rect index so that the decriment happens to every
+                    // rect in the set
+                    rect_index = -1;
+                } else if (rect_index == rects.length - 1) {
+                    // delete rects from the back until we get to something not null
+                    while (rects[rects.length - 1] == null)
+                        rects.pop();
+                }
+            } else {
+                // update the geometry
+                rect.update(this, rect.start);
+            }
+            
+            // decrement the start index of all rects ahead of this
+            var tmp = null
+            for (var i = rect_index + 1; i < rects.length; i++)
+            {
+                tmp = rects[i];
+                if (tmp != null) tmp.start--;
+            }
+            
+            // reset max and min x in constant time
+            zg.maxx = rects[rects.length - 1].x;
+            zg.minx = rects[0].x;
+            
+            // Finding the highest yvalue requires scanning the entire zset
+            if (deleted.y == zg.miny || deleted.y == zg.maxy)
+            {
+                zg.maxy = d[set_index].y;
+                zg.miny = d[set_index].y;
+                
+                var max = rect.start + rect.count - 1;
+                
+                for (var i = set_index + 1; i < max; i++)
+                {
+                    if (d[i].y > zg.maxy)
+                        zg.maxy = d[i].y;
+                    else if (d[i].y < zg.miny)
+                        zg.miny = d[i].y;
+                }
+            }
+            
+            zg.updatePixelProjection();
+        }
+        
+        return deleted;
+    },
+    
+    findIndexForObjectAt: function (x,y,z)
+    {
+        return this.findIndexForObject(new DSAObject(null, x, y, z));
+    },
+    
+    findIndexForObject: function (obj)
+    {
+        // This method returns the the index of the object passed.
+        // Returns null of not present.
+        
+        if (obj == null) return;
+        
+        // out of zbounds?
+        if (obj.z > this.maxz || obj.z < this.minz) return null;
+        
+        var zgeom = this.z_geom;
+        var zg = zgeom[obj.z - this.minz];
+        
+        // Anything in this zplane?
+        if (zg == null) return null;
+        
+        // Out of x bounds for this plane?
+        if (obj.x > zg.maxx || obj.x < zg.minx) return null;
+        
+        // Anything at this x value?
+        var rects = zg.xrects;
+        var rect = rects[obj.x - zg.minx];
+        if (rect == null) return null;
+        
+        var min = rect.start;
+        var d = this.data;
+        
+        // Figure out the max value
+        var max = min + rect.count - 1;
+        
+        // Binary search for y (wikipedia has psuedocode)
+        var mid = 0;
+        do {
+            mid = min + ((max - min) >> 1);
+            if (obj.y > d[mid].y )
+                min = mid + 1;
+            else
+                max = mid - 1;
+        } while (d[mid].y != obj.y && min <= max);
+        
+        // is the y value present?
+        if (d[mid].y != obj.y) return null;
+        
+        // Success!
+        return mid;
+    },
+    
+    snap: function (x,y,z,stairs)
+    {
+        // If this function is given the coordinates of an existing tile, it returns
+        // the object at the first tile above that one with nothing above it.
+        // Otherwise, it returns the object at the first tile below the given coords
+        
+        // It returns null if there is no object below the coordinates in the latter
+        
+        // The 'stairs' argument is a boolean which, if set, will cause the algo
+        // look for an object at (x,y,z) AND (x,y+1,z) 
+        
+        if (z > this.maxz || z < this.minz)
+            return null;
+        
+        var d = this.data;
+        var plane = this.z_geom[z - this.minz];
+        if (plane == null)
+            return null;
+        
+        var xrect = plane.xrects[x - plane.minx];
+        if (xrect == null)
+            return null;
+        
+        // Try to find the Y value we're looking for via binary search
+        var min = xrect.start;
+        var max = min + xrect.count - 1;
+        var mid = 0;
+        var cury = 0;
+        do {
+            mid = min + ((max - min) >> 1);
+            if (y > d[mid].y )
+                min = mid + 1;
+            else
+                max = mid - 1;
+            cury = d[mid].y;
+        } while ((cury != y || (stairs == true && cury != y + 1)) && min <= max);
+        
+        // reset min and max
+        min = xrect.start
+        max = min + xrect.count - 1;
+        
+        // is the y value present?
+        if (cury != y || (stairs == true && cury != y + 1))
+        {
+            // climb
+            while (mid <= max)
+            {
+                if (d[mid + 1] == null)
+                    return d[mid];
+                
+                if (d[mid + 1].y > d[mid].y + 1)
+                    return d[mid];
+                
+                mid++
+            }
+            
+            return d[max];
+        } else {
+            // fall (TODO: this could be smarter, with hill climbing or something)
+            for (var i = max; i >= min; i--)
+                if (d[i].y < y) return d[i];
+        }
+        
+        // Otherwise there's nothing below
+        return null;
+    },
+    
+    fall: function (x,y,z)
+    {
+        // Fall from height Y at (x,z) and return the first object found.
+        // Return null if nothing
+        
+        if (z > this.maxz || z < this.minz)
+            return null;
+        
+        var d = this.data;
+        var plane = this.z_geom[z - this.minz];
+        if (plane == null)
+            return null;
+        
+        var xrect = plane.xrects[x - plane.minx];
+        if (xrect == null)
+            return null;
+        
+        // Try to find the Y value we're looking for via binary search
+        var min = xrect.start;
+        var max = min + xrect.count - 1;
+        var mid = 0;
+        var cury = 0;
+        do {
+            mid = min + ((max - min) >> 1);
+            if (y > d[mid].y )
+                min = mid + 1;
+            else
+                max = mid - 1;
+            cury = d[mid].y;
+        } while (cury != y && min <= max);
+        
+        // Is the y value present?
+        if (d[mid].y == y) return d[mid];
+        
+        // If it's not, go down by reseting min and max
+        min = xrect.start;
+        max = min + xrect.count - 1;
+        
+        // TODO: This could choose a start location in a smarter way
+        for (var i = max; i >= min; i--)
+            if (d[i].y < y) return d[i];
+        
+        return null;
+    },
+    
+    markBufferCollision: function (direction)
+    {
+        // This function basically updates the highest_z and lowest_z
+        // values for this map based on where the buffer is so that
+        // subsequent draws don't have to do collision testing on each one.
+        
+        var zg = this.z_geom;
+        var maxx = bufferX + bufferWidth;
+        var maxy = bufferY + bufferHeight;
+        var rect = {x: bufferX, y:bufferY, w:maxx, h:maxy};
+        var p = null, point0 = null, point1 = null, point2 = null, point3 = null;
+        var min = 0, max = 0;
+        
+        // Which direction has the buffer moved in?
+        switch (direction)
+        {
+            case 1:
+            // Up or right
+            max = this.highest_z + 1;
+            break;
+            
+            case 2:
+            // Down or left
+            min = this.lowest_z;
+            max = zg.length;
+            break;
+            
+            case 0:
+            default:
+            // Don't assume anything
+            this.lowest_z = zg.length + 1
+            this.highest_z = -1;
+            max = zg.length;
+            break;
+        }
+        
+        for (var i = min; i < max; i++)
+        {
+            p = zg[i];
+            
+            if (p == null) continue;
+            
+            point0 = p.points[0];
+            point1 = p.points[1];
+            point2 = p.points[2];
+            point3 = p.points[3];
+            
+            if (point3.y > maxy || point1.y < bufferY ||
+                point3.x > maxx || point1.x < bufferX)
+            {
+                p.insideClippingArea = false;
+                continue;
+            }
+            
+            if (triangleTest(rect, point0, point1, point2) == false)
+            {
+                if (triangleTest(rect, point0, point2, point3) == false)
+                {
+                    p.insideClippingArea = false;
+                    continue;
+                }
+            }
+            
+            if (i > this.highest_z) this.highest_z = i;
+            if (i < this.lowest_z) this.lowest_z = i;
+            
+            p.insideClippingArea = true;
+        }
+    },
+    
+    updatePlaneGeometry: function (obj, index)
+    {
+        // This function updates zgeom assuming that obj at index has
+        // just been added to the DSA.
+        
+        // Is this the biggest xval?
+        var zg = this.z_geom;
+        var plane = zg[obj.z - this.minz];
+        var delta = false;
+        var x = obj.x;
+        var y = obj.y;
+        
+        // Test for null values, which would mean the ZPlaneObject has not been used
+        if (plane.maxx == null)
+        {
+            plane.maxx = x;
+            plane.minx = x;
+            plane.miny = y;
+            plane.maxy = y;
+            plane.xrects[0] = new DSAXGeometryObject(index, obj);
+            plane.updatePixelProjection();
+            return;
+        }
+        
+        var xr = plane.xrects;
+        if (x > plane.maxx)
+        {
+            // add space between old maxx and new one
+            for (var i = 0; i < x - plane.maxx - 1; i++)
+                xr.push(null);
+            
+            // ad new description
+            xr.push(new DSAXGeometryObject(index, obj));
+            
+            // No longer optimized
+            this.optimized = false;
+            
+            plane.maxx = x;
+        } else if (x < plane.minx) {
+            // Add the space between the old minx and the new minx
+            for (var i = 0; i < plane.minx - x - 1; i++)
+                xr.splice(0,0,null);
+            
+            // Add description for the new one
+            xr.splice(0,0,new DSAXGeometryObject(index, obj));
+            
+            // gotta increase the start of every other DSAXGeom object
+            for (var i = 1; i < xr.length; i++)
+                if (xr[i] != null) xr[i].start++;
+            
+            // No longer optimized
+            this.optimized = false;
+            
+            plane.minx = x;
+        } else {
+            // It's in the middle
+            var cur = x - plane.minx;
+            if (xr[cur] == null)
+            {
+                xr[cur] = new DSAXGeometryObject(index, obj);
+                // No longer optimized
+                this.optimized = false;
+            } else {
+                xr[cur].addObject(obj, index);
+            }
+            
+            // gotta increase the start of every other DSAXGeom object
+            for (var i = cur + 1; i < xr.length; i++)
+                if (xr[i] != null) xr[i].start++;
+        }
+        
+        // increase the start of every other DSAXGeom object in every other zgeom
+        var rects = null;
+        for (var i = (obj.z - this.minz) + 1; i <= zg.length; i++)
+        {
+            if (zg[i] == null) continue;
+            
+            rects = zg[i].xrects;
+            for (var j = 0; j < rects.length; j++)
+                if (rects[j] != null) rects[j].start++;
+        }
+        
+        // Is this the biggest or smallest yval?
+        if (y > plane.maxy)
+        {
+            plane.maxy = y;
+        } else if (y < plane.miny) {
+            plane.miny = y;
+        }
+        
+        plane.updatePixelProjection();
+    },
+    
+    drawZPlaneBounds: function ()
+    {
+        // Draw red lines around each zplane's clipping rhombus.
+        var d = this.data;
+        var b = this.buffer;
+        var zgeom = this.z_geom;
+        
+        var p = null, r = null;
+        var t = null;
+        for (var z = 0; z < zgeom.length; z++)
+        {
+            p = zgeom[z];
+            
+            if (p == null) continue;
+            
+            b.strokeStyle = "red";
+            b.beginPath();
+            b.moveTo(p.points[0].x - bufferX, p.points[0].y - bufferY);
+            b.lineTo(p.points[1].x - bufferX, p.points[1].y - bufferY);
+            b.lineTo(p.points[2].x - bufferX, p.points[2].y - bufferY);
+            b.lineTo(p.points[3].x - bufferX, p.points[3].y - bufferY);
+            b.closePath();
+            b.stroke();
+        }
+    },
+    
+    optimize: function ()
+    {
+        if (this.optimized == true) return true;
+        
+        // This function should do any time-consuming optimizations and set
+        // the optimized flag.  For instance, big arrays can be replaced with
+        // ones that have been explicitly allocated.
+        
+        var t0 = new Date();
+        
+        // explicitly allocate space for zgeom
+        var zg = this.z_geom;
+        var temp = new Array(zg.length);
+        for (var i = 0; i < zg.length; i++)
+            temp[i] = zg[i];
+        
+        delete this.z_geom;
+        this.z_geom = temp;
+        zg = this.z_geom;
+        
+        // explicitly allocate space for xrects
+        var xr = null;
+        for (var i = 0; i < zg.length; i++)
+        {
+            if (zg[i] == null) continue;
+            
+            xr = zg[i].xrects;
+            temp = new Array(xr.length);
+            for (var j = 0; j < xr.length; j++)
+                temp[j] = xr[j];
+            
+            delete zg[i].xrects;
+            zg[i].xrects = temp;
+        }
+        
+        // explicitly allocate space for tiles
+        var d = this.data;
+        temp = new Array(d.length);
+        for (var i = 0; i < d.length; i++)
+            temp[i] = d[i];
+        
+        delete this.data;
+        this.data = temp;
+        
+        var t1 = new Date();
+        log("Map optimized: " + (t1 - t0) + "ms");
+        
+        this.optimized = true;
+        return true;
     }
     
-    // explicitly allocate space for tiles
-    var d = this.data;
-    temp = new Array(d.length);
-    for (var i = 0; i < d.length; i++)
-        temp[i] = d[i];
-    
-    delete this.data;
-    this.data = temp;
-    
-    var t1 = new Date();
-    log("Map optimized: " + (t1 - t0) + "ms");
-    
-    this.optimized = true;
-    return true;
-}
+};
 
 function triangleTest(rect, vertex0, vertex1, vertex2)
 {
