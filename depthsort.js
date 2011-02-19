@@ -597,6 +597,7 @@ DepthSortedArray.prototype = {
         b.restore();
         
         if (update == false) return;
+        if (horizontalScrollSpeed | verticalScrollSpeed > 0) return;
         
         // Only redraw viewport if this draw's clipping area is intersecting,
         // inside, or completely enclosing the viewport.
