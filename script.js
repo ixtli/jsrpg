@@ -115,7 +115,7 @@ function init()
     kirby = new GameObject("kirby", animations);
     kirby.setTile(map.data[0]);
     kirby.setAnimation('kirby_walking', kirby.facing);
-    kirby.animate();
+    addObjectToBeAnimated(kirby);
 }
 
 function configureEventBindings()
@@ -359,10 +359,6 @@ function deleteFocussed()
     tileEditorUpdate();
     
     return true;
-}
-
-function keydownHandler()
-{
 }
 
 function mouseClickHandler(ev)

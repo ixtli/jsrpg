@@ -23,6 +23,8 @@ var animations = [];
 
 // Animations
 var animated = [];
+var quantum_alpha = -1;
+var animationInterval = null;
 
 function Animation(array, start, count, quantum)
 {
@@ -40,20 +42,98 @@ function Animation(array, start, count, quantum)
     this.yOffset = 0;
 }
 
+function addObjectToBeAnimated(object)
+{
+    // O(n) execution time because of loop at the end
+    
+    if (object == null) return false;
+    
+    var anim = object.currentAnimation;
+    if (anim == null) return false;
+    
+    if (object.img == null)
+        object.img = anim.array[anim.start];
+    
+    if (quantum_alpha == -1 || anim.quantum < quantum_alpha)
+    {
+        // We haven't started animating yet
+        quantum_alpha = anim.quantum;
+        
+        animated.splice(0,0, object);
+        
+        clearInterval(animationInterval);
+        animationInterval = setInterval(animate, quantum_alpha);
+        
+        return true;
+    }
+    
+    // Sort by quantum
+    var found = false;
+    for (var i = 0; i < animated.length; i++)
+    {
+        if (animated[i].currentAnimation.quantum > anim.quantum)
+        {
+            animated.splice(i,0,object);
+            found = true;
+            break;
+        }
+    }
+    
+    if (found == false) animated.push(object);
+    
+    return true;
+}
+
+function stopAnimatingObject(object)
+{
+    // O(n) because of loop to find the thing to stop animating
+    
+    if (object == null) return false;
+    
+    var found = -1;
+    for (var i = 0; i < animated.length; i++)
+    {
+        if (object === animated[i])
+        {
+            animated.splice(i,1);
+            found = i;
+            break;
+        }
+    }
+    
+    if (found == -1) return false;
+    
+    // Special case
+    if (animated.length == 0)
+    {
+        clearInterval(animationInterval);
+        quantum_alpha = -1;
+        return true;
+    } else if (found == 0) {
+        quantum_alpha = animated[0].currentAnimation.quantum;
+        clearInterval(animationInterval);
+        animationInterval = setInterval(animate, quantum_alpha);
+    }
+    
+    return true;
+}
+
 function animate()
 {
     var tmp = null;
     var anim = null;
+    var start = 0;
     var t0 = new Date();
     for (var i = animated.length - 1; i >= 0; i--)
     {
         tmp = animated[i];
         anim = tmp.currentAnimation;
+        start = anim.start;
         if (t0 - tmp.lastUpdate > anim.quantum)
         {
-            if (++tmp.animationIndex >= anim.start + anim.count)
-                tmp.animationIndex = anim.start;
-            tmp.img = anim.array[tmp.animationIndex];
+            if (++tmp.animIndex >= start + anim.count)
+                tmp.animIndex = start;
+            tmp.img = anim.array[tmp.animIndex];
             map.updateBuffer(true, tmp.px, tmp.py, tmp.w, tmp.h);
             tmp.lastUpdate = t0;
         }
@@ -67,7 +147,13 @@ function SpriteSheet(img, name, w, h, array)
     this.count = -1;
     this.array = array;
     
-    this.initSprites = function(img, w, h) {
+    this.initSprites(img, w, h);
+}
+
+SpriteSheet.prototype = {
+    
+    initSprites: function(img, w, h)
+    {
         var start = this.array.length;
         var wide = img.width / w;
         var high = img.height / h;
@@ -80,7 +166,7 @@ function SpriteSheet(img, name, w, h, array)
             p.height = high;
             ctx = p.getContext('2d');
             ctx.drawImage(img,x*wide,y*high,wide,high,0,0,wide,high);
-            array.push(p);
+            this.array.push(p);
             count++;
             if ( ++x == w)
             {
@@ -95,9 +181,12 @@ function SpriteSheet(img, name, w, h, array)
             this.count = count;
             sheets[this.name] = self;
         }
-    }
+    },
     
-    this.destroy = function () {
+    destroy: function ()
+    {
+        // Do the following to free up memory taken up by the canvas objects
+        
         var tmp = null;
         for (var i = this.start; i - this.start < this.count; i++)
         {
@@ -109,10 +198,8 @@ function SpriteSheet(img, name, w, h, array)
         this.start = -1;
         this.count = -1;
         this.name = null;
-    }
-    
-    this.initSprites(img, w, h);
-}
+    },
+};
 
 function pixelProjection(x, y, z)
 {

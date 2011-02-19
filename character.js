@@ -6,41 +6,36 @@ const DIR_RIGHT = 3;
 
 function GameObject(name, anims)
 {
+    // Meta members
     this.name = name;
     
+    // Graphics-related members
     this.animations = anims;
     this.currentAnimation = null;
-    
+    this.animIndex = 0;
+    this.lastUpdate = 0;
+    this.w = 0;
+    this.h = 0;
     this.img = null;
-    this.stats = null;
-    this.facing = DIR_CLOSER;
     this.px = -1;
     this.py = -1;
     this.px_offset = 0;
     this.py_offset = 0;
     
+    // Associated map tile
     this.tile = null;
     
-    this.interval = -1;
-    
-    var instance = null;
-    var animIndex = 0;
-    var w = 0;
-    var h = 0;
-    
-    function drawObject() {
-        var anim = instance.currentAnimation;
-        if (++animIndex >= anim.start + anim.count)
-            animIndex = anim.start;
-        instance.img = anim.array[animIndex];
-        map.updateBuffer(true, instance.px, instance.py, w, h);
-        return true;
-    };
+    // Game system mebers
+    this.stats = null;
+    this.facing = DIR_CLOSER;
 }
 
 GameObject.prototype = {
     
-    face: function (direction) {this.facing = direction},
+    face: function (direction)
+    {
+        this.facing = direction;
+    },
     
     setTile: function (tile)
     {
@@ -61,26 +56,24 @@ GameObject.prototype = {
         if (tmp == null) return false;
         this.currentAnimation = tmp;
         this.project();
-        this.img = this.currentAnimation.array[animIndex];
+        this.img = this.currentAnimation.array[this.animIndex];
     },
     
     project: function ()
     {
         if (this.tile == null || this.currentAnimation == null) return;
         
-        w = this.currentAnimation.width;
-        h = this.currentAnimation.height;
+        this.w = this.currentAnimation.width;
+        this.h = this.currentAnimation.height;
         
-        this.px = this.tile.px + (tileWidth >> 1) - (w >> 1);
+        this.px = this.tile.px + (tileWidth >> 1) - (this.w >> 1);
         this.px += this.px_offset + this.currentAnimation.xOffset;
         this.py = this.tile.py + this.py_offset + this.currentAnimation.yOffset;
     },
     
-    animate: function () {
-        if (this.currentAnimation == null || this.img == null) return false;
-        instance = this;
-        this.interval=setInterval(drawObject, 1000/this.currentAnimation.quantum);
-        return true;
+    tileWasDeleted: function ()
+    {
+        stopAnimatingObject(this);
     },
     
 };

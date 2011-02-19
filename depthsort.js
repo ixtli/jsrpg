@@ -994,6 +994,15 @@ DepthSortedArray.prototype = {
             zg.updatePixelProjection();
         }
         
+        // Notify game objects associated with this tile that the tile is
+        // no longer being displayed
+        var objList = deleted.obj;
+        if (objList != null)
+        {
+            for (var i = objList.length - 1; i >= 0; i--)
+                objList[i].tileWasDeleted();
+        }
+        
         return deleted;
     },
     
