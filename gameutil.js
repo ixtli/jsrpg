@@ -1,21 +1,45 @@
-function objectCloser(obj)
-{
-    return map.snap(obj.x, obj.y, obj.z + 1, true);
+// * TODO obj.sibling(direction)
+// * TODO DsaObj.leftOf(obj), obj.siblingLeft() ?
+function getSibling(obj, direction) {
+    switch (direction) {
+    case "closer":
+        return map.snap(obj.x, obj.y, obj.z + 1, true);
+        break;
+    case "further":
+        return map.snap(obj.x, obj.y, obj.z - 1, true);
+        break;
+    case "right":
+        return map.snap(obj.x + 1, obj.y, obj.z, true);
+        break;
+    case "left":
+        return map.snap(obj.x - 1, obj.y, obj.z, true);
+        break;
+    default:
+        break;
+    }
 }
 
-function objectFurther(obj)
-{
-    return map.snap(obj.x, obj.y, obj.z - 1, true);
-}
-
-function objectRight(obj)
-{
-    return map.snap(obj.x + 1, obj.y, obj.z, true);
-}
-
-function objectLeft(obj)
-{
-    return map.snap(obj.x - 1, obj.y, obj.z, true);
+// * TODO viewport.scroll(offsetX,offsetY)
+function scrollViewport(direction) {
+    if (allowScrolling == false) return false;
+    switch(direction) {
+    case "up":
+        viewY -= keyboardScrollGranulatiry;
+        break
+    case "down":
+        viewY += keyboardScrollGranulatiry;
+        break
+    case "left":
+        viewX -= keyboardScrollGranulatiry;
+        break
+    case "right":
+        viewX += keyboardScrollGranulatiry;
+        break;
+    default:
+        return false;
+    }
+    viewportDirty = true;
+    return true;
 }
 
 function moveObjectRight(obj)
@@ -40,6 +64,8 @@ function moveObjectCloser(obj)
 
 function generateTestMap()
 {
+    map = new DepthSortedArray(0);
+    t0 = new Date();
     var ind = 0;
     var zg = null, rect = null;
     for (var z = 0; z < 100; z++)
@@ -89,6 +115,16 @@ function generateTestMap()
     for (var i = 5; i >= 1; i--)
         map.insert(sprites[0], 6, i, 5);
     */
+    t1 = new Date();
+    log("Terrain DSA insertion time: "+ (t1-t0) +"ms "
+        + " (" + map.data.length + " tiles)");
+
+    // Associate the buffer context with the map DSA
+    map.buffer = bufferCtx;
+    viewX = 0;
+    viewY = 0;
+    bufferX = viewX;
+    bufferY = viewY;
 }
 
 function optimalPath(s, g, maxDistance, maxHeight)

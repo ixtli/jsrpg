@@ -31,7 +31,7 @@ var mouseInside = false;
 
 // Keyboard event handling
 var previousKeyboardEvent = new Date();
-var keyMap = {up: key_w, down: key_s, left: key_a, right: key_d};
+
 
 var fpsVal = FPS;
 
@@ -84,21 +84,8 @@ function init()
     log("Graphics init: "+(t1-t0)+" ms");
     
     // generate terrain
-    map = new DepthSortedArray(0);
-    t0 = new Date();
     generateTestMap();
-    t1 = new Date();
-    var msg = "Terrain DSA insertion time: "+ (t1-t0) +"ms";
-    msg += " (" + map.data.length + " tiles)";
-    log(msg);
-    
-    // Associate the buffer context with the map DSA
-    map.buffer = bufferCtx;
-    
-    // Configure the buffer
-    bufferX = viewX;
-    bufferY = viewY;
-    
+            
     //Initialize the buffer
     map.optimize();
     t0 = new Date();
@@ -155,11 +142,7 @@ function configureEventBindings()
     
     // Set up click handlers
     $(window).bind('mousedown mouseup', mouseClickHandler);
-    
-    // Set up keyboard handlers
-    // @TODO handle keyup with this too
-    $(window).bind('keydown', keypressHandler);
-    
+        
     // handle ericb mode
     $('#ebmode').bind('click', ericBHandler);
     
@@ -378,173 +361,8 @@ function deleteFocussed()
     return true;
 }
 
-function keypressHandler(evt)
+function keydownHandler()
 {
-    var time = new Date();
-    if (time - previousKeyboardEvent < keyRepeatDelay)
-        return;
-    
-    var code = evt.keyCode ? evt.keyCode : evt.which;
-    
-    // Ignore when the user intially presses the shift key: we only care
-    // if it's down when something else happens.  If we don't return false
-    // safari sends a mousemove event which screws up selection.  Weird.
-    if (code == key_shift)
-        return true;
-    
-    switch (code)
-    {
-        case keyMap.left:
-        if (allowScrolling == false) break;
-        viewX -= keyboardScrollGranulatiry;
-        viewportDirty = true;
-        break;
-        
-        case keyMap.up:
-        if (allowScrolling == false) break;
-        viewY -= keyboardScrollGranulatiry;
-        viewportDirty = true;
-        break;
-        
-        case keyMap.down:
-        if (allowScrolling == false) break;
-        viewY += keyboardScrollGranulatiry;
-        viewportDirty = true;
-        break;
-        
-        case keyMap.right:
-        if (allowScrolling == false) break;
-        viewX += keyboardScrollGranulatiry;
-        viewportDirty = true;
-        break;
-        
-        case key_up:
-        if (focussed != null)
-        {
-            // Handle selecting multiple objects
-            if (evt.shiftKey)
-                addToExtendedSelection(focussed);
-            else if (extendedSelection.length > 0)
-                clearExtendedSelection();
-            
-            var found = objectFurther(focussed);
-            if (found != null)
-                setSelection(found, true);
-        }
-        break;
-        
-        case key_left:
-        if (focussed != null)
-        {
-            // Handle selecting multiple objects
-            if (evt.shiftKey)
-                addToExtendedSelection(focussed);
-            else if (extendedSelection.length > 0)
-                clearExtendedSelection();
-            
-            var found = objectLeft(focussed);
-            if (found != null)
-                setSelection(found, true);
-        }
-        break;
-        
-        case key_right:
-        if (focussed != null)
-        {
-            // Handle selecting multiple objects
-            if (evt.shiftKey)
-                addToExtendedSelection(focussed);
-            else if (extendedSelection.length > 0)
-                clearExtendedSelection();
-            
-            var found = objectRight(focussed);
-            if (found != null)
-                setSelection(found, true);
-        }
-        break;
-        
-        case key_down:
-        if (focussed != null)
-        {
-            // Handle selecting multiple objects
-            if (evt.shiftKey)
-                addToExtendedSelection(focussed);
-            else if (extendedSelection.length > 0)
-                clearExtendedSelection();
-            
-            var found = objectCloser(focussed);
-            if (found != null)
-                setSelection(found, true);
-        }
-        break;
-        
-        case key_minus:
-        case key_delete:
-        if (extendedSelection.length > 0)
-        {
-            deleteExtendedSelection();
-        } else if (focussed != null) {
-            deleteFocussed();
-        }
-        break;
-        
-        case key_plus:
-        case key_space:
-        // handle multiple selections
-        if (extendedSelection.length > 0)
-        {
-            insertAboveExtendedSelection();
-        } else if (focussed != null) {
-            obj = map.insertAboveObject(focussed, focussed.terrain);
-            if (obj)
-                setSelection(obj, true);
-        }
-        break;
-        
-        case key_refresh:
-        delete map;
-        map = new DepthSortedArray(0);
-        
-        // generate terrain
-        t0 = new Date();
-        generateTestMap();
-        t1 = new Date();
-        
-        focussed = null;
-        map.buffer = bufferCtx;
-        
-        var msg = "Terrain DSA insertion time: "+ (t1-t0) +"ms";
-        msg += " (" + map.data.length + " tiles)";
-        log(msg);
-        
-        viewX = 0;
-        viewY = 0;
-        bufferX = viewX;
-        bufferY = viewY;
-        map.optimize();
-        map.markBufferCollision();
-        map.updateBuffer(false, bufferX, bufferY, bufferWidth, bufferHeight);
-        viewportDirty = true;
-        
-        canvasContext.drawImage(buffer, viewX - bufferX, viewY - bufferY,
-            viewWidth,viewHeight,0,0,viewWidth,viewHeight);
-        
-        // reset sections
-        redrawFlags = 0;
-        
-        break;
-        
-        case key_optimize:
-        map.optimize();
-        break;
-        
-        default:
-        log("Unhandled keycode: " + code);
-        return true;
-        break;
-    }
-    
-    return false;
 }
 
 function mouseClickHandler(ev)
