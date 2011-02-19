@@ -44,7 +44,7 @@ DSAXGeometryObject.prototype = {
         }
     },
     
-    addObject: function (object, index)
+    addObject: function (obj, index)
     {
         // Start index in the map array
         if (index < this.start) this.start = index;
