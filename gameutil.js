@@ -1,7 +1,9 @@
 // * TODO obj.sibling(direction)
 // * TODO DsaObj.leftOf(obj), obj.siblingLeft() ?
-function getSibling(obj, direction) {
-    switch (direction) {
+function getSibling(obj, direction)
+{
+    switch (direction)
+    {
     case "closer":
         return map.snap(obj.x, obj.y, obj.z + 1, true);
         break;
@@ -20,9 +22,11 @@ function getSibling(obj, direction) {
 }
 
 // * TODO viewport.scroll(offsetX,offsetY)
-function scrollViewport(direction) {
+function scrollViewport(direction)
+{
     if (allowScrolling == false) return false;
-    switch(direction) {
+    switch (direction)
+    {
     case "up":
         viewY -= keyboardScrollGranulatiry;
         break
@@ -133,7 +137,7 @@ function generateTestMap()
     t1 = new Date();
     log("Terrain DSA insertion time: "+ (t1-t0) +"ms "
         + " (" + map.data.length + " tiles)");
-
+    
     // Associate the buffer context with the map DSA
     map.buffer = bufferCtx;
     viewX = 0;
