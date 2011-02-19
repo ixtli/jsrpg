@@ -42,7 +42,7 @@ function Animation(array, start, count, quantum)
     this.yOffset = 0;
 }
 
-function addObjectToBeAnimated(object)
+function addObjectToBeAnimated(object, fireAnimation)
 {
     // O(n) execution time because of loop at the end
     
@@ -80,6 +80,8 @@ function addObjectToBeAnimated(object)
     }
     
     if (found == false) animated.push(object);
+    
+    if (fireAnimation == true) animate();
     
     return true;
 }
