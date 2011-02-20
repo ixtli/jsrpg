@@ -115,7 +115,9 @@ function init()
     kirby = new GameObject("kirby", animations);
     kirby.setTile(map.data[0]);
     kirby.setAnimation('kirby_walking', kirby.facing);
-    addObjectToBeAnimated(kirby);
+    kirby.animate();
+    
+    var interv = setInterval(function () {kirby.moveForward(false);}, 1000);
 }
 
 function configureEventBindings()

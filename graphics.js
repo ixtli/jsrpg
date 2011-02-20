@@ -122,13 +122,17 @@ function stopAnimatingObject(object)
 
 function animate()
 {
-    var tmp = null;
-    var anim = null;
-    var start = 0;
+    var tmp = null, anim = null, start = 0;
     var t0 = new Date();
+    
     for (var i = animated.length - 1; i >= 0; i--)
     {
         tmp = animated[i];
+        
+        // Might want to disable animation for a bit without removing from
+        // the queue, to move or something
+        if (tmp.isAnimating == false) continue;
+        
         anim = tmp.currentAnimation;
         start = anim.start;
         if (t0 - tmp.lastUpdate > anim.quantum)
@@ -140,6 +144,8 @@ function animate()
             tmp.lastUpdate = t0;
         }
     }
+    
+    return true;
 }
 
 function SpriteSheet(img, name, w, h, array)
