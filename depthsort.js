@@ -450,13 +450,15 @@ DepthSortedArray.prototype = {
         // Construct the rectangle representing our viewport
         var rect = {x:minx,y:miny,w:maxx,h:maxy};
         
+        b.clearRect(minx - bufferX, miny - bufferY, width, height);
+        
         // Push context
         b.save();
         
-        // Bigin definition of new clipping path
+        // Begin definition of new clipping path
         b.beginPath();
         
-        // Make clipping rect
+        // Make clipping rect.
         b.rect(minx - bufferX, miny - bufferY, width, height);
         
         // close path, even though there's no documentation on if this is necessary
@@ -464,8 +466,6 @@ DepthSortedArray.prototype = {
         
         // Clip the area of relevant changes
         b.clip();
-        
-        b.clearRect(minx - bufferX, miny - bufferY, width, height);
         
         for (var z = this.lowest_z; z <= this.highest_z; z++)
         {
@@ -569,18 +569,18 @@ DepthSortedArray.prototype = {
                 
                 px -= bufferX;
                 py -= bufferY;
-                sList = obj.shaderList;
                 
-                // Draw
+                // Draw tile and effects
+                sList = obj.shaderList;
                 if (sList == null)
                 {
                     b.drawImage(obj.img, px, py);
                 } else {
-                    for (var j = sList.length - 1; j > 0; j--)
+                    for (var j = sList.length - 1; j >= 0; j--)
                         sList[j](obj, b, px, py);
-                    sList[0](obj, b, px, py);
                 }
                 
+                // Draw objects associated with tile
                 sList = obj.obj;
                 if (sList != null)
                 {
@@ -611,12 +611,12 @@ DepthSortedArray.prototype = {
         if (maxx <= viewX || minx >= omaxx) return;
         if (maxy <= viewY || miny >= omaxy) return;
         
-        var tx = minx > viewX ? minx : viewX;
-        var ty = miny > viewY ? miny : viewY;
-        var tw = tx+width;
+        var tx = minx - 1 > viewX ? minx - 1 : viewX;
+        var ty = miny - 1 > viewY ? miny - 1 : viewY;
+        var tw = tx + width + 1;
         if (tw > omaxx) tw = omaxx;
         tw -= tx;
-        var th = ty+height;
+        var th = ty + height + 1;
         if (th > omaxy) th = omaxy;
         th -= ty;
         

@@ -113,11 +113,11 @@ function init()
     
     // Make a character
     kirby = new GameObject("kirby", animations);
-    kirby.setTile(map.data[0]);
     kirby.setAnimation('kirby_walking', kirby.facing);
+    kirby.setTile(map.data[0]);
     kirby.animate();
     
-    var interv = setInterval(function () {kirby.moveForward(false);}, 1000);
+    var interv = setInterval(function () {kirby.moveForward(true);}, 1000);
 }
 
 function configureEventBindings()

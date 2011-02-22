@@ -26,6 +26,61 @@ var animated = [];
 var quantum_alpha = -1;
 var animationInterval = null;
 
+var moving = [];
+var movingInterval = null;
+
+function startMovingObject(object)
+{
+    if (object == null) return false;
+    
+    object.speed = (Math.abs(object.px - object.target_px) +
+        Math.abs(object.py - object.target_py)) / (1000/FPS);
+    moving.push(object);
+    
+    if (movingInterval == null)
+        movingInterval = setInterval(move, 1000/FPS);
+    
+    return true;
+}
+
+function move()
+{
+    var tmp = null;
+    var finished = [];
+    var cury = 0;
+    for (var i = moving.length - 1; i >= 0; i--)
+    {
+        tmp = moving[i];
+        
+        cury = tmp.py;
+        
+        tmp.px += tmp.speed;
+        tmp.py = (tmp.slope * tmp.px) - (tmp.slope * tmp.target_px) +
+            tmp.target_py;
+        
+        map.updateBuffer(true, tmp.px - tmp.speed, cury,
+            tmp.w + tmp.speed, tmp.h + Math.abs(tmp.py - cury));
+        
+        if (tmp.px >= tmp.target_px)
+        {
+            finished.push(i);
+            tmp.finishedMoving();
+        }
+    }
+    
+    if (finished.length > 0)
+    {
+        for (var i = finished.length - 1; i >= 0; i--)
+            moving.splice(finished[i], 1);
+        
+        if (moving.length == 0)
+        {
+            clearInterval(movingInterval);
+            movingInterval = null;
+        }
+    }
+}
+
 function Animation(array, start, count, quantum)
 {
     this.array = array;
@@ -138,7 +193,14 @@ function animate()
         if (t0 - tmp.lastUpdate > anim.quantum)
         {
             if (++tmp.animIndex >= start + anim.count)
+            {
                 tmp.animIndex = start;
+                
+                if (tmp.notifyOnAnimationCompletion == true)
+                    // If the callback returns false, skip animating this frame
+                    if (tmp.finishedAnimating(t0) == false)
+                        continue;
+            }
             tmp.img = anim.array[tmp.animIndex];
             map.updateBuffer(true, tmp.px, tmp.py, tmp.w, tmp.h);
             tmp.lastUpdate = t0;

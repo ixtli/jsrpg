@@ -88,21 +88,6 @@ function generateTestMap()
     }
     
     /*
-    // Animation benchmark
-    var tmp = null;
-    for (var i = map.data.length - 1; i >= 0; i--)
-    {
-        if (Math.floor(Math.random() * 2) == 0)
-        {
-            tmp = new GameObject("kirby", animations);
-            tmp.setTile(map.data[i]);
-            tmp.setAnimation('kirby_walking', Math.floor(Math.random() * 2));
-            addObjectToBeAnimated(tmp);
-        }
-    }
-    */
-    
-    /*
     for (var i = 25; i >= 0; i--)
     {
         for (var j = 25; j >= 0; j--)
@@ -236,3 +221,4 @@ function optimalPath(s, g, maxDistance, maxHeight)
     
     return {r: null, e: explored};
 }
+
