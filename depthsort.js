@@ -635,7 +635,7 @@ DepthSortedArray.prototype = {
                 // Draw tile and effects.  We can avoid drawing the tile if
                 // it couldn't possible encroach into the clipping area
                 
-                if (py + obj.h + bufferY > miny)
+                if (py + obj.h + bufferY >= miny)
                 {
                     sList = obj.shaderList;
                     if (sList == null)

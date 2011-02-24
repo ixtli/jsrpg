@@ -62,7 +62,10 @@ GameObject.prototype = {
         
         tile.addObject(this);
         this.tile = tile;
-        this.project();
+        
+        var ret = this.project(this.tile);
+        this.px = ret.px;
+        this.py = ret.py;
         
         map.updateBuffer(true, this.px, this.py, this.w, this.h);
         
@@ -75,7 +78,14 @@ GameObject.prototype = {
         
         if (tmp == null) return false;
         this.currentAnimation = tmp;
-        this.project();
+        
+        this.w = this.currentAnimation.width;
+        this.h = this.currentAnimation.height;
+        
+        var ret = this.project(this.tile);
+        this.px = ret.px;
+        this.py = ret.py;
+        
         this.img = this.currentAnimation.array[this.animIndex];
     },
     
@@ -99,16 +109,23 @@ GameObject.prototype = {
         return true;
     },
     
-    project: function ()
+    project: function (tile)
     {
-        if (this.tile == null || this.currentAnimation == null) return;
+        var ret = {px: 0, py: 0};
         
-        this.w = this.currentAnimation.width;
-        this.h = this.currentAnimation.height;
+        if (tile != null)
+        {
+            ret.px = tile.px;
+            ret.py = tile.py;
+        }
         
-        this.px = this.tile.px + (tileWidth >> 1) - (this.w >> 1);
-        this.px += this.currentAnimation.xOffset;
-        this.py = this.tile.py + this.currentAnimation.yOffset;
+        // Center the image based on tile width
+        ret.px += (tileWidth >> 1) - (this.w >> 1);
+        ret.px += this.currentAnimation.xOffset;
+        
+        ret.py += this.currentAnimation.yOffset;
+        
+        return ret;
     },
     
     tileWasDeleted: function ()
@@ -158,18 +175,16 @@ GameObject.prototype = {
             return true;
         }
         
-        this.target_px = target.px + (tileWidth >> 1) - (this.w >> 1);
-        this.target_px += this.currentAnimation.xOffset;
-        this.target_py = target.py + this.currentAnimation.yOffset;
-        this.slope = (this.px - target.px) / (this.py - target.py);
+        var ret = this.project(target);
+        this.target_px = ret.px;
+        this.target_py = ret.py;
+        this.slope = Math.round((ret.py - this.py) / (ret.px - this.px));
         
         target.addObject(this);
         this.target_tile = target;
         
         this.moving = true;
         
-        //bufferCtx.clearRect(0,0,bufferWidth, bufferHeight);
-        //canvasContext.clearRect(0,0,viewWidth, viewHeight);
         startMovingObject(this);
         
         return true;
@@ -178,8 +193,17 @@ GameObject.prototype = {
     finishedMoving: function ()
     {
         // The px,py has reached the target px,py
-        this.setTile(this.target_tile);
-        this.target_tile = null;
+        
+        if (this.target_tile != null)
+        {
+            this.tile.removeObject(this);
+            this.tile = this.target_tile;
+            var ret = this.project(this.tile);
+            this.px = ret.px;
+            this.py = ret.py;
+            this.target_tile = null;
+        }
+        
         this.moving = false;
     },
     
