@@ -55,7 +55,8 @@ GameObject.prototype = {
         {
             var t = this.tile;
             t.removeObject(this);
-            map.updateBuffer(true, this.px, this.py, this.w, this.h);
+            map.updateBuffer(true, Math.floor(this.px), Math.floor(this.py),
+                Math.ceil(this.w), Math.ceil(this.h));
             if (t === focussed) tileEditorUpdate();
         }
         
@@ -177,8 +178,7 @@ GameObject.prototype = {
     finishedMoving: function ()
     {
         // The px,py has reached the target px,py
-        this.tile.removeObject(this);
-        this.tile = this.target_tile;
+        this.setTile(this.target_tile);
         this.target_tile = null;
         this.moving = false;
     },

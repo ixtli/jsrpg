@@ -57,8 +57,9 @@ function move()
         tmp.py = (tmp.slope * tmp.px) - (tmp.slope * tmp.target_px) +
             tmp.target_py;
         
-        map.updateBuffer(true, tmp.px - tmp.speed, cury,
-            tmp.w + tmp.speed, tmp.h + Math.abs(tmp.py - cury));
+        map.updateBuffer(true, Math.floor(tmp.px - tmp.speed), Math.floor(cury),
+            Math.ceil(tmp.w + tmp.speed),
+            Math.ceil(tmp.h + Math.abs(tmp.py - cury)));
         
         if (tmp.px >= tmp.target_px)
         {

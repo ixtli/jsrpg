@@ -32,7 +32,6 @@ var mouseInside = false;
 // Keyboard event handling
 var previousKeyboardEvent = new Date();
 
-
 var fpsVal = FPS;
 
 window.onload = init;
