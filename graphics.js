@@ -33,8 +33,7 @@ function startMovingObject(object)
 {
     if (object == null) return false;
     
-    object.speed = (Math.abs(object.px - object.target_px) +
-        Math.abs(object.py - object.target_py)) / (1000/FPS);
+    object.speed = Math.abs(object.px - object.target_px) / (1000/FPS);
     moving.push(object);
     
     if (movingInterval == null)
@@ -202,7 +201,8 @@ function animate()
                         continue;
             }
             tmp.img = anim.array[tmp.animIndex];
-            map.updateBuffer(true, tmp.px, tmp.py, tmp.w, tmp.h);
+            if (tmp.moving == false)
+                map.updateBuffer(true, tmp.px, tmp.py, tmp.w, tmp.h);
             tmp.lastUpdate = t0;
         }
     }

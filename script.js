@@ -192,7 +192,7 @@ function setSelection(object, keepInViewport)
     if (focussed != null)
     {
         focussed.removeShader(primarySelection);
-        map.updateBuffer(true, focussed.px, focussed.py, focussed.w, focussed.h);
+        map.updateBuffer(true, focussed.px, focussed.py, tileGraphicWidth, focussed.h);
     }
     
     // Select object
@@ -208,8 +208,8 @@ function setSelection(object, keepInViewport)
         {
             viewX = object.px - scrollBorder;
             delta = true;
-        } else if (object.px + object.w > viewX + viewWidth - scrollBorder) {
-            viewX = (object.px + object.w + scrollBorder) - viewWidth;
+        } else if (object.px + tileGraphicWidth > viewX + viewWidth - scrollBorder) {
+            viewX = (object.px + tileGraphicWidth + scrollBorder) - viewWidth;
             delta = true;
         }
         
@@ -231,12 +231,12 @@ function setSelection(object, keepInViewport)
                 moveBuffer(viewX - (viewWidth >> 1), viewY - (viewHeight >> 1));
         
         // redraw tile but do NOT update viewport
-        map.updateBuffer(false, focussed.px, focussed.py, focussed.w, focussed.h);
+        map.updateBuffer(false, focussed.px, focussed.py, tileGraphicWidth, focussed.h);
         
         viewportDirty = true;
     } else {
         // redraw only selected tile and update viewport
-        map.updateBuffer(true, focussed.px, focussed.py, focussed.w, focussed.h);
+        map.updateBuffer(true, focussed.px, focussed.py, tileGraphicWidth, focussed.h);
     }
     
     // Update the tile editor
@@ -259,7 +259,7 @@ function addToExtendedSelection(obj)
     // We rely on the caller to decide to update the map or not,
     // since this could be called many times in a loop
     obj.addShader(false, secondarySelection);
-    map.updateBuffer(false, obj.px, obj.py, obj.w, obj.h);
+    map.updateBuffer(false, obj.px, obj.py, tileGraphicWidth, obj.h);
     
     // Return its index
     return extendedSelection.length - 1;
@@ -272,7 +272,7 @@ function clearExtendedSelection()
     {
         obj = extendedSelection[i];
         obj.removeShader(secondarySelection);
-        map.updateBuffer(true, obj.px, obj.py, obj.w, obj.h);
+        map.updateBuffer(true, obj.px, obj.py, tileGraphicWidth, obj.h);
     }
     
     delete extendedSelection;
@@ -297,9 +297,9 @@ function insertAboveExtendedSelection()
         {
             newSelection[i] = tmp;
             tmp.addShader(false, secondarySelection);
-            map.updateBuffer(true, obj.px, obj.py - obj.h, tmp.w, obj.h * 2);
+            map.updateBuffer(true, obj.px, obj.py - obj.h, tileGraphicWidth, obj.h * 2);
         } else {
-            map.updateBuffer(true, obj.px, obj.py, obj.w, obj.h);
+            map.updateBuffer(true, obj.px, obj.py, tileGraphicWidth, obj.h);
         }
     }
     
@@ -337,7 +337,7 @@ function deleteExtendedSelection()
     for (var i = 0; i < extendedSelection.length; i++)
         map.updateBuffer(true, extendedSelection[i].px,
             extendedSelection[i].py - extendedSelection[i].h,
-            extendedSelection[i].w, extendedSelection[i].h * 2);
+            tileGraphicWidth, extendedSelection[i].h * 2);
     
     delete extendedSelection;
     extendedSelection = newSelection;
@@ -350,7 +350,7 @@ function deleteFocussed()
     if (focussed == null) return false;
     
     var old = map.deleteObject(focussed);
-    map.updateBuffer(true, old.px, old.py, old.w, old.h);
+    map.updateBuffer(true, old.px, old.py, tileGraphicWidth, old.h);
     focussed = null;
     
     // Move selection down
@@ -386,7 +386,7 @@ function mouseClickHandler(ev)
                 deleteFocussed();
             } else {
                 map.deleteObject(obj);
-                map.updateBuffer(true, obj.px, obj.py, obj.w, obj.h);
+                map.updateBuffer(true, obj.px, obj.py, tileGraphicWidth, obj.h);
             }
         } else {
             setSelection(obj, false);
@@ -398,7 +398,7 @@ function mouseClickHandler(ev)
         } else {
             obj = map.insertAboveObject(focussed, focussed.terrain);
             if (obj != null )
-                map.updateBuffer(true, obj.px, obj.py, obj.w, obj.h);
+                map.updateBuffer(true, obj.px, obj.py, tileGraphicWidth, obj.h);
         }
     }
     

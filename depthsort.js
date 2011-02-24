@@ -8,6 +8,8 @@ function DSAXGeometryObject(start, obj)
     
     this.count = 1;
     this.start = start;
+    
+    return true;
 }
 
 DSAXGeometryObject.prototype = {
@@ -71,6 +73,7 @@ function DSAZGeometryObject(z)
     this.points = new Array(4);
     this.xrects = [];
     
+    this.movingList = null;
     this.insideClippingArea = true;
     
     for (var i = 0; i < 4; i++)
@@ -106,6 +109,61 @@ DSAZGeometryObject.prototype = {
         p[i].y = r.py - (tileGraphicWidth >> 1);
     },
     
+    objectStartedMoving: function (x)
+    {
+        // Object is moving between x and x+1
+        var list = this.movingList;
+        
+        if (list == null)
+        {
+            this.movingList = [{x: x, count: 1}];
+            return true;
+        }
+        
+        var len = list.length, o = null;
+        for (var i = 0; i < len; i++)
+        {
+            o = list[i];
+            if (x == o.x)
+            {
+                o.count++;
+                return true;
+            } else if (x < o.x) {
+                list.splice(i,0,x);
+                return true;
+            }
+        }
+        
+        list.push({x: x, count:1});
+        return true;
+    },
+    
+    objectFinishedMoving: function (x)
+    {
+        var list = this.movingList;
+        
+        if (list == null) return false;
+        
+        var len = list.length, o = null;
+        for (var i = 0; i < len; i++)
+        {
+            o = list[i];
+            if (x == o.x)
+            {
+                if (o.count > 0)
+                {
+                    o.count--;
+                    return true;
+                } else {
+                    list.splice(i,1);
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    },
+    
 };
 
 function DSAObject(terrain, x, y, z)
@@ -123,15 +181,17 @@ function DSAObject(terrain, x, y, z)
     
     // graphics related members
     this.img = null;
-    this.w = 0;
     this.h = 0;
     this.px = 0;
     this.py = 0;
+    this.moving = false;
     
     // Do we draw the tile's sprite?  Or do some extra work?
     this.shaderList = null;
     
     // Shader stuff
+    // TODO: Make this stay updated because it's actually a convenient way
+    // to check the distance between this and the next tile up, if there is one
     this.shadow = 0;
     
     // Initial setup of object
@@ -161,7 +221,6 @@ DSAObject.prototype = {
         
         // graphics related members
         this.img = this.terrain.sprite;
-        this.w = this.img.width;
         this.h = this.img.height;
     },
     
@@ -441,16 +500,15 @@ DepthSortedArray.prototype = {
         var d = this.data;
         var zgeom = this.z_geom;
         var b = this.buffer;
-        var px = 0, py = 0, omaxx = 0, omaxy = 0, p1x = 0, p3x = 0;
+        var px = 0, py = 0, omaxx = 0, omaxy = 0, p1x = 0, p3x = 0, tx=0, tw=0,
+            hz = this.highest_z;
         var point0 = null, point1 = null, point2 = null, point3 = null;
         var p = null, obj = null, sList = null;
         var rects = null, min_rect = null, max_rect = null;
-        var tileObj = null;
+        var tileObj = null, movingObj = null;
         
         // Construct the rectangle representing our viewport
-        var rect = {x:minx,y:miny,w:maxx,h:maxy};
-        
-        b.clearRect(minx - bufferX, miny - bufferY, width, height);
+        var rect = {x: minx, y: miny, w: maxx, h: maxy};
         
         // Push context
         b.save();
@@ -467,7 +525,10 @@ DepthSortedArray.prototype = {
         // Clip the area of relevant changes
         b.clip();
         
-        for (var z = this.lowest_z; z <= this.highest_z; z++)
+        // Clear the area we're about to draw
+        b.clearRect(minx - bufferX, miny - bufferY, width, height);
+        
+        for (var z = this.lowest_z; z <= hz; z++)
         {
             p = zgeom[z];
             
@@ -555,40 +616,78 @@ DepthSortedArray.prototype = {
                     max_rect = rects[min];
             }
             
+            // Get min and max data indicies
             min = min_rect.start;
             max = max_rect.start + max_rect.count;
             
             for (var i = min; i < max; i++)
             {
                 obj = d[i];
-                px = obj.px;
+                
+                // Objects should not be able to extend lower than the tile
+                // so skip tile if it's out of bounds of rect
                 py = obj.py;
-                omaxy = py + tileGraphicHeight;
+                if (py >= maxy) continue;
                 
-                if (omaxy <= miny || py >= maxy) continue;
-                
-                px -= bufferX;
                 py -= bufferY;
+                px = obj.px - bufferX;
                 
-                // Draw tile and effects
-                sList = obj.shaderList;
-                if (sList == null)
+                // Draw tile and effects.  We can avoid drawing the tile if
+                // it couldn't possible encroach into the clipping area
+                
+                if (py + obj.h + bufferY > miny)
                 {
-                    b.drawImage(obj.img, px, py);
-                } else {
-                    for (var j = sList.length - 1; j >= 0; j--)
-                        sList[j](obj, b, px, py);
+                    sList = obj.shaderList;
+                    if (sList == null)
+                    {
+                        b.drawImage(obj.img, px, py);
+                    } else {
+                        for (var j = sList.length - 1; j >= 0; j--)
+                            sList[j](obj, b, px, py);
+                    }
                 }
                 
-                // Draw objects associated with tile
+                // Draw objects associated with tile, but remember that they
+                // may extend above tileGraphicHeight
                 sList = obj.obj;
                 if (sList != null)
                 {
                     for (var j = sList.length - 1; j >= 0; j--)
                     {
                         tileObj = sList[j];
-                        b.drawImage(tileObj.img,
-                            tileObj.px - bufferX, tileObj.py - bufferY);
+                        tx = tileObj.px - bufferX;
+                        
+                        if (tileObj.moving == false)
+                        {
+                            b.drawImage(tileObj.img, tx, tileObj.py - bufferY);
+                            continue;
+                        }
+                        
+                        // Is the object completely to the left of this tile?
+                        tw = tileObj.w;
+                        if (tx + tw < px) continue;
+                        
+                        // Is it completely to the right?
+                        omaxx = px + tileGraphicWidth;
+                        if (tx > omaxx) continue;
+                        
+                        // Is it hanging off the left size?
+                        if (tx < px)
+                        {
+                            // If so, clip that area
+                            tx = px - tx;
+                            tw -= tx;
+                        } else if (tx + tw > omaxx) {
+                            // If it's hanging off the right side, clip it there
+                            tw -= tx + tw - omaxx;
+                            tx = 0;
+                        } else {
+                            tx = 0;
+                        }
+                        
+                        b.drawImage(tileObj.img, tx, 0, tw, tileObj.h,
+                            tileObj.px - bufferX + tx, tileObj.py - bufferY,
+                            tw, tileObj.h);
                     }
                 }
             }
@@ -611,12 +710,14 @@ DepthSortedArray.prototype = {
         if (maxx <= viewX || minx >= omaxx) return;
         if (maxy <= viewY || miny >= omaxy) return;
         
-        var tx = minx - 1 > viewX ? minx - 1 : viewX;
-        var ty = miny - 1 > viewY ? miny - 1 : viewY;
-        var tw = tx + width + 1;
+        var ty = 0, th = 0;
+        
+        tx = minx > viewX ? minx : viewX;
+        ty = miny > viewY ? miny : viewY;
+        tw = tx + width;
         if (tw > omaxx) tw = omaxx;
         tw -= tx;
-        var th = ty + height + 1;
+        th = ty + height;
         if (th > omaxy) th = omaxy;
         th -= ty;
         
@@ -769,7 +870,7 @@ DepthSortedArray.prototype = {
         // update geometry
         this.updatePlaneGeometry(n, index);
         
-        // recast a shadow
+        // Recast shadow
         this.castShadow(index);
         
         return n;
@@ -845,7 +946,9 @@ DepthSortedArray.prototype = {
     
     deleteObject: function (obj)
     {
-        return this.deleteIndex(this.findIndexForObject(obj));
+    
+        return this.deleteIndex( this.findIndexForObject(obj) );
+    
     },
     
     deleteIndex: function (index)

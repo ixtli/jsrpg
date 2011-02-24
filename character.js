@@ -17,8 +17,8 @@ function GameObject(name, anims)
     this.w = 0;
     this.h = 0;
     this.img = null;
-    this.px = -1;
-    this.py = -1;
+    this.px = 0;
+    this.py = 0;
     this.moveSpeed = 3;
     this.notifyOnAnimationCompletion = false;
     this.isAnimating = false;
@@ -27,6 +27,7 @@ function GameObject(name, anims)
     this.speed = null;
     this.target_px = null;
     this.target_py = null;
+    this.moving = false;
     
     // Associated map tile
     this.tile = null;
@@ -161,9 +162,10 @@ GameObject.prototype = {
         this.target_py = target.py + this.currentAnimation.yOffset;
         this.slope = (this.px - target.px) / (this.py - target.py);
         
-        this.tile.removeObject(this);
         target.addObject(this);
-        this.tile = target;
+        this.target_tile = target;
+        
+        this.moving = true;
         
         //bufferCtx.clearRect(0,0,bufferWidth, bufferHeight);
         //canvasContext.clearRect(0,0,viewWidth, viewHeight);
@@ -175,6 +177,10 @@ GameObject.prototype = {
     finishedMoving: function ()
     {
         // The px,py has reached the target px,py
+        this.tile.removeObject(this);
+        this.tile = this.target_tile;
+        this.target_tile = null;
+        this.moving = false;
     },
     
     finishedAnimating: function (time)
