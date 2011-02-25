@@ -55,8 +55,7 @@ GameObject.prototype = {
         {
             var t = this.tile;
             t.removeObject(this);
-            map.updateBuffer(true, Math.floor(this.px), Math.floor(this.py),
-                Math.ceil(this.w), Math.ceil(this.h));
+            map.updateBuffer(true, this.px, this.py, this.w, this.h);
             if (t === focussed) tileEditorUpdate();
         }
         
@@ -178,7 +177,7 @@ GameObject.prototype = {
         var ret = this.project(target);
         this.target_px = ret.px;
         this.target_py = ret.py;
-        this.slope = Math.round((ret.py - this.py) / (ret.px - this.px));
+        this.slope = (ret.py - this.py) / (ret.px - this.px);
         
         target.addObject(this);
         this.target_tile = target;

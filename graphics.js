@@ -33,6 +33,8 @@ function startMovingObject(object)
 {
     if (object == null) return false;
     
+    // calculate object 
+    
     object.speed = Math.floor(Math.abs(object.px - object.target_px) /
         (1000/FPS));
     moving.push(object);
@@ -55,7 +57,7 @@ function move()
         cury = tmp.py;
         
         tmp.px += tmp.speed;
-        tmp.py = tmp.slope * (tmp.px - tmp.target_px) + tmp.target_py;
+        tmp.py = Math.round(tmp.slope * (tmp.px - tmp.target_px) + tmp.target_py);
         
         map.updateBuffer(true, tmp.px - tmp.speed, cury, tmp.w + tmp.speed,
             tmp.h + Math.abs(tmp.py - cury));
