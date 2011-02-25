@@ -22,6 +22,7 @@ function GameObject(name, anims)
     this.moveSpeed = 3;
     this.notifyOnAnimationCompletion = false;
     this.isAnimating = false;
+    this.movingAnimationName = null;
     
     this.slope = null;
     this.speed = null;
@@ -45,6 +46,9 @@ GameObject.prototype = {
     face: function (direction)
     {
         this.facing = direction;
+        this.setAnimation(this.movingAnimationName, direction);
+        map.updateBuffer(true, this.px, this.py, this.w, this.h);
+        this.lastUpdate = new Date();
     },
     
     setTile: function (tile)

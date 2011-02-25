@@ -35,7 +35,7 @@ function startMovingObject(object)
     
     // calculate object 
     
-    object.speed = Math.floor(Math.abs(object.px - object.target_px) /
+    object.speed = Math.round(Math.abs(object.px - object.target_px) /
         (1000/FPS));
     moving.push(object);
     
@@ -50,19 +50,36 @@ function move()
     var tmp = null;
     var finished = [];
     var cury = 0;
+    var done = false;
+    
     for (var i = moving.length - 1; i >= 0; i--)
     {
         tmp = moving[i];
-        
         cury = tmp.py;
+        done = false;
         
-        tmp.px += tmp.speed;
-        tmp.py = Math.round(tmp.slope * (tmp.px - tmp.target_px) + tmp.target_py);
+        if (tmp.px < tmp.target_px)
+        {
+            tmp.px += tmp.speed;
+            tmp.py = Math.ceil(
+                tmp.slope * (tmp.px - tmp.target_px) + tmp.target_py);
+            
+            map.updateBuffer(true, tmp.px - tmp.speed, cury,
+                tmp.w + tmp.speed, tmp.h + Math.abs(tmp.py - cury));
+            
+            if (tmp.px >= tmp.target_px) done = true;
+        } else {
+            tmp.px -= tmp.speed;
+            tmp.py = Math.floor(
+                tmp.slope * (tmp.px - tmp.target_px) + tmp.target_py);
+            
+            map.updateBuffer(true, tmp.px, tmp.py,
+                tmp.w + tmp.speed, tmp.h + Math.abs(tmp.py - cury));
+            
+            if (tmp.px <= tmp.target_px) done = true;
+        }
         
-        map.updateBuffer(true, tmp.px - tmp.speed, cury, tmp.w + tmp.speed,
-            tmp.h + Math.abs(tmp.py - cury));
-        
-        if (tmp.px >= tmp.target_px)
+        if (done == true)
         {
             finished.push(i);
             tmp.finishedMoving();
