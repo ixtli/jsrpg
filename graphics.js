@@ -19,7 +19,7 @@ var lightDistance = 5;
 var terrainSprites = [];
 var characterSprites = [];
 var sheets = [];
-var animations = [];
+var kirbyAnimations = [];
 
 // Animations
 var animated = [];
@@ -480,17 +480,32 @@ function initGraphics()
     
     initTerrain(terrainNames, tmp);
     
-    tmp = new SpriteSheet(kirbyImage, "Kirby",
+    bootstrapKirbyAnimations();
+}
+
+function bootstrapKirbyAnimations()
+{
+    var tmp = new SpriteSheet(kirbyImage, "Kirby",
         kirbySheetWidth, kirbySheetHeight, characterSprites);
     
-    animations['kirby_walking'] = new Array(4);
-    animations['kirby_walking'][DIR_CLOSER] = new Animation(
+    kirbyAnimations['moving'] = new Array(4);
+    kirbyAnimations['moving'][DIR_CLOSER] = new Animation(
         characterSprites, 6, 2, kirbyWalkingSpeed);
-    animations['kirby_walking'][DIR_FURTHER] = new Animation(
+    kirbyAnimations['moving'][DIR_FURTHER] = new Animation(
         characterSprites, 4, 2, kirbyWalkingSpeed);
-    animations['kirby_walking'][DIR_LEFT] = new Animation(
+    kirbyAnimations['moving'][DIR_LEFT] = new Animation(
         characterSprites, 2, 2, kirbyWalkingSpeed);
-    animations['kirby_walking'][DIR_RIGHT] = new Animation(
+    kirbyAnimations['moving'][DIR_RIGHT] = new Animation(
+        characterSprites, 0, 2, kirbyWalkingSpeed);
+    
+    kirbyAnimations['idle'] = new Array(4);
+    kirbyAnimations['idle'][DIR_CLOSER] = new Animation(
+        characterSprites, 6, 2, kirbyWalkingSpeed);
+    kirbyAnimations['idle'][DIR_FURTHER] = new Animation(
+        characterSprites, 4, 2, kirbyWalkingSpeed);
+    kirbyAnimations['idle'][DIR_LEFT] = new Animation(
+        characterSprites, 2, 2, kirbyWalkingSpeed);
+    kirbyAnimations['idle'][DIR_RIGHT] = new Animation(
         characterSprites, 0, 2, kirbyWalkingSpeed);
 }
 

@@ -22,7 +22,6 @@ function GameObject(name, anims)
     this.moveSpeed = 3;
     this.notifyOnAnimationCompletion = false;
     this.isAnimating = false;
-    this.movingAnimationName = null;
     
     this.slope = null;
     this.speed = null;
@@ -45,10 +44,14 @@ GameObject.prototype = {
     
     face: function (direction)
     {
+        if (this.moving == true) return false;
+        
         this.facing = direction;
-        this.setAnimation(this.movingAnimationName, direction);
+        this.setAnimation('idle');
         map.updateBuffer(true, this.px, this.py, this.w, this.h);
         this.lastUpdate = new Date();
+        
+        return true;
     },
     
     setTile: function (tile)
@@ -75,15 +78,16 @@ GameObject.prototype = {
         if (tile === focussed) tileEditorUpdate();
     },
     
-    setAnimation: function (name, index)
+    setAnimation: function (name)
     {
-        var tmp = this.animations[name][index];
+        var tmp = this.animations[name][this.facing];
         
         if (tmp == null) return false;
         this.currentAnimation = tmp;
         
         this.w = this.currentAnimation.width;
         this.h = this.currentAnimation.height;
+        this.animIndex = this.currentAnimation.start;
         
         var ret = this.project(this.tile);
         this.px = ret.px;
@@ -141,7 +145,7 @@ GameObject.prototype = {
         // Move in the direction the object is facing.
         
         // Has the previous move finished yet?
-        if (this.target_tile != null) return false;
+        if (this.target_tile != null || this.moving == true) return false;
         
         var target = null;
         var tile = this.tile;
@@ -188,6 +192,7 @@ GameObject.prototype = {
         
         this.moving = true;
         
+        this.setAnimation('moving');
         startMovingObject(this);
         
         return true;
@@ -207,6 +212,7 @@ GameObject.prototype = {
             this.target_tile = null;
         }
         
+        this.setAnimation('idle');
         this.moving = false;
     },
     

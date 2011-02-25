@@ -111,16 +111,12 @@ function init()
     toggleAnimation();
     
     // Make a character
-    kirby = new GameObject("kirby", animations);
-    kirby.movingAnimationName = 'kirby_walking';
-    kirby.face(DIR_LEFT);
-    kirby.setAnimation('kirby_walking', kirby.facing);
+    kirby = new GameObject("kirby", kirbyAnimations);
+    kirby.face(DIR_FURTHER);
+    kirby.setAnimation('idle');
     kirby.setTile(map.data[205]);
     kirby.animate();
-    var interv = setInterval(function () {
-        kirby.face(Math.floor(Math.random() * 3));
-        kirby.moveForward(true);
-    }, 1000);
+    kirby.moveForward(true);
 }
 
 function configureEventBindings()
