@@ -366,8 +366,10 @@ function mouseClickHandler(ev)
 {
     if (focussed == null)
         return true;
-    else if (ev.type === 'mousedown') ev.preventDefault();
-    else if (ev.type === 'mouseup') return true; // for now
+    else if (ev.type === 'mousedown')
+        ev.preventDefault();
+    else if (ev.type === 'mouseup')
+        return true; // for now
     
     if (mouseInside == false)
         return true;
@@ -389,6 +391,19 @@ function mouseClickHandler(ev)
             }
         } else {
             setSelection(obj, false);
+            
+            var res = optimalPath(kirby.tile, obj, 30, 5);
+            if (res.r == null) return false;
+            
+            var r = res.r, ret = [];
+            while (r != null)
+            {
+                ret.push(r.obj);
+                r = r.prev;
+            }
+            
+            kirby.startMovingOnPath(ret);
+            
         }
     } else {
         if (ev.shiftKey)

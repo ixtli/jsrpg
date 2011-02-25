@@ -19,15 +19,19 @@ function GameObject(name, anims)
     this.img = null;
     this.px = 0;
     this.py = 0;
-    this.moveSpeed = 3;
     this.notifyOnAnimationCompletion = false;
     this.isAnimating = false;
     
-    this.slope = null;
-    this.speed = null;
-    this.target_px = null;
-    this.target_py = null;
+    // Movement state members
+    this.slope = 0;
+    this.speed = 0;
+    this.moveSpeed = 3;
+    this.target_px = 0;
+    this.target_py = 0;
     this.moving = false;
+    this.target_tile = null;
+    this.path = null;
+    this.pathIndex = 0;
     
     // Associated map tile
     this.tile = null;
@@ -35,9 +39,6 @@ function GameObject(name, anims)
     // Game system mebers
     this.stats = null;
     this.facing = DIR_RIGHT;
-    
-    // Private members
-    this.target_tile = null;
 }
 
 GameObject.prototype = {
@@ -212,8 +213,12 @@ GameObject.prototype = {
             this.target_tile = null;
         }
         
-        this.setAnimation('idle');
         this.moving = false;
+        
+        if (this.path != null)
+            this.moveToNextPathTile();
+        else
+            this.setAnimation('idle');
     },
     
     finishedAnimating: function (time)
@@ -222,7 +227,62 @@ GameObject.prototype = {
         // This is useful if the animation should only play once.
         
         this.stopAnimating();
+        this.setAnimation('idle');
         return false;
+    },
+    
+    startMovingOnPath: function (path)
+    {
+        if (this.moving == true || this.path != null)
+            return false;
+        
+        this.pathIndex = path.length - 1;
+        
+        // Are we at the first tile?
+        if (!(path[this.pathIndex] === this.tile))
+            setTile(path[this.pathIndex]);
+        
+        this.path = path;
+        this.moveToNextPathTile();
+        
+        return true;
+    },
+    
+    moveToNextPathTile: function ()
+    {
+        var cur = this.tile;
+        
+        // Error condition check
+        if (this.moving == true) return false;
+        
+        // Remember that the path is backwards because of how A* returns results
+        var index = --this.pathIndex;
+        if (index < 0)
+        {
+            this.path = null;
+            return false;
+        }
+        
+        var next = this.path[index];
+        
+        // Moving left
+        if (cur.x > next.x)
+            this.face(DIR_LEFT);
+        // Moving right
+        else if (cur.x < next.x)
+            this.face(DIR_RIGHT);
+        // Moving further
+        else if (cur.z > next.z)
+            this.face(DIR_FURTHER);
+        // Moving closer
+        else
+            this.face(DIR_CLOSER);
+        
+        // Traverse the list
+        this.nextPathNode = next.prev;
+        this.moveForward(true);
+        
+        return true;
     }
     
 };
