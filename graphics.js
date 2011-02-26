@@ -99,12 +99,13 @@ function move()
     }
 }
 
-function Animation(array, start, count, quantum)
+function Animation(array, start, count, loop, quantum)
 {
     this.array = array;
     this.start = start;
     this.count = count;
     this.quantum = quantum;
+    this.loop = loop;
     
     // The following is based on the assumption that all sprites in one sheet
     // must have the same dimensions
@@ -210,15 +211,33 @@ function animate()
         start = anim.start;
         if (t0 - tmp.lastUpdate > anim.quantum)
         {
-            if (++tmp.animIndex >= start + anim.count)
+            if (anim.loop == false)
+                tmp.animIndex++;
+            else if (tmp.animReverse == false)
+                tmp.animIndex++;
+            else
+                tmp.animIndex--;
+            
+            if (tmp.animIndex >= start + anim.count)
             {
-                tmp.animIndex = start;
+                if (anim.loop == true)
+                {
+                    tmp.animReverse = true;
+                    tmp.animIndex = start + anim.count - 2;
+                } else {
+                    tmp.animIndex = start;
+                }
                 
                 if (tmp.notifyOnAnimationCompletion == true)
                     // If the callback returns false, skip animating this frame
                     if (tmp.finishedAnimating(t0) == false)
                         continue;
+                
+            } else if (tmp.animIndex < start) {
+                tmp.animReverse = false;
+                tmp.animIndex = start + 1;
             }
+            
             tmp.img = anim.array[tmp.animIndex];
             if (tmp.moving == false)
                 map.updateBuffer(true, tmp.px, tmp.py, tmp.w, tmp.h);
@@ -490,23 +509,23 @@ function bootstrapKirbyAnimations()
     
     kirbyAnimations['moving'] = new Array(4);
     kirbyAnimations['moving'][DIR_CLOSER] = new Animation(
-        characterSprites, 6, 2, kirbyWalkingSpeed);
+        characterSprites, 9, 3, true, kirbyWalkingSpeed);
     kirbyAnimations['moving'][DIR_FURTHER] = new Animation(
-        characterSprites, 4, 2, kirbyWalkingSpeed);
+        characterSprites, 6, 3, true, kirbyWalkingSpeed);
     kirbyAnimations['moving'][DIR_LEFT] = new Animation(
-        characterSprites, 2, 2, kirbyWalkingSpeed);
+        characterSprites, 3, 3, true, kirbyWalkingSpeed);
     kirbyAnimations['moving'][DIR_RIGHT] = new Animation(
-        characterSprites, 0, 2, kirbyWalkingSpeed);
+        characterSprites, 0, 3, true, kirbyWalkingSpeed);
     
     kirbyAnimations['idle'] = new Array(4);
     kirbyAnimations['idle'][DIR_CLOSER] = new Animation(
-        characterSprites, 6, 2, kirbyWalkingSpeed);
+        characterSprites, 9, 3, true, kirbyWalkingSpeed);
     kirbyAnimations['idle'][DIR_FURTHER] = new Animation(
-        characterSprites, 4, 2, kirbyWalkingSpeed);
+        characterSprites, 6, 3, true, kirbyWalkingSpeed);
     kirbyAnimations['idle'][DIR_LEFT] = new Animation(
-        characterSprites, 2, 2, kirbyWalkingSpeed);
+        characterSprites, 3, 3, true, kirbyWalkingSpeed);
     kirbyAnimations['idle'][DIR_RIGHT] = new Animation(
-        characterSprites, 0, 2, kirbyWalkingSpeed);
+        characterSprites, 0, 3, true, kirbyWalkingSpeed);
 }
 
 function secondarySelection(obj, buffer, px, py)

@@ -21,6 +21,7 @@ function GameObject(name, anims)
     this.py = 0;
     this.notifyOnAnimationCompletion = false;
     this.isAnimating = false;
+    this.animReverse = false; // Is it playing backwards at the moment?
     
     // Movement state members
     this.slope = 0;
@@ -46,6 +47,7 @@ GameObject.prototype = {
     face: function (direction)
     {
         if (this.moving == true) return false;
+        if (this.facing == direction) return true;
         
         this.facing = direction;
         this.setAnimation('idle');
@@ -192,8 +194,6 @@ GameObject.prototype = {
         this.target_tile = target;
         
         this.moving = true;
-        
-        this.setAnimation('moving');
         startMovingObject(this);
         
         return true;
@@ -217,8 +217,6 @@ GameObject.prototype = {
         
         if (this.path != null)
             this.moveToNextPathTile();
-        else
-            this.setAnimation('idle');
     },
     
     finishedAnimating: function (time)
@@ -226,7 +224,6 @@ GameObject.prototype = {
         // If this function returns false, the first frame will not be displayed
         // This is useful if the animation should only play once.
         
-        this.stopAnimating();
         this.setAnimation('idle');
         return false;
     },

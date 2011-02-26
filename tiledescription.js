@@ -23,7 +23,7 @@ const tileSheetHeight = 3;
 
 var kirbyImage = new Image();
 kirbyImage.src = "img/kirby.png";
-const kirbySheetWidth = 8;
+const kirbySheetWidth = 12;
 const kirbySheetHeight = 1;
-const kirbyWalkingSpeed = 400;
+const kirbyWalkingSpeed = 200;
 
