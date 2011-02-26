@@ -392,7 +392,11 @@ function mouseClickHandler(ev)
         } else {
             setSelection(obj, false);
             
-            var res = optimalPath(kirby.tile, obj, 30, 5);
+            var t = kirby.tile;
+            if (kirby.target_tile != null)
+                t = kirby.target_tile;
+            
+            var res = optimalPath(t, obj, 30, 5);
             if (res.r == null) return false;
             
             var r = res.r, ret = [];
@@ -402,7 +406,11 @@ function mouseClickHandler(ev)
                 r = r.prev;
             }
             
-            kirby.startMovingOnPath(ret);
+            var start = kirby.path == null ? true : false;
+            if (start == false)
+                kirby.cancelMovementPath();
+            
+            kirby.startMovingOnPath(ret, start);
             
         }
     } else {

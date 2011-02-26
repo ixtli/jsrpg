@@ -228,19 +228,29 @@ GameObject.prototype = {
         return false;
     },
     
-    startMovingOnPath: function (path)
+    startMovingOnPath: function (path, start)
     {
-        if (this.moving == true || this.path != null)
-            return false;
+        if (this.path != null) return false;
         
+        // Remember that paths go from back to front because of how A*
+        // discovers them.
         this.pathIndex = path.length - 1;
+        
+        if (this.moving == true)
+        {
+            // Queue up the path to start right after moving is complexted.
+            this.path = path;
+            return true;
+        }
         
         // Are we at the first tile?
         if (!(path[this.pathIndex] === this.tile))
             setTile(path[this.pathIndex]);
         
         this.path = path;
-        this.moveToNextPathTile();
+        
+        if (start == true)
+            this.moveToNextPathTile();
         
         return true;
     },
@@ -275,12 +285,19 @@ GameObject.prototype = {
         else
             this.face(DIR_CLOSER);
         
-        // Traverse the list
-        this.nextPathNode = next.prev;
         this.moveForward(true);
         
         return true;
-    }
+    },
+    
+    cancelMovementPath: function ()
+    {
+        if (this.path == null) return false;
+        
+        this.path = null;
+        
+        return true;
+    },
     
 };
 
