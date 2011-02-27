@@ -2,9 +2,12 @@ function DSAXGeometryObject(start, obj)
 {
     this.x = obj.x;
     
+    this.miny = obj.y;
+    this.maxy = obj.y;
+    
     this.minx = obj.px;
-    this.miny = obj.py;
-    this.maxy = this.miny + tileGraphicHeight;
+    this.minpy = obj.py;
+    this.maxpy = this.minpy + obj.h;
     
     this.count = 1;
     this.start = start;
@@ -14,36 +17,58 @@ function DSAXGeometryObject(start, obj)
 
 DSAXGeometryObject.prototype = {
     
-    update: function (map, index)
+    tileWasDeleted: function (map, deleted)
     {
-        // This is only called if something has changed that requires the entire
-        // x value to be rescanned such as deletion or a tile's metric being changed.
-        // Therefore we have to treat everything as invalidated and scan the
-        // entire x value again.
+        // Called when a tile was deleted from this XGeometryObject.
+        
+        // If the deleted object was in the middle of the xrect, nothing needs
+        // to be done.
+        if (deleted.py > this.minpy && deleted.py + deleted.h < this.maxpy &&
+            deleted.y > this.miny && deleted.y < this.maxy)
+            return false;
+        
+        // If it fails one of these test, we have to regen
         
         var d = map.data;
+        var index = this.start;
         var obj = d[index];
         var z = obj.z;
         var x = obj.x;
         
         // reinit
-        this.start = index;
-        this.minx = obj.px;
-        this.miny = obj.py;
-        this.maxy = this.miny + obj.h;
+        this.miny = obj.y;
+        this.maxy = obj.y;
+        this.minpy = obj.py;
+        this.maxpy = this.minpy + obj.h;
         
-        for (var i = index + 1; i < d.length; i++)
+        var max = this.start + this.count, change = false;
+        for (var i = index + 1; i < max; i++)
         {
             obj = d[i];
             
             // don't change x or z
             if (obj.z != z || obj.x != x) return;
             
-            // Geometry
-            if (obj.px < this.minx) this.minx = obj.px;
-            if (obj.py < this.miny) this.miny = obj.py;
-            if (obj.h + obj.py > this.maxy) this.maxy = obj.py + obj.h;
+            if (obj.y < this.miny)
+                this.miny = obj.y;
+            else if (obj.y > this.maxy)
+                this.maxy = obj.y;
+            
+            // Geometry updates
+            if (obj.py < this.minpy)
+            {
+                this.minpy = obj.py;
+                change = true;
+            }
+            
+            if (obj.h + obj.py > this.maxpy)
+            {
+                this.maxpy = obj.py + obj.h;
+                change = true;
+            }
         }
+        
+        return change;
     },
     
     addObject: function (obj, index)
@@ -51,10 +76,12 @@ DSAXGeometryObject.prototype = {
         // Start index in the map array
         if (index < this.start) this.start = index;
         
-        // Geometry
-        if (obj.px < this.minx) this.minx = obj.px;
-        if (obj.py < this.miny) this.miny = obj.py;
-        if (obj.h + obj.py > this.maxy) this.maxy = obj.py + tileGraphicHeight;
+        // Geometry update
+        if (obj.y < this.miny) this.miny = obj.y;
+        if (obj.py < this.minpy) this.minpy = obj.py;
+        
+        if (obj.y > this.maxy) this.maxy = obj.y;
+        if (obj.h + obj.py > this.maxpy) this.maxpy = obj.py + obj.h;
         
         this.count++;
         return true;
@@ -289,8 +316,11 @@ DSAObject.prototype = {
         {
             if (slist[i] === shader)
             {
-                if (slist.length == 1) this.shaderList = null;
-                return slist.splice(i,1);
+                if (slist.length > 1)
+                    return slist.splice(i,1);
+                
+                this.shaderList = null;
+                return shader;
             }
         }
         
@@ -635,7 +665,7 @@ DepthSortedArray.prototype = {
                 // Draw tile and effects.  We can avoid drawing the tile if
                 // it couldn't possible encroach into the clipping area
                 
-                if (py + obj.h + bufferY > miny)
+                if (py + obj.h + bufferY >= miny)
                 {
                     sList = obj.shaderList;
                     if (sList == null)
@@ -648,7 +678,7 @@ DepthSortedArray.prototype = {
                 }
                 
                 // Draw objects associated with tile, but remember that they
-                // may extend above tileGraphicHeight
+                // may extend below the height of the tile
                 sList = obj.obj;
                 if (sList != null)
                 {
@@ -691,6 +721,8 @@ DepthSortedArray.prototype = {
                     }
                 }
             }
+            
+            this.drawZPlaneBounds(z);
         }
         
         b.restore();
@@ -868,7 +900,7 @@ DepthSortedArray.prototype = {
         this.optimized = false;
         
         // update geometry
-        this.updatePlaneGeometry(n, index);
+        this.updatePlaneGeometry(n, index + 1);
         
         // Recast shadow
         this.castShadow(index);
@@ -946,9 +978,7 @@ DepthSortedArray.prototype = {
     
     deleteObject: function (obj)
     {
-    
         return this.deleteIndex( this.findIndexForObject(obj) );
-    
     },
     
     deleteIndex: function (index)
@@ -960,7 +990,6 @@ DepthSortedArray.prototype = {
         
         // Figure out if there is a block spacially above us or not
         var above = null;
-        
         if (index + 1 < d.length)
         {
             if (d[index + 1].x == d[index].x && d[index + 1].z == d[index].z)
@@ -977,13 +1006,12 @@ DepthSortedArray.prototype = {
         var rects = zg.xrects;
         
         // Handle shadow
-        if (above != null)
+        if (index - 1 >= 0)
         {
-            this.castShadow(index);
-        } else {
             // If nothing is above us, remove shadow
-            if (index - 1 >= 0)
+            if (above == null)
             {
+                // Make sure the one below deleted is still in the same xrect
                 if (d[index - 1].x == deleted.x &&
                     d[index - 1].z == deleted.z)
                 {
@@ -1042,6 +1070,8 @@ DepthSortedArray.prototype = {
             // decrement count
             rect.count--;
             
+            var geomChange = true;
+            
             // were we the last object in this xplane?
             if (rect.count < 1)
             {
@@ -1063,7 +1093,7 @@ DepthSortedArray.prototype = {
                 }
             } else {
                 // update the geometry
-                rect.update(this, rect.start);
+                geomChange = rect.tileWasDeleted(this, deleted);
             }
             
             // decrement the start index of all rects ahead of this
@@ -1078,20 +1108,23 @@ DepthSortedArray.prototype = {
             zg.maxx = rects[rects.length - 1].x;
             zg.minx = rects[0].x;
             
-            // Finding the highest yvalue requires scanning the entire zset
-            if (deleted.y == zg.miny || deleted.y == zg.maxy)
+            // Was the rect in question recalculated?
+            if (geomChange == true)
             {
-                zg.maxy = d[set_index].y;
-                zg.miny = d[set_index].y;
+                // Finding the highest yvalue requires scanning the entire zset
+                zg.maxy = rects[0].maxy;
+                zg.miny = rects[0].miny;
                 
-                var max = rect.start + rect.count - 1;
-                
-                for (var i = set_index + 1; i < max; i++)
+                var max = rects.length;
+                for (var i = 1; i < max; i++)
                 {
-                    if (d[i].y > zg.maxy)
-                        zg.maxy = d[i].y;
-                    else if (d[i].y < zg.miny)
-                        zg.miny = d[i].y;
+                    rect = rects[i];
+                    if (rect == null) continue;
+                    
+                    if (rect.maxy > zg.maxy)
+                        zg.maxy = rect.maxy;
+                    else if (rect.miny < zg.miny)
+                        zg.miny = rect.miny;
                 }
             }
             
@@ -1394,21 +1427,14 @@ DepthSortedArray.prototype = {
             for (var i = 1; i < xr.length; i++)
                 if (xr[i] != null) xr[i].start++;
             
-            // No longer optimized
-            this.optimized = false;
-            
             plane.minx = x;
         } else {
             // It's in the middle
             var cur = x - plane.minx;
             if (xr[cur] == null)
-            {
                 xr[cur] = new DSAXGeometryObject(index, obj);
-                // No longer optimized
-                this.optimized = false;
-            } else {
+            else
                 xr[cur].addObject(obj, index);
-            }
             
             // gotta increase the start of every other DSAXGeom object
             for (var i = cur + 1; i < xr.length; i++)
@@ -1437,30 +1463,27 @@ DepthSortedArray.prototype = {
         plane.updatePixelProjection();
     },
     
-    drawZPlaneBounds: function ()
+    drawZPlaneBounds: function (z)
     {
         // Draw red lines around each zplane's clipping rhombus.
         var d = this.data;
         var b = this.buffer;
         var zgeom = this.z_geom;
         
-        var p = null, r = null;
-        var t = null;
-        for (var z = 0; z < zgeom.length; z++)
-        {
-            p = zgeom[z];
-            
-            if (p == null) continue;
-            
-            b.strokeStyle = "red";
-            b.beginPath();
-            b.moveTo(p.points[0].x - bufferX, p.points[0].y - bufferY);
-            b.lineTo(p.points[1].x - bufferX, p.points[1].y - bufferY);
-            b.lineTo(p.points[2].x - bufferX, p.points[2].y - bufferY);
-            b.lineTo(p.points[3].x - bufferX, p.points[3].y - bufferY);
-            b.closePath();
-            b.stroke();
-        }
+        var p = zgeom[z];
+        if (p == null) continue;
+        p = p.points;
+        
+        b.save();
+        b.strokeStyle = "red";
+        b.beginPath();
+        b.moveTo(p[0].x - bufferX, p[0].y - bufferY);
+        b.lineTo(p[1].x - bufferX, p[1].y - bufferY);
+        b.lineTo(p[2].x - bufferX, p[2].y - bufferY);
+        b.lineTo(p[3].x - bufferX, p[3].y - bufferY);
+        b.closePath();
+        b.stroke();
+        b.restore();
     },
     
     optimize: function ()
