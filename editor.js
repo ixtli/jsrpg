@@ -30,10 +30,12 @@ function tileIndexInputDidChange(event, ui)
 {
     var val = ui.value;
     var spriteName = terrainNames[val];
+    
     if (focussed != null)
     {
         focussed.setTerrain(terrain[spriteName]);
-        map.updateBuffer(true, focussed.px, focussed.py, focussed.w, focussed.h);
+        map.updateBuffer(true,
+            focussed.px, focussed.py, tileGraphicWidth, focussed.h);
         tileEditorUpdate();
     }
     
@@ -47,6 +49,8 @@ function tileIndexInputDidChange(event, ui)
             redrawObject(t);
         }
     }
+    
+    return true;
 }
 
 function tileEditorUpdate()
