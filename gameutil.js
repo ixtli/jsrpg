@@ -76,9 +76,9 @@ function generateTestMap()
     {
         for (var x = 0; x < 100; x++)
         {
-            for (var y = 0; y < 1; y++)
+            for (var y = 0; y < 2; y++)
             {
-                //if (Math.floor(Math.random() * 3) == 0) continue;
+                if (Math.floor(Math.random() * 10) < 2) continue;
                 
                 //ind = Math.floor(Math.random() * 3);
                 //ind = 0;
@@ -88,6 +88,22 @@ function generateTestMap()
     }
     
     /*
+    for (var z = 0; z < 100; z++)
+    {
+        for (var x = 0; x < 100; x++)
+        {
+            for (var y = 2; y < 4; y++)
+            {
+                if (Math.floor(Math.random() * 10) > 0) continue;
+                
+                //ind = Math.floor(Math.random() * 3);
+                //ind = 0;
+                map.insert(terrain['grass'], x, y, z);
+            }
+        }
+    }
+    
+    
     for (var i = 25; i >= 0; i--)
     {
         for (var j = 25; j >= 0; j--)
