@@ -722,7 +722,8 @@ DepthSortedArray.prototype = {
                 }
             }
             
-            this.drawZPlaneBounds(z);
+            // If you need to debug bounds, uncomment the following
+            // this.drawZPlaneBounds(z);
         }
         
         b.restore();
