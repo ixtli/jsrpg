@@ -172,6 +172,8 @@ function InterfaceWindow (name, px, py, width, height)
     this.ctx = null;
     
     this.elementList = [];
+    this.backgroundFxn = null;
+    this.borderStyle = null;
     
     this.debug = false;
     
@@ -227,6 +229,9 @@ InterfaceWindow.prototype = {
             c.fillStyle = "rgba(255,0,0,.5)";
             c.fillRect(px,py,width,height);
         }
+        
+        if (this.backgroundFxn != null)
+            this.backgroundFxn(c,px,py,w,h);
         
         for (var i = elist.length - 1; i >= 0; i--)
         {
@@ -293,6 +298,18 @@ InterfaceWindow.prototype = {
         
         return false;
     },
+    
+    setBGFunction: function(fxn)
+    {
+        this.backgroundFxn = fxn;
+        this.update(0,0,0,0);
+    },
+    
+    setBorderStyle: function(style)
+    {
+        this.borderStyle = style;
+        this.update(0,0,0,0);
+    }
     
 };
 
@@ -408,7 +425,7 @@ InterfaceLabel.prototype = {
     update: function (c, px, py, w, h)
     {
         c.font = this.font;
-        c.fillStyle = "black";
+        c.fillStyle = "white";
         c.fillText(this.string, this.px, this.py + this.height);
     },
     
