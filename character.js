@@ -54,8 +54,6 @@ GameObject.prototype = {
         this.setAnimation('idle');
         this.animate();
         
-        charWin.update(0,0,0,0);
-        
         return true;
     },
     
