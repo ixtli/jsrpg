@@ -110,12 +110,15 @@ function init()
     // Start drawing
     toggleAnimation();
     
+    // Initialize the interface
+    ui = new Interface(document.getElementById('interface'));
+    charWin = new InterfaceWindow("test win", 20, viewHeight - 120, 300, 100);
+    var pbar = new ProgressBar("test", charWin, 0,12,100,5,0,0,0);
+    var lb = new InterfaceLabel("t label", charWin, "HP: 10/10", 0,0);
+    
     // Make a character
     kirby = new GameObject("kirby", kirbyAnimations);
-    kirby.face(DIR_FURTHER);
-    kirby.setAnimation('idle');
     kirby.setTile(map.data[205]);
-    kirby.animate();
     kirby.moveForward(true);
 }
 

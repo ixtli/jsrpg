@@ -4,6 +4,9 @@ const DIR_LEFT = 1;
 const DIR_FURTHER = 2;
 const DIR_RIGHT = 3;
 
+// Associated ui windows
+var charWin = null;
+
 function GameObject(name, anims)
 {
     // Meta members
@@ -40,9 +43,31 @@ function GameObject(name, anims)
     // Game system mebers
     this.stats = null;
     this.facing = DIR_RIGHT;
+    
+    return this.init();
 }
 
 GameObject.prototype = {
+    
+    init: function ()
+    {
+        this.setAnimation('idle');
+        this.animate();
+        
+        charWin.update(0,0,0,0);
+        
+        return true;
+    },
+    
+    gotFocus: function ()
+    {
+        
+    },
+    
+    lostFocus: function ()
+    {
+        
+    },
     
     face: function (direction)
     {

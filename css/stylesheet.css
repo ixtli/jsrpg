@@ -251,9 +251,13 @@ canvas {
     z-index: 2;
 }
 
+#interface {
+    z-index: 3;
+}
+
 #msg {
     letter-spacing:-20px;
-    z-index: 3;
+    z-index: 4;
 }
 
 .editorview {
