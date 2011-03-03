@@ -114,7 +114,7 @@ function init()
     ui = new Interface(document.getElementById('interface'));
     charWin = new InterfaceWindow("test win", 20, viewHeight - 120, 300, 100);
     var pbar = new ProgressBar("test", charWin, 5,16,100,5,0,0,0);
-    var lb = new InterfaceLabel("t label", charWin, "HP: 10/10", 5,4);
+    var lb = new InterfaceLabel("t label", charWin, "HP:^2 10/10", 5,4);
     
     // Make a character
     kirby = new GameObject("kirby", kirbyAnimations);

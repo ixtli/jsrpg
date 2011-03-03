@@ -54,13 +54,14 @@ GameObject.prototype = {
         this.setAnimation('idle');
         this.animate();
         
+        charWin.borderStyle = "white";
         charWin.setBGFunction(function (c,px,py,w,h)
         {
             var oldalpha = c.globalAlpha;
-            c.globalAlpha = .75;
+            c.globalAlpha = .85;
             var grad = c.createLinearGradient(0,0,0,charWin.height);
-            grad.addColorStop(0, "black");
-            grad.addColorStop(1, "grey");
+            grad.addColorStop(0, "#0000B3");
+            grad.addColorStop(1, "black");
             c.fillStyle = grad;
             c.fillRect(0,0,charWin.width, charWin.height);
             c.globalAlpha = oldalpha;

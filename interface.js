@@ -141,6 +141,7 @@ Interface.prototype = {
             if (opx >= maxx || opx + o.width <= px) continue;
             if (opy >= maxy || opy + o.height <= py) continue;
             
+            c.globalAlpha = o.alpha;
             c.drawImage(o.img, opx, opy);
         }
         
@@ -166,6 +167,8 @@ function InterfaceWindow (name, px, py, width, height)
     this.width = width;
     this.height = height;
     
+    this.alpha = 1;
+    
     this.hidden = false;
     
     this.img = null;
@@ -174,6 +177,7 @@ function InterfaceWindow (name, px, py, width, height)
     this.elementList = [];
     this.backgroundFxn = null;
     this.borderStyle = null;
+    this.lineWidth = 4;
     
     this.debug = false;
     
@@ -248,6 +252,13 @@ InterfaceWindow.prototype = {
             if (epy >= maxy || emaxy <= py) continue;
             
             e.update(c, epx, epy, width, height);
+        }
+        
+        if (this.borderStyle != null)
+        {
+            c.strokeStyle = this.borderStyle;
+            c.lineWidth = this.lineWidth;
+            c.strokeRect(0, 0, width, height);
         }
         
         c.restore();
@@ -371,7 +382,7 @@ ProgressBar.prototype = {
         // ignore request for location for now
         c.fillStyle = this.color;
         var oldAlpha = c.globalAlpha;
-        c.globalAlpha = .25;
+        c.globalAlpha = .6;
         c.fillRect(this.px, this.py, this.width, this.height);
         c.globalAlpha = oldAlpha;
         return true;
@@ -426,8 +437,9 @@ InterfaceLabel.prototype = {
     {
         c.font = this.font;
         c.fillStyle = "white";
-        c.fillText(this.string, this.px, this.py + this.height);
+        drawEscapedString(c, this.string, "white", px, py + this.height, w);
     },
     
 };
+
 

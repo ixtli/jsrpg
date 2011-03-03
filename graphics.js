@@ -561,3 +561,35 @@ function shadowShader(obj, buffer, px, py)
     buffer.globalAlpha = prev_context;
 }
 
+function drawEscapedString(c, str, default_style, px, py, w)
+{
+    if (c == null || str == null) return false;
+    
+    var tmp = str.split(text_token);
+    
+    // If there were no escape chars in the string
+    if (tmp[0].length == str.length)
+    {
+        c.fillStyle = default_style;
+        c.fillText(str, px, py);
+        return true;
+    }
+    
+    var cind, o, cpx = px, len = tmp.length;
+    for (var i = 0; i < len; i++)
+    {
+        o = tmp[i];
+        cind = parseInt(o);
+        if (isNaN(cind) == false)
+        {
+            c.fillStyle = text_styles[cind];
+            if (cind > 9)
+                o = o.substring(2);
+            else
+                o = o.substring(1);
+        }
+        
+        c.fillText(o, cpx, py);
+        cpx += c.measureText(o).width;
+    }
+}

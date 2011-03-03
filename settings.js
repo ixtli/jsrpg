@@ -51,6 +51,8 @@ const alphaSelectionThreshold = 127;
 const msgTypeSize = 14;
 const msgBorder = 3;
 const msgLeftPadding = 8;
+const text_styles = ["black", "red", "green", "blue", "white"];
+const text_token = "^";
 
 // Engine settings.  Things here can be changed during runtime without maleffect
 var allowScrolling = true;
