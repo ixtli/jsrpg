@@ -213,10 +213,10 @@ InterfaceWindow.prototype = {
         var width = w > 0 ? w : this.width;
         var height = h > 0 ? h : this.height;
         if (px + width > px + this.width)
-            width = this.width - px;
+            width = this.width - Math.abs(width - this.width);
         
         if (py + height > py + this.height)
-            height = this.height - py;
+            height = this.height - Math.abs(height + this.height);
         
         var maxx = px + width;
         var maxy = py + height;
@@ -250,6 +250,9 @@ InterfaceWindow.prototype = {
             
             if (epx >= maxx || emaxx <= px) continue;
             if (epy >= maxy || emaxy <= py) continue;
+            
+            // adjust width and height so that we don't try to draw outside
+            // the bounds of the elements or more than we need to
             
             e.update(c, epx, epy, width, height);
         }
@@ -350,6 +353,8 @@ ProgressBar.prototype = {
     
     init: function (w)
     {
+        if (w == null) return false;
+        
         if (w.addElement(this) == false)
             return false;
         
@@ -442,4 +447,82 @@ InterfaceLabel.prototype = {
     
 };
 
+function ImageWell (name, w, img, px, py)
+{
+    this.name = name;
+    this.window = null;
+    this.hidden = false;
+    
+    this.px = px;
+    this.py = py;
+    
+    this.img = null;
+    this.alpha = 1;
+    this.width = 0;
+    this.height = 0;
+    
+    return this.init(w, img);
+}
+
+ImageWell.prototype = {
+    
+    init: function (w, img)
+    {
+        if (w == null) return false;
+        
+        if (w.addElement(this) == false)
+            return false;
+        
+        this.window = w;
+        this.setImg(img);
+        
+        return true;
+    },
+    
+    setImg: function (img)
+    {
+        
+        if (img != null)
+        {
+            this.width = img.width;
+            this.height = img.height;
+        } else {
+            this.width = 0;
+            this.height = 0;
+        }
+        
+        this.img = img;
+        
+        return true;
+    },
+    
+    setAlpha: function (alpha)
+    {
+        this.alpha = alpha;
+        return true;
+    },
+    
+    update: function (c, px, py, w, h)
+    {
+        if (this.img == null) return false;
+        
+        var width = w;
+        var height = h;
+        var px_offset = px - this.px;
+        var py_offset = py - this.py;
+        if (px_offset + width > px_offset + this.width)
+            width = w - Math.abs(width - this.width);
+        if (py_offset + height > py_offset + this.height)
+            height = h - Math.abs(height - this.height);
+        
+        var alpha = this.globalAlpha;
+        c.globalAlpha = this.alpha;
+        c.drawImage(this.img, px_offset, py_offset, width, height, px, py,
+            width, height);
+        c.globalAlpha = alpha;
+        
+        return true;
+    },
+    
+};
 

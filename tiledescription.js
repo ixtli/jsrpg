@@ -2,6 +2,10 @@
 var terrainImage = new Image();
 terrainImage.src = "img/terrain.png";
 
+// TODO: move this
+var kirbyPortrait = new Image();
+kirbyPortrait.src = "img/kirby_portrait.jpg";
+
 // Tile settings
 const tileWidth = 64;
 const tileHeight = 32;

@@ -593,3 +593,4 @@ function drawEscapedString(c, str, default_style, px, py, w)
         cpx += c.measureText(o).width;
     }
 }
+
