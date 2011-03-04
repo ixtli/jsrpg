@@ -1472,7 +1472,7 @@ DepthSortedArray.prototype = {
         var zgeom = this.z_geom;
         
         var p = zgeom[z];
-        if (p == null) continue;
+        if (p == null) return;
         p = p.points;
         
         b.save();

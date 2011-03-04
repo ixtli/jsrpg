@@ -515,7 +515,7 @@ ImageWell.prototype = {
         if (py_offset + height > py_offset + this.height)
             height = h - Math.abs(height - this.height);
         
-        var alpha = this.globalAlpha;
+        var alpha = c.globalAlpha;
         c.globalAlpha = this.alpha;
         c.drawImage(this.img, px_offset, py_offset, width, height, px, py,
             width, height);
