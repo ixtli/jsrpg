@@ -67,6 +67,8 @@ GameObject.prototype = {
             c.globalAlpha = oldalpha;
         });
         
+        charWin.show("open", 5);
+        
         return true;
     },
     

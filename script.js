@@ -80,7 +80,7 @@ function init()
     var t0 = new Date();
     initGraphics();
     var t1 = new Date();
-    log("Graphics init: "+(t1-t0)+" ms");
+    log("Graphics init: " + (t1-t0) + " ms");
     
     // generate terrain
     generateTestMap();
