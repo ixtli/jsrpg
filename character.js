@@ -54,8 +54,7 @@ GameObject.prototype = {
         this.setAnimation('idle');
         this.animate();
         
-        charWin.borderStyle = "white";
-        charWin.setBGFunction(function (c,px,py,w,h)
+        var bluegrad = function (c,px,py,w,h)
         {
             var oldalpha = c.globalAlpha;
             c.globalAlpha = .85;
@@ -65,9 +64,14 @@ GameObject.prototype = {
             c.fillStyle = grad;
             c.fillRect(0,0,charWin.width, charWin.height);
             c.globalAlpha = oldalpha;
-        });
+        };
         
-        charWin.show("open", 5);
+        charWin.borderStyle = "white";
+        charWin.setBGFunction(bluegrad);
+        
+        charWin.show("open_up", 10);
+        
+        //var box = 
         
         return true;
     },

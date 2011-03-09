@@ -349,8 +349,8 @@ function InterfaceWindow (name, px, py, width, height)
     this.alpha = 1;
     
     // Animation
-    this.animationTransform = null;
-    this.transformSpeed = null;
+    this.animationTransform = {px: 0, py: 0, width: 0, height: 0};
+    this.transformSpeed = {px: 0, py: 0, width: 0, height: 0};
     this.quantum = 0;
     this.lastUpdate = new Date();
     this.animationHasCompleted = null;
@@ -363,41 +363,94 @@ function InterfaceWindow (name, px, py, width, height)
 InterfaceWindow.prototype = {
     
     animations: {
-        open: function (w, s) {
+        
+        zoom_in: function(w, step_size)
+        {
             var target_width = w.width;
-            var t_height = w.height;
-            var trans = {px: 0, py: 0, width: 0, height: 0};
-            var speed = {px: 0, py: 0, width: 0, height: 0};
+            var target_height = w.height;
+            var trans = w.animationTransform;
+            var speed = w.transformSpeed;
             
-            // Amount of steps to take, 1-indexed (not zero).
-            trans.width = Math.floor(target_width / s) + 1;
-            // Amount to increase width per step
-            speed.width = s;
-            
-            trans.px = Math.floor((target_width >> 1) / s) + 1;
-            speed.px = -s;
+            trans.width = Math.floor((target_width / step_size) / 2) + 1;
+            speed.width = step_size * 2;
+            trans.px = Math.floor((target_width / 2) / step_size) + 1;
+            speed.px = -step_size;
+            trans.height = Math.floor((target_height / step_size) / 2) + 1;
+            speed.height = step_size * 2;
+            trans.py = Math.floor((target_height / 2) / step_size) + 1;
+            speed.py = -step_size;
             
             w.px += target_width >> 1;
+            w.py += target_height >> 1;
             w.height = 1;
-            w.width = target_width % s;
-            w.animationTransform = trans;
-            w.transformSpeed = speed;
+            w.width = 1;
             w.quantum = 1;
-            ui.animate(w);
             
+            // When this is done, set the width and height to what they
+            // should be, because they might not be devisible by step_size
             w.animationHasCompleted = function () {
-                this.animationTransform.height = Math.floor(t_height / s) + 1;
-                this.transformSpeed.height = s;
-                this.height = t_height % s;
+                this.width = target_width;
+                this.height = target_height;
+                this.update(0,0,0,0,true);
                 
-                this.quantum = 1;
                 this.animationHasCompleted = null;
-                
-                ui.animate(this);
+                return true;
             };
+            
+            ui.animate(w);
             
             return true;
         },
+        
+        open_up: function (w, step_size)
+        {
+            var target_width = w.width;
+            var target_height = w.height;
+            var trans = w.animationTransform;
+            var speed = w.transformSpeed;
+            
+            // Amount of steps to take, 1-indexed (not zero).
+            trans.width = Math.floor((target_width / step_size) / 2) + 1;
+            // Amount to increase width per step
+            speed.width = step_size * 2;
+            
+            trans.px = Math.floor((target_width / 2) / step_size) + 1;
+            speed.px = -step_size;
+            
+            w.px += target_width >> 1;
+            w.py += target_height >> 1;
+            w.height = 1;
+            w.width = 1;
+            w.quantum = 1;
+            
+            // "Open" vertically after horazontal
+            w.animationHasCompleted = function () {
+                trans.height = Math.floor((target_height / step_size) / 2) + 1;
+                speed.height = step_size * 2;
+                trans.py = Math.floor((target_height / 2) / step_size) + 1;
+                speed.py = -step_size;
+                
+                // When this is done, set the width and height to what they
+                // should be, because they might not be devisible by step_size
+                this.animationHasCompleted = function () {
+                    this.width = target_width;
+                    this.height = target_height;
+                    this.update(0,0,0,0,true);
+                    
+                    this.animationHasCompleted = null;
+                    return true;
+                };
+                
+                ui.animate(this);
+                
+                return true;
+            };
+            
+            ui.animate(w);
+            
+            return true;
+        },
+        
     },
     
     init: function()
