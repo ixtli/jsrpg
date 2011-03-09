@@ -370,6 +370,8 @@ InterfaceWindow.prototype = {
             var target_height = w.height;
             var trans = w.animationTransform;
             var speed = w.transformSpeed;
+            var target_px = w.px;
+            var target_py = w.py;
             
             trans.width = Math.floor((target_width / step_size) / 2) + 1;
             speed.width = step_size * 2;
@@ -391,6 +393,8 @@ InterfaceWindow.prototype = {
             w.animationHasCompleted = function () {
                 this.width = target_width;
                 this.height = target_height;
+                this.px = target_px;
+                this.py = target_py;
                 this.update(0,0,0,0,true);
                 
                 this.animationHasCompleted = null;
@@ -406,6 +410,8 @@ InterfaceWindow.prototype = {
         {
             var target_width = w.width;
             var target_height = w.height;
+            var target_px = w.px;
+            var target_py = w.py;
             var trans = w.animationTransform;
             var speed = w.transformSpeed;
             
@@ -435,6 +441,8 @@ InterfaceWindow.prototype = {
                 this.animationHasCompleted = function () {
                     this.width = target_width;
                     this.height = target_height;
+                    this.px = target_px;
+                    this.py = target_py;
                     this.update(0,0,0,0,true);
                     
                     this.animationHasCompleted = null;

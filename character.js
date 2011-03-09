@@ -69,7 +69,7 @@ GameObject.prototype = {
         charWin.borderStyle = "white";
         charWin.setBGFunction(bluegrad);
         
-        charWin.show("open_up", 10);
+        charWin.show("open_up", 12);
         
         //var box = 
         
