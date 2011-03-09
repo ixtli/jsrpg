@@ -15,7 +15,8 @@ function animateWindows()
         time = new Date();
         
         // Respect that element's animation quantum
-        if (w.quantum >= (time - w.lastUpdate)) continue;
+        if (w.quantum != ui.quantum && w.quantum > (time - w.lastUpdate))
+            continue;
         w.lastUpdate = time;
         
         // Are we changing location or size?
@@ -363,25 +364,28 @@ InterfaceWindow.prototype = {
     
     animations: {
         open: function (w, s) {
-            var ydif = Math.floor(w.height / 2);
-            var trans = {px: 0, py: 0, width: 300, height: 0};
-            var speed = {px: 0, py: 0, width: 1, height: 0};
+            
+            var ydif = w.height >> 1;
+            var xdif = w.width >> 1;
+            var trans = {px: xdif >> 1, py: 0, width: 100, height: 0};
+            var speed = {px: -2, py: 0, width: 3, height: 0};
             
             w.py += ydif;
+            w.px += xdif
             w.height = 1;
             w.width = 1;
             w.animationTransform = trans;
             w.transformSpeed = speed;
-            w.quantum = 10;
+            w.quantum = 1;
             ui.animate(w);
             
             w.animationHasCompleted = function () {
-                var trans = {px: 0, py: ydif, width: 0, height: 100};
-                var speed = {px: 0, py: -1, width: 0, height: 1};
+                var trans = {px: 0, py: ydif >> 1, width: 0, height: 25};
+                var speed = {px: 0, py: -2, width: 0, height: 4};
                 
                 this.animationTransform = trans;
                 this.transformSpeed = speed;
-                this.quantum = 1000 / FPS;
+                this.quantum = 1;
                 ui.animate(this);
                 this.animationHasCompleted = null;
             };
