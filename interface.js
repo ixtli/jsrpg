@@ -5,9 +5,10 @@ function animateWindows()
 {
     var list = ui.animatingWindows;
     var w, t, s, time, finished = [];
+    var quant = ui.quantum;
     
     // Calculated metrics
-    var dpx, dpy, dw, dh, sx, sy, sw, sh, sizeDelta;
+    var dpx, dpy, dw, dh, stemp, sizeDelta;
     
     for (var i = list.length - 1; i >= 0; i--)
     {
@@ -15,26 +16,22 @@ function animateWindows()
         time = new Date();
         
         // Respect that element's animation quantum
-        if (w.quantum != ui.quantum && w.quantum > (time - w.lastUpdate))
+        if (w.quantum != quant && w.quantum > (time - w.lastUpdate))
             continue;
         w.lastUpdate = time;
         
         // Are we changing location or size?
         t = w.animationTransform;
+        s = w.transformSpeed;
         
         // If we're not moving the window around
-        if (t == null)
+        if (t == null || s == null)
         {
             // If not, just redraw the window
             w.update(0, 0, 0, 0, true);
             continue;
         }
         
-        s = w.transformSpeed;
-        sx = s.px;
-        sy = s.py;
-        sh = s.height;
-        sw = s.width;
         dpx = w.px;
         dpy = w.py;
         dh = w.height;
@@ -44,33 +41,36 @@ function animateWindows()
         // Apply the transition
         if (--t.px > 0)
         {
-            w.px += sx;
-            if (sx > 0) dpx -= sx;
-            else dw += sx;
+            stemp = s.px;
+            w.px += stemp;
+            if (stemp > 0) dpx -= stemp;
+            else dw += stemp;
         }
         
         if (--t.py > 0)
         {
-            w.py += sy;
-            if (sy > 0) dpy -= sy;
-            else dh += sy;
+            stemp = s.py;
+            w.py += stemp;
+            if (stemp > 0) dpy -= stemp;
+            else dh += stemp;
         }
         
         if (--t.width > 0)
         {
-            w.width += sw;
-            
+            stemp = s.width;
+            w.width += stemp;
             // If we're DECERASING width, redraw the area that used to
             // be covered by the window
-            if (sw < 0) dw += sw;
+            if (stemp < 0) dw += stemp;
             sizeDelta = true;
         }
         
         if (--t.height > 0)
         {
-            w.height += sh;
-            
+            stemp = s.height;
+            w.height += stemp;
             // The same that applies to width applies to height
+            if (stemp < 0) dh += stemp;
             sizeDelta = true;
         }
         
@@ -79,8 +79,8 @@ function animateWindows()
             w.update(0,0,0,0,false);
         
         // Redraw the display where it's been updated
-        // If height or width is 0, ui.update will redraw itself entirely
-        // so substitute in some values.
+        // If height or width is <= 0, ui.update will redraw itself entirely
+        // so substitute in 1 if this is the case.
         ui.update(dpx, dpy, dw > 1 ? dw : 1, dh > 1 ? dh : 1);
         
         // Check to see if the object has reached the goal state
@@ -364,30 +364,36 @@ InterfaceWindow.prototype = {
     
     animations: {
         open: function (w, s) {
+            var target_width = w.width;
+            var t_height = w.height;
+            var trans = {px: 0, py: 0, width: 0, height: 0};
+            var speed = {px: 0, py: 0, width: 0, height: 0};
             
-            var ydif = w.height >> 1;
-            var xdif = w.width >> 1;
-            var trans = {px: xdif >> 1, py: 0, width: 100, height: 0};
-            var speed = {px: -2, py: 0, width: 3, height: 0};
+            // Amount of steps to take, 1-indexed (not zero).
+            trans.width = Math.floor(target_width / s) + 1;
+            // Amount to increase width per step
+            speed.width = s;
             
-            w.py += ydif;
-            w.px += xdif
+            trans.px = Math.floor((target_width >> 1) / s) + 1;
+            speed.px = -s;
+            
+            w.px += target_width >> 1;
             w.height = 1;
-            w.width = 1;
+            w.width = target_width % s;
             w.animationTransform = trans;
             w.transformSpeed = speed;
             w.quantum = 1;
             ui.animate(w);
             
             w.animationHasCompleted = function () {
-                var trans = {px: 0, py: ydif >> 1, width: 0, height: 25};
-                var speed = {px: 0, py: -2, width: 0, height: 4};
+                this.animationTransform.height = Math.floor(t_height / s) + 1;
+                this.transformSpeed.height = s;
+                this.height = t_height % s;
                 
-                this.animationTransform = trans;
-                this.transformSpeed = speed;
                 this.quantum = 1;
-                ui.animate(this);
                 this.animationHasCompleted = null;
+                
+                ui.animate(this);
             };
             
             return true;
