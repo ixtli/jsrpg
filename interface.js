@@ -4,12 +4,12 @@ var ui = null;
 function animateWindows()
 {
     var list = ui.animatingWindows;
-    var w, t, s, time, finished = [];
     var quant = ui.quantum;
     
-    // Calculated metrics
+    var w, t, s, time;
     var dpx, dpy, dw, dh, stemp, sizeDelta;
     
+    var quantumDelta = false;
     for (var i = list.length - 1; i >= 0; i--)
     {
         w = list[i];
@@ -85,20 +85,21 @@ function animateWindows()
         
         // Check to see if the object has reached the goal state
         if (t.px <= 0 && t.py <= 0 && t.width <= 0 && t.height <= 0)
-            finished.push(i);
+        {
+            list.splice(i,1);
+            
+            if (w.animationHasCompleted != null)
+                w.animationHasCompleted();
+            
+            if (i == 0) quantumDelta = true;
+        }
     }
-    
-    // Remove finished elements.  Remember that it's ordered backwards!
-    t = finished.length;
-    if (t == 0) return true;
-    for (var i = 0; i < t; i++)
-        finished[i] = list.splice(finished[i],1)[0];
     
     // If the list is empty, stop animating
     if (list.length == 0)
     {
         ui.finishedAnimating();
-    } else if (finished[t - 1] == 0) {
+    } else if (quantumDelta == true) {
         // If the first element of the list was removed reset quantum
         if (list[0].quantum != ui.quantum)
         {
@@ -107,10 +108,6 @@ function animateWindows()
             ui.animationInterval = setInterval(animateWindows, ui.quantum);
         }
     }
-    
-    for (var i = 0; i < t; i++)
-        if (w.animationHasCompleted != null)
-            w.animationHasCompleted();
     
     return true;
 }
@@ -279,23 +276,23 @@ Interface.prototype = {
         if (w == null) return false;
         if (w.quantum < 1) return false;
         
-        if (this.animationInterval == null)
+        var list = this.animatingWindows;
+        if (list.length == 0)
         {
             // We have not yet begun to animate.
             this.animatingWindows.push(w);
             this.quantum = w.quantum;
-            this.animationInterval = setInterval(animateWindows, this.quantum);
+            this.animationInterval = setInterval(animateWindows, w.quantum);
             return true;
         }
         
         // Insert into list keeping sorted by quantum
-        var list = this.animatingWindows;
         if (w.quantum < this.quantum)
         {
             list.unshift(w);
             clearInterval(this.animationInterval);
             this.quantum = list[0].quantum;
-            this.animationInterval = setInterval(animateWindows, this.quantum);
+            this.animationInterval = setInterval(animateWindows, w.quantum);
         } else if (w.quantum == list[0].quantum) {
             list.unshift(w);
         } else {
@@ -364,7 +361,7 @@ InterfaceWindow.prototype = {
     
     animations: {
         
-        zoom_in: function(w, step_size)
+        zoom_in: function(w, args)
         {
             var target_width = w.width;
             var target_height = w.height;
@@ -372,6 +369,9 @@ InterfaceWindow.prototype = {
             var speed = w.transformSpeed;
             var target_px = w.px;
             var target_py = w.py;
+            
+            var step_size = args.step_size;
+            if (step_size < 0) step_size = 1;
             
             trans.width = Math.floor((target_width / step_size) / 2) + 1;
             speed.width = step_size * 2;
@@ -386,7 +386,8 @@ InterfaceWindow.prototype = {
             w.py += target_height >> 1;
             w.height = 1;
             w.width = 1;
-            w.quantum = 1;
+            w.quantum = 1000/FPS;
+            if (step_size < 1) w.quantum /= step_size;
             
             // When this is done, set the width and height to what they
             // should be, because they might not be devisible by step_size
@@ -406,7 +407,7 @@ InterfaceWindow.prototype = {
             return true;
         },
         
-        open_up: function (w, step_size)
+        open_up: function (w, args)
         {
             var target_width = w.width;
             var target_height = w.height;
@@ -414,6 +415,9 @@ InterfaceWindow.prototype = {
             var target_py = w.py;
             var trans = w.animationTransform;
             var speed = w.transformSpeed;
+            
+            var step_size = args.step_size;
+            if (step_size < 0) step_size = 1;
             
             // Amount of steps to take, 1-indexed (not zero).
             trans.width = Math.floor((target_width / step_size) / 2) + 1;
@@ -427,7 +431,9 @@ InterfaceWindow.prototype = {
             w.py += target_height >> 1;
             w.height = 1;
             w.width = 1;
-            w.quantum = 1;
+            
+            w.quantum = 1000/FPS;
+            if (step_size < 1) w.quantum /= step_size;
             
             // "Open" vertically after horazontal
             w.animationHasCompleted = function () {
@@ -475,7 +481,7 @@ InterfaceWindow.prototype = {
          return true;
     },
     
-    update: function(px, py, w, h, update)
+    update: function(px, py, w, h, refresh)
     {
         // PX and PY are relative to this window
         
@@ -541,7 +547,7 @@ InterfaceWindow.prototype = {
         
         c.restore();
         
-        if (update == true && this.hidden == false)
+        if (refresh == true && this.hidden == false)
             ui.update(this.px + px, this.py + py, width, height);
         
         return true;
@@ -553,12 +559,14 @@ InterfaceWindow.prototype = {
         ui.update(this.px, this.py, this.width, this.height);
     },
     
-    show: function(animation, speed)
+    show: function(args)
     {
         this.hidden = false;
         
-        if (animation != null && animation != "")
-            this.animations[animation](this, speed);
+        if (args != null)
+            this.animations[args.animation](this, args);
+        else
+            this.update(0,0,0,0, true);
         
         return true;
     },
