@@ -68,19 +68,18 @@ GameObject.prototype = {
         
         charWin.borderStyle = "white";
         charWin.setBGFunction(bluegrad);
-        charWin.show({animation: "open_up", step_size: 10});
         
         return true;
     },
     
     gotFocus: function ()
     {
-        
+        charWin.show({animation: "open_up", step_size: 10});
     },
     
     lostFocus: function ()
     {
-        
+        charWin.hide({animation: "fade", step_size: -10});
     },
     
     face: function (direction)

@@ -5,20 +5,20 @@ function animateWindows()
 {
     var list = ui.animatingWindows;
     var quant = ui.quantum;
-    
     var w, t, s, time;
     var dpx, dpy, dw, dh, stemp, sizeDelta;
     
-    var quantumDelta = false;
     for (var i = list.length - 1; i >= 0; i--)
     {
         w = list[i];
         time = new Date();
         
-        // Respect that element's animation quantum
-        if (w.quantum != quant && w.quantum > (time - w.lastUpdate))
+        // Respect element's animation quantum
+        if (w.quantum > quant && w.quantum > (time - w.lastUpdate))
             continue;
         w.lastUpdate = time;
+        
+        if (w.hidden == true) continue;
         
         // Are we changing location or size?
         t = w.animationTransform;
@@ -59,9 +59,7 @@ function animateWindows()
         {
             stemp = s.width;
             w.width += stemp;
-            // If we're DECERASING width, redraw the area that used to
-            // be covered by the window
-            if (stemp < 0) dw += stemp;
+            if (stemp > 0) dw += stemp;
             sizeDelta = true;
         }
         
@@ -69,14 +67,18 @@ function animateWindows()
         {
             stemp = s.height;
             w.height += stemp;
-            // The same that applies to width applies to height
-            if (stemp < 0) dh += stemp;
+            if (stemp > 0) dh += stemp;
             sizeDelta = true;
         }
         
-        // Redraw the window's context first if the size has changed
-        if (sizeDelta == true)
-            w.update(0,0,0,0,false);
+        if (--t.alpha > 0)
+        {
+            w.alpha += s.alpha;
+            if (w.alpha > 1) w.alpha = 1;
+            else if (w.alpha < 0) w.alpha = 0;
+        }
+        
+        if (sizeDelta == true) w.update(0,0,0,0,false);
         
         // Redraw the display where it's been updated
         // If height or width is <= 0, ui.update will redraw itself entirely
@@ -84,14 +86,16 @@ function animateWindows()
         ui.update(dpx, dpy, dw > 1 ? dw : 1, dh > 1 ? dh : 1);
         
         // Check to see if the object has reached the goal state
-        if (t.px <= 0 && t.py <= 0 && t.width <= 0 && t.height <= 0)
+        if (t.px <= 0 && t.py <= 0 && t.width <= 0 && t.height <= 0 &&
+            t.alpha <= 0)
         {
             list.splice(i,1);
+            w.isAnimating = false;
             
             if (w.animationHasCompleted != null)
                 w.animationHasCompleted();
-            
-            if (i == 0) quantumDelta = true;
+            else
+                w.resetAnimationState();
         }
     }
     
@@ -99,14 +103,11 @@ function animateWindows()
     if (list.length == 0)
     {
         ui.finishedAnimating();
-    } else if (quantumDelta == true) {
+    } else if (list[0].quantum != ui.quantum) {
         // If the first element of the list was removed reset quantum
-        if (list[0].quantum != ui.quantum)
-        {
-            clearInterval(ui.animationInterval);
-            ui.quantum = list[0].quantum;
-            ui.animationInterval = setInterval(animateWindows, ui.quantum);
-        }
+        clearInterval(ui.animationInterval);
+        ui.quantum = list[0].quantum;
+        ui.animationInterval = setInterval(animateWindows, ui.quantum);
     }
     
     return true;
@@ -130,6 +131,8 @@ function Interface (canvas)
     this.animatingWindows = [];
     this.quantum = 0;
     this.animationInterval = null;
+    
+    this.captureInput = false;
     
     return this.init(canvas);
 }
@@ -274,7 +277,10 @@ Interface.prototype = {
     animate: function(w)
     {
         if (w == null) return false;
-        if (w.quantum < 1) return false;
+        if (w.quantum < 0) return false;
+        if (w.isAnimating == true) return false;
+        
+        w.isAnimating = true;
         
         var list = this.animatingWindows;
         if (list.length == 0)
@@ -346,11 +352,12 @@ function InterfaceWindow (name, px, py, width, height)
     this.alpha = 1;
     
     // Animation
-    this.animationTransform = {px: 0, py: 0, width: 0, height: 0};
-    this.transformSpeed = {px: 0, py: 0, width: 0, height: 0};
+    this.animationTransform = {px: 0, py: 0, width: 0, height: 0, alpha: 0};
+    this.transformSpeed = {px: 0, py: 0, width: 0, height: 0, alpha: 0};
     this.quantum = 0;
     this.lastUpdate = new Date();
     this.animationHasCompleted = null;
+    this.isAnimating = false;
     
     this.debug = false;
     
@@ -363,10 +370,11 @@ InterfaceWindow.prototype = {
         
         zoom_in: function(w, args)
         {
-            var target_width = w.width;
-            var target_height = w.height;
             var trans = w.animationTransform;
             var speed = w.transformSpeed;
+            
+            var target_width = w.width;
+            var target_height = w.height;
             var target_px = w.px;
             var target_py = w.py;
             
@@ -398,7 +406,8 @@ InterfaceWindow.prototype = {
                 this.py = target_py;
                 this.update(0,0,0,0,true);
                 
-                this.animationHasCompleted = null;
+                this.animationHasCompleted = args.callback != null ?
+                    args.callback : null;
                 return true;
             };
             
@@ -409,12 +418,13 @@ InterfaceWindow.prototype = {
         
         open_up: function (w, args)
         {
+            var trans = w.animationTransform;
+            var speed = w.transformSpeed;
+            
             var target_width = w.width;
             var target_height = w.height;
             var target_px = w.px;
             var target_py = w.py;
-            var trans = w.animationTransform;
-            var speed = w.transformSpeed;
             
             var step_size = args.step_size;
             if (step_size < 0) step_size = 1;
@@ -451,7 +461,8 @@ InterfaceWindow.prototype = {
                     this.py = target_py;
                     this.update(0,0,0,0,true);
                     
-                    this.animationHasCompleted = null;
+                    this.animationHasCompleted = args.callback != null ?
+                        args.callback : null;
                     return true;
                 };
                 
@@ -460,6 +471,66 @@ InterfaceWindow.prototype = {
                 return true;
             };
             
+            ui.animate(w);
+            
+            return true;
+        },
+        
+        close_up: function (w, args)
+        {
+            var trans = w.animationTransform;
+            var speed = w.transformSpeed;
+            
+            var target_width = w.width;
+            var target_height = w.height;
+            var target_px = w.px;
+            var target_py = w.py;
+            
+            var step_size = args.step_size;
+            if (step_size < 0) step_size = 1;
+            
+            trans.width = Math.ceil(target_width / step_size) + 1;
+            speed.width = -step_size;
+            
+            w.animationHasCompleted = function () {
+                
+                // Animation is finished
+                this.animationHasCompleted = args.callback != null ?
+                    args.callback : null;
+                
+                // Reset width
+                this.width = target_width;
+                
+                // Actually hide and update
+                this.hide();
+                
+                return true;
+            };
+            
+            w.quantum = 1000/FPS;
+            if (step_size < 1) w.quantum /= step_size;
+            ui.animate(w);
+            
+            return true;
+        },
+        
+        fade: function (w, args)
+        {
+            var trans = w.animationTransform;
+            var speed = w.transformSpeed;
+            var step_size = args.step_size;
+            if (step_size == 0) step_size = 1;
+            
+            w.alpha = step_size > 0 ? 0 : 1;
+            trans.alpha = Math.abs(step_size);
+            speed.alpha = 1 / step_size;
+            
+            w.animationHasCompleted = args.callback != null ?
+                args.callback : null;
+            
+            w.quantum = 1000/FPS;
+            if (step_size < 1 && step_size > -1)
+                w.quantum /= Math.abs(step_size);
             ui.animate(w);
             
             return true;
@@ -553,10 +624,24 @@ InterfaceWindow.prototype = {
         return true;
     },
     
-    hide: function()
+    hide: function(args)
     {
-        this.hidden = true;
-        ui.update(this.px, this.py, this.width, this.height);
+        if (args == null)
+        {
+            this.hidden = true;
+            ui.update(this.px, this.py, this.width, this.height);
+            return true;
+        }
+        
+        args.callback = function () {
+            this.alpha = 1;
+            this.hidden = true;
+            ui.update(this.px, this.py, this.width, this.height);
+        };
+        
+        this.animate(args);
+        
+        return true;
     },
     
     show: function(args)
@@ -564,7 +649,7 @@ InterfaceWindow.prototype = {
         this.hidden = false;
         
         if (args != null)
-            this.animations[args.animation](this, args);
+            this.animate(args);
         else
             this.update(0,0,0,0, true);
         
@@ -612,6 +697,41 @@ InterfaceWindow.prototype = {
     {
         this.borderStyle = style;
         this.update(0,0,0,0);
+    },
+    
+    resetAnimationState: function()
+    {
+        while (this.animationHasCompleted != null)
+            this.animationHasCompleted();
+        
+        this.animationTransform = {px: 0, py: 0, width: 0, height: 0, alpha: 0};
+        this.transformSpeed = {px: 0, py: 0, width: 0, height: 0, alpha: 0};
+        this.quantum = 0;
+        this.lastUpdate = new Date();
+        this.animationHasCompleted = null;
+        this.isAnimating = false;
+        
+        return true;
+    },
+    
+    animate: function(args)
+    {
+        if (args == null) return false;
+        
+        // Forcefully reset animation state if it's currently animating
+        if (this.isAnimating == true)
+            this.resetAnimationState();
+        
+        // Do animation
+        if (this.animations[args.animation] != null)
+        {
+            this.animations[args.animation](this, args);
+        } else {
+            log("Invalid animation name: " + args.animation);
+            return false;
+        }
+        
+        return true;
     },
     
 };

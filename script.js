@@ -197,6 +197,14 @@ function setSelection(object, keepInViewport)
     {
         focussed.removeShader(primarySelection);
         map.updateBuffer(true, focussed.px, focussed.py, tileGraphicWidth, focussed.h);
+        
+        // Notify all associated objects that they've had focus removed.
+        if (focussed.obj != null)
+        {
+            var list = focussed.obj;
+            for (var i = list.length - 1; i >= 0; i--)
+                list[i].lostFocus();
+        }
     }
     
     // Select object
@@ -245,6 +253,14 @@ function setSelection(object, keepInViewport)
     
     // Update the tile editor
     tileEditorUpdate();
+    
+    // Notify all associated objects that they've recieved focus.
+    if (focussed.obj != null)
+    {
+        var list = focussed.obj;
+        for (var i = list.length - 1; i >= 0; i--)
+            list[i].gotFocus();
+    }
     
     return true;
 }
