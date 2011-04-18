@@ -783,7 +783,8 @@ InterfaceWindow.prototype = {
     
     finishAnimating: function()
     {
-        while (this.completeAnimation() == false) {}
+        do {}
+        while (this.completeAnimation() == false);
         
         // update self
         this.update(0,0,0,0,true);
