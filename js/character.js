@@ -79,7 +79,7 @@ GameObject.prototype = {
     
     lostFocus: function ()
     {
-        charWin.hide({animation: "fade", step_size: -10});
+        charWin.hide({animation: "fade", step_size: -30});
     },
     
     face: function (direction)
