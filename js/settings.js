@@ -5,9 +5,18 @@ const tickerMessages = ["Click to add a block, shift+click to delete.",
     "Use the + and -, or delete and space keys to add and remove selection.",
     "武器による攻撃や魔法の発動を行います 。", "Now with smoother scrolling!"];
 
+// These shouldn't change without restarting the engine.
+var constants = {
+    fps: 60,
+    cameraFollowsSelection: true,
+    fpsCounter: false,
+    tileBorderDebug: false,
+    debugMessages: true,
+};
+
 // * using arrays for attributes to allow multiple bindings to one action
 // * TODO user editable eventually? otherwise go back to const
-keys = {
+var keys = {
     'move_left':       [37],    // left arrow 
     'move_up':         [38],    // up arrow
     'move_right':      [39],    // right arrow
@@ -23,27 +32,28 @@ keys = {
     'optimize': [79]            // o
 };
 
-// Engine constants.  Things here require restart to change
-const FPS = 60;
-const mouseMoveDelay = (1000 / FPS);
-// This should be really small, so that the OS can regulate it
-// we just don't want to be scrolling much faster than once per frame
-const keyRepeatDelay = (1000 / FPS);
-const scrollBorder = 32;
-const reclipThreshold = 0;
-const secondarySelectionAlpha = .35;
-const cameraFollowsSelection = true;
-const tickerChangeRate = 10; // Seconds
-const fpsCounter = false;
+// These can (and will be) changed on the fly.
+var inputSettings = {
+    allowScrolling: true,
+    allowBorderScroll: true,
+    mouseScrollGranulatiry: 8,
+    keyboardScrollGranularity: 32,
+    scrollBorder: 32,
+    clickToSelect: false,
+    mouseMoveDelay: (1000 / constants.fps),
+    keyRepeatDelay: (1000 / constants.fps),
+}
 
 // debugging
-const tileBorderDebug = false;
-const debugMessages = true;
 function log(msg)
 {
-    if (debugMessages == true && typeof(console) != "undefined")
+    if (constants.debugMessages == true && typeof(console) != "undefined")
         console.log(msg);
 }
+
+// Other constants that should eventually be moved out of this file
+const tickerChangeRate = 10;
+const secondarySelectionAlpha = 35;
 
 // Graphical Constants
 const shadowStep = .1;
@@ -53,11 +63,3 @@ const msgBorder = 3;
 const msgLeftPadding = 8;
 const text_styles = ["black", "red", "green", "blue", "white"];
 const text_token = "^";
-
-// Engine settings.  Things here can be changed during runtime without maleffect
-var allowScrolling = true;
-var allowBorderScroll = true;
-var mouseScrollGranulatiry = 8;
-var keyboardScrollGranulatiry = 32;
-var clickToSelect = false;
-

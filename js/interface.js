@@ -500,7 +500,7 @@ InterfaceWindow.prototype = {
             speed.py = -step_size;
             
             // Set the animation quantum and normalize
-            anim.quantum = 1000/FPS;
+            anim.quantum = 1000 / constants.fps;
             if (step_size < 1) anim.quantum /= step_size;
             
             // Append this animation onto the window
@@ -540,7 +540,7 @@ InterfaceWindow.prototype = {
             trans.px = Math.floor((target_width / 2) / step_size) + 1;
             speed.px = -step_size;
             
-            anim.quantum = 1000/FPS;
+            anim.quantum = 1000 / constants.fps;
             if (step_size < 1) anim.quantum /= step_size;
             
             // "Open" vertically after horazontal
@@ -552,7 +552,7 @@ InterfaceWindow.prototype = {
             trans.py = Math.floor((target_height / 2) / step_size) + 1;
             speed.py = -step_size;
             
-            secondAnim.quantum = 1000/FPS;
+            secondAnim.quantum = 1000 / constants.fps;
             if (step_size < 1) secondAnim.quantum /= step_size;
             
             w.animationStack.push(anim);
@@ -575,7 +575,7 @@ InterfaceWindow.prototype = {
             anim.stepCount.width = Math.ceil(target_width / step_size) + 1;
             anim.speed.width = -step_size;
             
-            anim.quantum = 1000/FPS;
+            anim.quantum = 1000 / constants.fps;
             if (step_size < 1) anim.quantum /= step_size;
             
             w.animationStack.push(anim);
@@ -597,7 +597,7 @@ InterfaceWindow.prototype = {
             trans.alpha = Math.abs(step_size);
             speed.alpha = 1 / step_size;
             
-            anim.quantum = 1000/FPS;
+            anim.quantum = 1000 / constants.fps;
             if (step_size < 1 && step_size > -1)
                 anim.quantum /= Math.abs(step_size);
             

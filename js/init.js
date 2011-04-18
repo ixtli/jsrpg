@@ -16,7 +16,6 @@ var redrawFlags = 0; // Serious business
 // Sprite selection
 var focussed = null;
 var allowSelection = true;
-var mouseX = 0, mouseY = 0;
 var extendedSelection = [];
 
 // Viewport Scrolling
@@ -25,18 +24,10 @@ var viewportScrollUp = false;
 var horizontalScrollSpeed = 0;
 var verticalScrollSpeed = 0;
 
-// Mouse movement event handling
-var previousMouseMove = new Date();
-var mouseInside = false;
-
-// Keyboard event handling
-var previousKeyboardEvent = new Date();
-
-var fpsVal = FPS;
+var fpsVal = constants.fps;
+var kirby = null;
 
 window.onload = init;
-
-var kirby = null;
 
 function init()
 {
@@ -76,6 +67,10 @@ function init()
     setOverlayWhiteVerticalGradient();
     setMessage("Welcome to the JSRPG map editor!");
     
+    // Intialize input manager
+    inputManager = new UserInputManager();
+    inputManager.init();
+    
     // Initialize the tiles based on the map
     var t0 = new Date();
     initGraphics();
@@ -84,7 +79,7 @@ function init()
     
     // generate terrain
     generateTestMap();
-            
+    
     //Initialize the buffer
     map.optimize();
     t0 = new Date();
@@ -97,9 +92,6 @@ function init()
     msg = "Buffer initial draw time: "+ (t1-t0) +"ms";
     msg += " (" + bufferWidth + " by " + bufferHeight + " pixels)";
     log(msg);
-    
-    // Bind event handlers
-    configureEventBindings();
     
     // set up editor
     tileEditorInit();
@@ -122,66 +114,6 @@ function init()
     kirby = new GameObject("kirby", kirbyAnimations);
     kirby.setTile(map.data[205]);
     kirby.moveForward(true);
-}
-
-function configureEventBindings()
-{
-    // Set up mouse move event listener
-    $('#game').bind('mouseenter focusin', function() {
-        mouseInside = true;
-        $('#game').bind('mousemove', mouseMoveHandler);
-        
-    });
-    
-    $('#game').bind('mouseleave focusout', function() {
-        mouseInside = false;
-        
-        // Fire mousemove with mouseInside = false to stop scrolling
-        $('#game').trigger('mousemove');
-        
-        // This doesn't happen sometimes, and it's annoying.
-        horizontalScrollSpeed = 0;
-        verticalScrollSpeed = 0;
-        
-        $('#game').unbind('mousemove');
-    });
-    
-    // Set up click handlers
-    $(window).bind('mousedown mouseup', mouseClickHandler);
-        
-    // handle ericb mode
-    $('#ebmode').bind('click', ericBHandler);
-    
-    // Click-to-select mode
-    $('#clk').bind('click', function () {
-        clickToSelect = clickToSelect ? false : true;
-    });
-    
-    // enable/disable scrolling
-    $('#allow-scroll').bind('click', function ()
-        {allowScrolling = allowScrolling ? false : true;});
-    
-    // enable/disable scrolling by mousing over border
-    $('#b-scrolling').bind('click', function ()
-        {allowBorderScroll = allowBorderScroll ? false : true;});
-}
-
-function ericBHandler()
-{
-    // Remap wasd to esdf because EricB complained in #offtopic one day,
-    // about how his pinky feels left out when he plays quake that way.
-    if (keyMap.right == key_d)
-    {
-        keyMap.left = key_s;
-        keyMap.down = key_d;
-        keyMap.right = key_f;
-        keyMap.up = key_e;
-    } else {
-        keyMap.left = key_a;
-        keyMap.up = key_w;
-        keyMap.down = key_s;
-        keyMap.right = key_d;
-    }
 }
 
 function setSelection(object, keepInViewport)
@@ -214,23 +146,23 @@ function setSelection(object, keepInViewport)
     
     // If we're trying to keep selection in view, figure out if it left
     var delta = false;
-    if (cameraFollowsSelection == true && keepInViewport == true)
+    if (constants.cameraFollowsSelection == true && keepInViewport == true)
     {
-        if (object.px < viewX + scrollBorder)
+        if (object.px < viewX + inputSettings.scrollBorder)
         {
-            viewX = object.px - scrollBorder;
+            viewX = object.px - inputSettings.scrollBorder;
             delta = true;
-        } else if (object.px + tileGraphicWidth > viewX + viewWidth - scrollBorder) {
-            viewX = (object.px + tileGraphicWidth + scrollBorder) - viewWidth;
+        } else if (object.px + tileGraphicWidth > viewX + viewWidth - inputSettings.scrollBorder) {
+            viewX = (object.px + tileGraphicWidth + inputSettings.scrollBorder) - viewWidth;
             delta = true;
         }
         
-        if (object.py < viewY + scrollBorder)
+        if (object.py < viewY + inputSettings.scrollBorder)
         {
-            viewY = object.py - scrollBorder;
+            viewY = object.py - inputSettings.scrollBorder;
             delta = true;
-        } else if (object.py + object.h > viewY + viewHeight - scrollBorder){
-            viewY = (object.py + object.h + scrollBorder) - viewHeight;
+        } else if (object.py + object.h > viewY + viewHeight - inputSettings.scrollBorder){
+            viewY = (object.py + object.h + inputSettings.scrollBorder) - viewHeight;
             delta = true;
         }
     }
@@ -383,133 +315,6 @@ function deleteFocussed()
     return true;
 }
 
-function mouseClickHandler(ev)
-{
-    if (focussed == null)
-        return true;
-    else if (ev.type === 'mousedown')
-        ev.preventDefault();
-    else if (ev.type === 'mouseup')
-        return true; // for now
-    
-    if (mouseInside == false)
-        return true;
-    
-    var obj = null;
-    if (clickToSelect == true )
-    {
-        obj = map.selectObject(mouseX + viewX, mouseY + viewY);;
-        if (obj == null) return true;
-        
-        if (ev.shiftKey)
-        {
-            if (obj === focussed)
-            {
-                deleteFocussed();
-            } else {
-                map.deleteObject(obj);
-                map.updateBuffer(true, obj.px, obj.py, tileGraphicWidth, obj.h);
-            }
-        } else {
-            setSelection(obj, false);
-            
-            var t = kirby.tile;
-            if (kirby.target_tile != null)
-                t = kirby.target_tile;
-            
-            var res = optimalPath(t, obj, 30, 5);
-            if (res.r == null) return false;
-            
-            var r = res.r, ret = [];
-            while (r != null)
-            {
-                ret.push(r.obj);
-                r = r.prev;
-            }
-            
-            var start = kirby.path == null ? true : false;
-            if (start == false)
-                kirby.cancelMovementPath();
-            
-            kirby.startMovingOnPath(ret, start);
-            
-        }
-    } else {
-        if (ev.shiftKey)
-        {
-            deleteFocussed();
-        } else {
-            obj = map.insertAboveObject(focussed, focussed.terrain);
-            if (obj != null )
-                map.updateBuffer(true, obj.px, obj.py, tileGraphicWidth, obj.h);
-        }
-    }
-    
-    return false;
-}
-
-function mouseMoveHandler(evt)
-{
-    var time = new Date();
-    if (time - previousMouseMove < mouseMoveDelay)
-        return false;
-    
-    mouseX = evt.pageX - canvas.offsetLeft;
-    mouseY = evt.pageY - canvas.offsetTop;
-    
-    // Check to see if the mouse has entered the scroll border
-    if (allowScrolling == true && mouseInside == true &&
-        allowBorderScroll == true)
-    {
-        if (mouseX < scrollBorder)
-        {
-            // left
-            horizontalScrollSpeed = mouseScrollGranulatiry;
-            viewportScrollLeft = true;
-        } else if (mouseX > viewWidth - scrollBorder) {
-            // right
-            horizontalScrollSpeed = mouseScrollGranulatiry;
-            viewportScrollLeft = false;
-        } else {
-            horizontalScrollSpeed = 0;
-        }
-        
-        if (mouseY < scrollBorder)
-        {
-            // up
-            verticalScrollSpeed = mouseScrollGranulatiry;
-            viewportScrollUp = true;
-        } else if (mouseY > viewHeight - scrollBorder) {
-            // down
-            verticalScrollSpeed = mouseScrollGranulatiry;
-            viewportScrollUp = false;
-        } else {
-            verticalScrollSpeed = 0;
-        }
-    } else {
-        horizontalScrollSpeed = 0;
-        verticalScrollSpeed = 0;
-    }
-    
-    // N.B.: The following is for performance.  I have found that with the
-    // current redraw implementation, selecting an object WHILE scrolling
-    // starts to put too much stress on the browser.  So for now, its off.
-    if (horizontalScrollSpeed == 0 && verticalScrollSpeed == 0 &&
-        clickToSelect == false)
-    {
-        var obj = map.selectObject(mouseX + viewX, mouseY + viewY);
-        
-        if (obj != null)
-        {
-            setSelection(obj);
-            tileEditorUpdate();
-        }
-    }
-    
-    previousMouseMove = new Date();
-    return false;
-}
-
 function setRandomTickerMessage()
 {
     var i = Math.floor(Math.random() * (tickerMessages.length));
@@ -529,8 +334,8 @@ function toggleAnimation()
         tickerInterval = setInterval( function() {
             setRandomTickerMessage();
         },1000 * tickerChangeRate);
-        spriteAnimationInterval = setInterval(animate, 1000 / FPS);
-        interval = setInterval(draw, 1000 / FPS);
+        spriteAnimationInterval = setInterval(animate, 1000 / constants.fps);
+        interval = setInterval(draw, 1000 / constants.fps);
         animationOn = true;
     }
 }

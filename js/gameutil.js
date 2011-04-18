@@ -24,24 +24,26 @@ function getSibling(obj, direction)
 // * TODO viewport.scroll(offsetX,offsetY)
 function scrollViewport(direction)
 {
-    if (allowScrolling == false) return false;
+    var d = inputSettings.keyboardScrollGranularity;
+    
     switch (direction)
     {
     case "up":
-        viewY -= keyboardScrollGranulatiry;
-        break
+        viewY -= d;
+        break;
     case "down":
-        viewY += keyboardScrollGranulatiry;
-        break
+        viewY += d;
+        break;
     case "left":
-        viewX -= keyboardScrollGranulatiry;
-        break
+        viewX -= d;
+        break;
     case "right":
-        viewX += keyboardScrollGranulatiry;
+        viewX += d;
         break;
     default:
         return false;
     }
+    
     viewportDirty = true;
     return true;
 }

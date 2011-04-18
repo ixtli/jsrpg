@@ -33,14 +33,12 @@ function startMovingObject(object)
 {
     if (object == null) return false;
     
-    // calculate object 
-    
     object.speed = Math.round(Math.abs(object.px - object.target_px) /
-        (1000/FPS));
+        (1000 / constants.fps));
     moving.push(object);
     
     if (movingInterval == null)
-        movingInterval = setInterval(move, 1000/FPS);
+        movingInterval = setInterval(move, 1000 / constants.fps);
     
     return true;
 }
