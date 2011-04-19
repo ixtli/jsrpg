@@ -1,4 +1,5 @@
 // Canvas elements
+var animationManager = null;
 var canvas = null;
 var buffer = null;
 
@@ -28,6 +29,102 @@ var animationInterval = null;
 
 var moving = [];
 var movingInterval = null;
+
+function AnimationManager()
+{
+    this.suspended = false;
+    this.animations = [];
+    return this.init();
+}
+
+AnimationManager.prototype = {
+    
+    init: function (initialState)
+    {
+        this.suspended = initialState;
+        return true;
+    },
+    
+    registerAnimation: function (name, fxn, quantum)
+    {
+        if (this.animations[name] != null) return false;
+        this.animations[name] = {interval: null, fxn: fxn, quantum: quantum};
+        
+        return true;
+    },
+    
+    startAnimation: function (name)
+    {
+        var anim = this.animations[name];
+        if (anim == null) return false;
+        if (anim.interval != null) return false;
+        
+        if (this.suspended == true)
+            anim.interval = 99999;
+        else
+            anim.interval = setInterval(anim.fxn, anim.quantum);
+        
+        return true;
+    },
+    
+    stopAnimation: function (name)
+    {
+        var anim = this.animations[name];
+        if (anim == null) return false;
+        if (anim.interval == null) return false;
+        
+        clearInterval(anim.interval);
+        anim.interval = null;
+        
+        return true;
+    },
+    
+    setQuantum: function (name, quantum)
+    {
+        var anim = this.animations[name];
+        if (anim == null) return false;
+        
+        if (quantum < 0)
+            anim.quantum = 1;
+        else
+            anim.quantum = quantum;
+        
+        if (anim.interval != null)
+        {
+            // restart animation
+            this.stopAnimation(name);
+            this.startAnimation(name);
+        }
+        
+        return true;
+    },
+    
+    suspendAll: function()
+    {
+        if (this.suspended == true) return false;
+        
+        for (names in this.animations)
+            clearInterval(names.interval);
+        
+        this.suspended = true;
+        return true;
+    },
+    
+    resumeAll: function()
+    {
+        if (this.suspended == false) return false;
+        
+        for (names in this.animations)
+        {
+            if (names.interval != null)
+                anim.interval = setInterval(names.fxn, names.quantum);
+        }
+        
+        this.suspended = false;
+        return true;
+    },
+    
+};
 
 function startMovingObject(object)
 {

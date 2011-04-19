@@ -1,7 +1,4 @@
 // Animation variables
-var interval = null;
-var tickerInterval = null;
-var animationOn = false;
 var previousFrameTime = 0;
 
 // Map
@@ -68,7 +65,15 @@ function init()
     setMessage("Welcome to the JSRPG map editor!");
     
     // Intialize input manager
-    inputManager = new UserInputManager();
+    inputManager = new InputManager();
+    
+    // Initialize animation manager and register animations
+    animationManager = new AnimationManager(false);
+    animationManager.registerAnimation("ticker",
+        function() {setRandomTickerMessage();}, 1000 * tickerChangeRate);
+    animationManager.registerAnimation("sprites", animate,
+        1000 / constants.fps);
+    animationManager.registerAnimation("scroll", draw, 1000 / constants.fps);
     
     // Initialize the tiles based on the map
     var t0 = new Date();
@@ -99,7 +104,9 @@ function init()
     setSelection(map.data[0]);
     
     // Start drawing
-    toggleAnimation();
+    animationManager.startAnimation("ticker");
+    animationManager.startAnimation("sprites");
+    animationManager.startAnimation("scroll");
     
     // Start accepting input
     inputManager.enableAllInput();
@@ -116,6 +123,11 @@ function init()
     kirby = new GameObject("kirby", kirbyAnimations);
     kirby.setTile(map.data[205]);
     kirby.moveForward(true);
+}
+
+function pause()
+{
+    
 }
 
 function setSelection(object, keepInViewport)
@@ -321,25 +333,6 @@ function setRandomTickerMessage()
 {
     var i = Math.floor(Math.random() * (tickerMessages.length));
     setMessage(tickerMessages[i]);
-}
-
-function toggleAnimation()
-{
-    if (animationOn == true)
-    {
-        clearInterval(interval);
-        clearInterval(tickerInterval);
-        clearInterval(spriteAnimationInterval);
-        interval = null;
-        animationOn = false;
-    } else {
-        tickerInterval = setInterval( function() {
-            setRandomTickerMessage();
-        },1000 * tickerChangeRate);
-        spriteAnimationInterval = setInterval(animate, 1000 / constants.fps);
-        interval = setInterval(draw, 1000 / constants.fps);
-        animationOn = true;
-    }
 }
 
 function draw()

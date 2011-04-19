@@ -1,6 +1,6 @@
 var inputManager = null;
 
-function UserInputManager()
+function InputManager()
 {
     // Mouse movement event handling
     this.mouseX = 0;
@@ -17,7 +17,7 @@ function UserInputManager()
     return this.init();
 }
 
-UserInputManager.prototype = {
+InputManager.prototype = {
     
     init: function ()
     {
