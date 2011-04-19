@@ -69,7 +69,6 @@ function init()
     
     // Intialize input manager
     inputManager = new UserInputManager();
-    inputManager.init();
     
     // Initialize the tiles based on the map
     var t0 = new Date();
@@ -101,6 +100,9 @@ function init()
     
     // Start drawing
     toggleAnimation();
+    
+    // Start accepting input
+    inputManager.enableAllInput();
     
     // Initialize the interface
     ui = new Interface(document.getElementById('interface'));

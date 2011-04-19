@@ -11,18 +11,30 @@ function UserInputManager()
     // Keyboard event handling
     this.previousKeyboardEvent = new Date();
     
-    return true;
+    // List of all html elements that are not canvases
+    this.htmlElements = ['#ebmode', '#clk', '#allow-scroll', '#b-scrolling'];
+    
+    return this.init();
 }
 
 UserInputManager.prototype = {
     
     init: function ()
     {
-        this.configureEventBindings();
+        
         return true;
     },
     
-    configureEventBindings: function ()
+    unbindViewInteraction: function ()
+    {
+        $('#game').unbind('mouseenter focusin mouseleave focusout');
+        $('#game').unbind('mousemove mousedown mouseup');
+        $(window).keydown(null);
+        
+        return true;
+    },
+    
+    bindViewInteraction: function ()
     {
         // These methods refer specifically to the global variable defined at
         // the top of this file (input) because of an ECMAScript bug wherein
@@ -52,6 +64,23 @@ UserInputManager.prototype = {
         // Set up click handlers
         $('#game').bind('mousedown mouseup', inputManager.mouseClickHandler);
         
+        $(window).keydown(inputManager.keydownHandler);
+        
+        return true;
+    },
+    
+    unbindExternalInteraction: function ()
+    {
+        $('#ebmode').unbind('click');
+        $('#clk').unbind('click');
+        $('#allow-scroll').unbind('click');
+        $('#b-scrolling').unbind('click');
+        
+        return true;
+    },
+    
+    bindExternalInteraction: function ()
+    {
         // handle ericb mode
         $('#ebmode').bind('click', inputManager.ericBHandler);
         
@@ -73,7 +102,7 @@ UserInputManager.prototype = {
                 false : true;
         });
         
-        $(window).keydown(inputManager.keydownHandler);
+        return true;
     },
     
     mouseMoveHandler: function (evt)
@@ -348,6 +377,22 @@ UserInputManager.prototype = {
             keyMap.down = key_s;
             keyMap.right = key_d;
         }
+    },
+    
+    enableAllInput: function ()
+    {
+        this.bindViewInteraction();
+        this.bindExternalInteraction();
+        
+        return true;
+    },
+    
+    disableAllInput: function ()
+    {
+        this.unbindViewInteraction();
+        this.unbindExternalInteraction();
+        
+        return true;
     },
     
 };
