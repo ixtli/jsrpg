@@ -182,7 +182,6 @@ function Interface (canvas)
     // Array of currently animating elements
     this.animatingWindows = [];
     this.quantum = 999999;
-    this.animationInterval = null;
     
     this.captureInput = false;
     
@@ -209,6 +208,9 @@ Interface.prototype = {
         // Do this so we can avoid clearing the canvas every time we draw
         // to the buffer.
         this.canvasCtx.globalCompositeOperation = "copy";
+        
+        // Register animation
+        animationManager.registerAnimation("interface", animateWindows, 1);
         
         return true;
     },
@@ -342,7 +344,10 @@ Interface.prototype = {
         {
             // We have not yet begun to animate.
             list.push(w);
-            this.resetAnimationInterval();
+            var q = animq.quantum;
+            this.quantum = q;
+            animationManager.setQuantum("interface", q);
+            animationManager.startAnimation("interface");
             return true;
         }
         
@@ -410,7 +415,7 @@ Interface.prototype = {
         
         if (list.length < 1)
         {
-            clearInterval(this.animationInterval);
+            animationManager.stopAnimation('interface');
             this.quantum = null;
             return true;
         }
@@ -418,9 +423,8 @@ Interface.prototype = {
         var first = list[0].animationStack[0].quantum;
         if (this.quantum != first)
         {
-            clearInterval(this.animationInterval);
             this.quantum = first;
-            this.animationInterval = setInterval(animateWindows, this.quantum);
+            animationManager.setQuantum('interface', first);
             return true;
         }
         

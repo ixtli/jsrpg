@@ -1,6 +1,7 @@
 // Canvas elements
 var animationManager = null;
 var overlay = null;
+var background = null;
 var canvas = null;
 var buffer = null;
 
@@ -26,10 +27,9 @@ var kirbyAnimations = [];
 // Animations
 var animated = [];
 var quantum_alpha = -1;
-var animationInterval = null;
 
+// Objects currently moving
 var moving = [];
-var movingInterval = null;
 
 function AnimationManager()
 {
@@ -84,6 +84,7 @@ AnimationManager.prototype = {
     {
         var anim = this.animations[name];
         if (anim == null) return false;
+        if (anim.quantum == quantum) return true;
         
         if (quantum < 0)
             anim.quantum = 1;
@@ -136,6 +137,9 @@ AnimationManager.prototype = {
     log: function()
     {
         var a = null;
+        
+        log("Animation: " + (this.suspended ? "suspended" : "running"));
+        
         for (var obj in this.animations)
         {
             a = this.animations[obj];
@@ -153,10 +157,10 @@ function startMovingObject(object)
     
     object.speed = Math.round(Math.abs(object.px - object.target_px) /
         (1000 / constants.fps));
+    
     moving.push(object);
     
-    if (movingInterval == null)
-        movingInterval = setInterval(move, 1000 / constants.fps);
+    animationManager.startAnimation('movement');
     
     return true;
 }
@@ -208,10 +212,7 @@ function move()
             moving.splice(finished[i], 1);
         
         if (moving.length == 0)
-        {
-            clearInterval(movingInterval);
-            movingInterval = null;
-        }
+            animationManager.stopAnimation('moving');
     }
 }
 
@@ -251,8 +252,8 @@ function addObjectToBeAnimated(object, fireAnimation)
         
         animated.splice(0,0, object);
         
-        clearInterval(animationInterval);
-        animationInterval = setInterval(animate, quantum_alpha);
+        animationManager.setQuantum('objects', quantum_alpha);
+        animationManager.startAnimation('objects');
         
         return true;
     }
@@ -295,16 +296,18 @@ function stopAnimatingObject(object)
     
     if (found == -1) return false;
     
-    // Special case
     if (animated.length == 0)
     {
-        clearInterval(animationInterval);
+        // Nothing left in the animation stack
+        animationManager.stopAnimation("objects");
         quantum_alpha = -1;
         return true;
-    } else if (found == 0) {
+    }
+    
+    if (found == 0) {
+        // Animation with smallest quantum removed
         quantum_alpha = animated[0].currentAnimation.quantum;
-        clearInterval(animationInterval);
-        animationInterval = setInterval(animate, quantum_alpha);
+        animationManager.setQuantum('objects', quantum_alpha);
     }
     
     return true;
@@ -443,22 +446,47 @@ function pixelProjection(x, y, z)
     return {px: px, py: py};
 }
 
-function setBackgroundLinearVerticalGradient()
+function Background (canvas)
 {
-    var bgCtx = $('#bg')[0].getContext("2d");
-    var grad = bgCtx.createLinearGradient(0,0,0,viewHeight);
-    grad.addColorStop(0, "#bbdcf5");
-    grad.addColorStop(1, "#84a69e");
-    bgCtx.fillStyle = grad;
-    bgCtx.fillRect(0,0,viewWidth, viewHeight);
+    this.canvas = canvas;
+    this.context = canvas.getContext("2d");
+    this.width = canvas.width;
+    this.height = canvas.height;
+    
+    return true;
 }
 
-function setBackgroundColor(colorString)
-{
-    var bgCtx = $('#bg')[0].getContext("2d");
-    bgCtx.fillStyle = colorString;
-    bgCtx.fillRect(0,0,viewWidth, viewHeight);
-}
+Background.prototype = {
+    
+    clear: function ()
+    {
+        this.canvas.width = this.width;
+        
+        return true;
+    },
+    
+    linearVerticalGradient: function ()
+    {
+        var bgCtx = this.context;
+        var grad = bgCtx.createLinearGradient(0,0,0,viewHeight);
+        grad.addColorStop(0, "#bbdcf5");
+        grad.addColorStop(1, "#84a69e");
+        bgCtx.fillStyle = grad;
+        bgCtx.fillRect(0,0,viewWidth, viewHeight);
+        
+        return true;
+    },
+    
+    setColor: function (colorString)
+    {
+        var bgCtx = $('#bg')[0].getContext("2d");
+        bgCtx.fillStyle = colorString;
+        bgCtx.fillRect(0,0,viewWidth, viewHeight);
+        
+        return true;
+    },
+    
+};
 
 function Overlay (canvas)
 {
@@ -649,32 +677,6 @@ function initGraphics()
     initTerrain(terrainNames, tmp);
     
     bootstrapKirbyAnimations();
-}
-
-function bootstrapKirbyAnimations()
-{
-    var tmp = new SpriteSheet(kirbyImage, "Kirby",
-        kirbySheetWidth, kirbySheetHeight, characterSprites);
-    
-    kirbyAnimations['moving'] = new Array(4);
-    kirbyAnimations['moving'][DIR_CLOSER] = new Animation(
-        characterSprites, 9, 3, true, kirbyWalkingSpeed);
-    kirbyAnimations['moving'][DIR_FURTHER] = new Animation(
-        characterSprites, 6, 3, true, kirbyWalkingSpeed);
-    kirbyAnimations['moving'][DIR_LEFT] = new Animation(
-        characterSprites, 3, 3, true, kirbyWalkingSpeed);
-    kirbyAnimations['moving'][DIR_RIGHT] = new Animation(
-        characterSprites, 0, 3, true, kirbyWalkingSpeed);
-    
-    kirbyAnimations['idle'] = new Array(4);
-    kirbyAnimations['idle'][DIR_CLOSER] = new Animation(
-        characterSprites, 9, 3, true, kirbyWalkingSpeed);
-    kirbyAnimations['idle'][DIR_FURTHER] = new Animation(
-        characterSprites, 6, 3, true, kirbyWalkingSpeed);
-    kirbyAnimations['idle'][DIR_LEFT] = new Animation(
-        characterSprites, 3, 3, true, kirbyWalkingSpeed);
-    kirbyAnimations['idle'][DIR_RIGHT] = new Animation(
-        characterSprites, 0, 3, true, kirbyWalkingSpeed);
 }
 
 function secondarySelection(obj, buffer, px, py)

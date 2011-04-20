@@ -62,7 +62,8 @@ function init()
     
     // Init forground, ticker, and background canvases
     overlay = new Overlay($('#fg')[0]);
-    setBackgroundLinearVerticalGradient();
+    background = new Background($('#bg')[0]);
+    background.linearVerticalGradient();
     overlay.whiteVerticalGradient();
     setMessage("Welcome to the JSRPG map editor!");
     
@@ -76,6 +77,8 @@ function init()
     animationManager.registerAnimation("sprites", animate,
         1000 / constants.fps);
     animationManager.registerAnimation("scroll", draw, 1000 / constants.fps);
+    animationManager.registerAnimation("objects", animate, 1);
+    animationManager.registerAnimation("movement", move, 1000 / constants.fps);
     
     // Initialize the tiles based on the map
     var t0 = new Date();
@@ -128,6 +131,32 @@ function init()
     kirby.moveForward(true);
 }
 
+function bootstrapKirbyAnimations()
+{
+    var tmp = new SpriteSheet(kirbyImage, "Kirby",
+        kirbySheetWidth, kirbySheetHeight, characterSprites);
+    
+    kirbyAnimations['moving'] = new Array(4);
+    kirbyAnimations['moving'][DIR_CLOSER] = new Animation(
+        characterSprites, 9, 3, true, kirbyWalkingSpeed);
+    kirbyAnimations['moving'][DIR_FURTHER] = new Animation(
+        characterSprites, 6, 3, true, kirbyWalkingSpeed);
+    kirbyAnimations['moving'][DIR_LEFT] = new Animation(
+        characterSprites, 3, 3, true, kirbyWalkingSpeed);
+    kirbyAnimations['moving'][DIR_RIGHT] = new Animation(
+        characterSprites, 0, 3, true, kirbyWalkingSpeed);
+    
+    kirbyAnimations['idle'] = new Array(4);
+    kirbyAnimations['idle'][DIR_CLOSER] = new Animation(
+        characterSprites, 9, 3, true, kirbyWalkingSpeed);
+    kirbyAnimations['idle'][DIR_FURTHER] = new Animation(
+        characterSprites, 6, 3, true, kirbyWalkingSpeed);
+    kirbyAnimations['idle'][DIR_LEFT] = new Animation(
+        characterSprites, 3, 3, true, kirbyWalkingSpeed);
+    kirbyAnimations['idle'][DIR_RIGHT] = new Animation(
+        characterSprites, 0, 3, true, kirbyWalkingSpeed);
+}
+
 function pause()
 {
     if (gameState.paused == true) return false;
@@ -136,6 +165,7 @@ function pause()
     animationManager.suspendAll();
     overlay.clear();
     overlay.greyTranslucent();
+    
     return true;
 }
 
