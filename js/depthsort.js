@@ -858,7 +858,8 @@ DepthSortedArray.prototype = {
                 px = Math.floor(x - px);
                 py = Math.floor(y - py);
                 pixeldata = obj.img.getContext('2d').getImageData(px,py,1,1);
-                if (pixeldata.data[3] > alphaSelectionThreshold) return obj;
+                if (pixeldata.data[3] > constants.alphaSelectionThreshold)
+                    return obj;
             }
         }
         
@@ -891,7 +892,7 @@ DepthSortedArray.prototype = {
         {
             obj.shadow = 0;
         } else if (obj.shadow != 0) {
-            n.shadow = obj.shadow + shadowStep;
+            n.shadow = obj.shadow + constants.shadowStep;
             obj.shadow = 0;
         }
         
@@ -966,7 +967,7 @@ DepthSortedArray.prototype = {
         // Don't cast a shadow on something directly below.
         if (below.y == d[index].y - 1) return;
         
-        below.shadow = 1 - ((d[index].y - below.y) * shadowStep);
+        below.shadow = 1 - ((d[index].y - below.y) * constants.shadowStep);
         
         if (below.shadow <= 0)
         {

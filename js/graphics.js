@@ -1,22 +1,19 @@
-// Canvas elements
+// Global objects.  I'd put these in their own namespace, but I think that
+// referring to them becomes a bit too verbose.
 var animationManager = null;
 var overlay = null;
 var background = null;
 var canvas = null;
 var buffer = null;
 
-// Drawing
+// Globally accessable variables about the state of the game's viewport
 var canvasContext = null;
 var bufferCtx = null;
 var viewportDirty = false;
 var viewWidth = null;
 var viewHeight = null;
-
-// buffer image
 var bufferX = null;
 var bufferY = null;
-
-var lightDistance = 5;
 
 // Sprites
 var terrainSprites = [];
@@ -643,31 +640,6 @@ function moveBuffer(x, y)
     return true;
 }
 
-function setMessage(string)
-{
-    var msgCanvas = $('#msg')[0];
-    var msgCtx = msgCanvas.getContext("2d");
-    
-    // Compute the y location to start from
-    var msgy = (msgCanvas.height - msgTypeSize) >> 1;
-    // Add 1 or 2 here because we're using ideographic baseline in order
-    // to support chinese characters
-    msgy += msgTypeSize + 1;
-    
-    // Draw the message
-    msgCtx.clearRect(0,0,msgCanvas.width, msgCanvas.height);
-    msgCtx.fillStyle = 'rgba(0,0,0,1)';
-    msgCtx.globalAlpha = .5;
-    msgCtx.fillRect(0,0,viewWidth, viewHeight);
-    msgCtx.globalAlpha = 1;
-    msgCtx.font = "bold " + msgTypeSize + "px sans-serif";
-    msgCtx.textBaseline = "ideographic";
-    msgCtx.fillStyle = 'rgba(255,255,255,.9)';
-    msgCtx.strokeStyle = 'rgba(0,0,0,.5)';
-    msgCtx.strokeText(string, msgLeftPadding, msgy);
-    msgCtx.fillText(string, msgLeftPadding, msgy);
-}
-
 function initGraphics()
 {
     // TODO: eventually this should only build tiles that the map needs...
@@ -683,7 +655,7 @@ function secondarySelection(obj, buffer, px, py)
 {
     buffer.drawImage(obj.img, px, py);
     var prev_context = buffer.globalAlpha;
-    buffer.globalAlpha = secondarySelectionAlpha;
+    buffer.globalAlpha = constants.secondarySelectionAlpha;
     buffer.drawImage(terrainSprites[secondarySelectionSprite], px, py);
     buffer.globalAlpha = prev_context;
 }
@@ -710,38 +682,5 @@ function shadowShader(obj, buffer, px, py)
     buffer.globalAlpha = obj.shadow;
     buffer.drawImage(terrainSprites[shadowMaskTile], px, py);
     buffer.globalAlpha = prev_context;
-}
-
-function drawEscapedString(c, str, default_style, px, py, w)
-{
-    if (c == null || str == null) return false;
-    
-    var tmp = str.split(text_token);
-    
-    // If there were no escape chars in the string
-    if (tmp[0].length == str.length)
-    {
-        c.fillStyle = default_style;
-        c.fillText(str, px, py);
-        return true;
-    }
-    
-    var cind, o, cpx = px, len = tmp.length;
-    for (var i = 0; i < len; i++)
-    {
-        o = tmp[i];
-        cind = parseInt(o);
-        if (isNaN(cind) == false)
-        {
-            c.fillStyle = text_styles[cind];
-            if (cind > 9)
-                o = o.substring(2);
-            else
-                o = o.substring(1);
-        }
-        
-        c.fillText(o, cpx, py);
-        cpx += c.measureText(o).width;
-    }
 }
 

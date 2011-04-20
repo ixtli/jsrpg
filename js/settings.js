@@ -12,6 +12,9 @@ var constants = {
     fpsCounter: false,
     tileBorderDebug: false,
     debugMessages: true,
+    secondarySelectionAlpha: 35,
+    alphaSelectionThreshold: 127,
+    shadowStep: .1,
 };
 
 // * using arrays for attributes to allow multiple bindings to one action
@@ -53,11 +56,5 @@ function log(msg)
 }
 
 // Graphical Constants
-const secondarySelectionAlpha = 35;
-const shadowStep = .1;
-const alphaSelectionThreshold = 127;
-const msgTypeSize = 14;
-const msgBorder = 3;
-const msgLeftPadding = 8;
-const text_styles = ["black", "red", "green", "blue", "white"];
-const text_token = "^";
+// TODO: Move
+var lightDistance = 5;

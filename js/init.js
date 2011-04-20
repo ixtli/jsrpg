@@ -2,6 +2,7 @@
 var gameState = {
     paused: false,
     tickerChangeRate: 10,
+    ticker: null,
 };
 
 var map = null;
@@ -38,9 +39,9 @@ function init()
     halfViewHeight = viewHeight >> 1;
     halfViewWidth = viewWidth >> 1;
     
-    // TODO: put this somewhere else
-    // Adjust ticker height based on type size setting
-    $('#msg')[0].height = msgTypeSize + (msgBorder << 1);
+    // Init ticker
+    gameState.ticker = new Ticker($('#msg')[0]);
+    gameState.ticker.setMessage("Welcome to the JSRPG map editor!");
     
     // Get graphics contexts for the canvas elements
     canvasContext = canvas.getContext("2d");
@@ -65,7 +66,6 @@ function init()
     background = new Background($('#bg')[0]);
     background.linearVerticalGradient();
     overlay.whiteVerticalGradient();
-    setMessage("Welcome to the JSRPG map editor!");
     
     // Intialize input manager
     inputManager = new InputManager();
@@ -165,6 +165,8 @@ function pause()
     animationManager.suspendAll();
     overlay.clear();
     overlay.greyTranslucent();
+    gameState.ticker.setMessage(
+        "Pause automatically when the window loses focus.");
     
     return true;
 }
@@ -177,6 +179,7 @@ function unpause()
     animationManager.resumeAll();
     overlay.clear();
     overlay.whiteVerticalGradient();
+    setRandomTickerMessage();
     return true;
 }
 
@@ -382,7 +385,7 @@ function deleteFocussed()
 function setRandomTickerMessage()
 {
     var i = Math.floor(Math.random() * (tickerMessages.length));
-    setMessage(tickerMessages[i]);
+    gameState.ticker.setMessage(tickerMessages[i]);
 }
 
 function draw()
