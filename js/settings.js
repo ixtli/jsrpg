@@ -29,7 +29,8 @@ var keys = {
     'add':      [107, 187, 32], // add, = (nothing to denote shift state for = ?,
                                 // space
     'refresh':  [82],           // r
-    'optimize': [79]            // o
+    'optimize': [79],           // o
+    'pause': [80],              // p
 };
 
 // These can (and will be) changed on the fly.
@@ -51,11 +52,8 @@ function log(msg)
         console.log(msg);
 }
 
-// Other constants that should eventually be moved out of this file
-const tickerChangeRate = 10;
-const secondarySelectionAlpha = 35;
-
 // Graphical Constants
+const secondarySelectionAlpha = 35;
 const shadowStep = .1;
 const alphaSelectionThreshold = 127;
 const msgTypeSize = 14;

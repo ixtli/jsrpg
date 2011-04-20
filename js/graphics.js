@@ -1,5 +1,6 @@
 // Canvas elements
 var animationManager = null;
+var overlay = null;
 var canvas = null;
 var buffer = null;
 
@@ -103,8 +104,13 @@ AnimationManager.prototype = {
     {
         if (this.suspended == true) return false;
         
-        for (names in this.animations)
-            clearInterval(names.interval);
+        var anim = this.animations;
+        var obj = null;
+        for (var key in anim)
+        {
+            obj = anim[key];
+            clearInterval(obj.interval);
+        }
         
         this.suspended = true;
         return true;
@@ -114,15 +120,30 @@ AnimationManager.prototype = {
     {
         if (this.suspended == false) return false;
         
-        for (names in this.animations)
+        var anim = this.animations;
+        var obj = null;
+        for (var key in anim)
         {
-            if (names.interval != null)
-                anim.interval = setInterval(names.fxn, names.quantum);
+            obj = anim[key];
+            if (obj.interval != null)
+                obj.interval = setInterval(obj.fxn, obj.quantum);
         }
         
         this.suspended = false;
         return true;
     },
+    
+    log: function()
+    {
+        var a = null;
+        for (var obj in this.animations)
+        {
+            a = this.animations[obj];
+            log(obj + " (" + a.interval + ") " + a.quantum + "ms");
+        }
+        
+        return true;
+    }
     
 };
 
@@ -439,27 +460,60 @@ function setBackgroundColor(colorString)
     bgCtx.fillRect(0,0,viewWidth, viewHeight);
 }
 
-function setOverlayWhiteVerticalGradient()
+function Overlay (canvas)
 {
-    var fgCtx = $('#fg')[0].getContext("2d");
-    var grad = fgCtx.createLinearGradient(0,0,0,viewHeight);
-    grad.addColorStop(0, "rgba(255,255,255,0)");
-    grad.addColorStop(.15, "rgba(255,255,255,.25)");
-    grad.addColorStop(1, "rgba(0,0,0,0)");
-    fgCtx.fillStyle = grad;
-    fgCtx.fillRect(0,0,viewWidth, viewHeight);
+    this.canvas = canvas;
+    this.context = canvas.getContext("2d");
+    this.width = canvas.width;
+    this.height = canvas.height;
+    
+    return true;
 }
 
-function setOverlayBlackHorazontalBars()
-{
-    var fgCtx = $('#fg')[0].getContext("2d");
-    var grad = fgCtx.createLinearGradient(0,0,0,viewHeight);
-    grad.addColorStop(0, "rgba(0,0,0,.75)");
-    grad.addColorStop(.10, "rgba(0,0,0,0)");
-    grad.addColorStop(.90, "rgba(0,0,0,0)");
-    grad.addColorStop(1, "rgba(0,0,0,.75)");
-    fgCtx.fillStyle = grad;
-    fgCtx.fillRect(0,0,viewWidth, viewHeight);
+Overlay.prototype = {
+    
+    clear: function()
+    {
+        this.canvas.width = this.width;
+        return true;
+    },
+    
+    whiteVerticalGradient: function ()
+    {
+        var fgCtx = this.context;
+        var grad = fgCtx.createLinearGradient(0,0,0,viewHeight);
+        grad.addColorStop(0, "rgba(255,255,255,0)");
+        grad.addColorStop(.15, "rgba(255,255,255,.25)");
+        grad.addColorStop(1, "rgba(0,0,0,0)");
+        fgCtx.fillStyle = grad;
+        fgCtx.fillRect(0,0,this.width, this.height);
+        
+        return true;
+    },
+    
+    blackHorazontalBars: function ()
+    {
+        var fgCtx = this.context;
+        var grad = fgCtx.createLinearGradient(0,0,0,viewHeight);
+        grad.addColorStop(0, "rgba(0,0,0,.75)");
+        grad.addColorStop(.10, "rgba(0,0,0,0)");
+        grad.addColorStop(.90, "rgba(0,0,0,0)");
+        grad.addColorStop(1, "rgba(0,0,0,.75)");
+        fgCtx.fillStyle = grad;
+        fgCtx.fillRect(0,0,this.width, this.height);
+        
+        return true;
+    },
+    
+    greyTranslucent: function ()
+    {
+        var fgCtx = this.context;
+        fgCtx.fillStyle = "rgba(0,0,0,.4)";
+        fgCtx.fillRect(0,0,this.width, this.height);
+        
+        return true;
+    },
+    
 }
 
 function moveBuffer(x, y)

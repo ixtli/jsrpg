@@ -1,7 +1,9 @@
-// Animation variables
-var previousFrameTime = 0;
-
 // Map
+var gameState = {
+    paused: false,
+    tickerChangeRate: 10,
+};
+
 var map = null;
 var viewX = 0, viewY = 0;
 var bufferWidth = 0;
@@ -21,7 +23,6 @@ var viewportScrollUp = false;
 var horizontalScrollSpeed = 0;
 var verticalScrollSpeed = 0;
 
-var fpsVal = constants.fps;
 var kirby = null;
 
 window.onload = init;
@@ -60,8 +61,9 @@ function init()
     bufferCtx.strokeStyle = "black";
     
     // Init forground, ticker, and background canvases
+    overlay = new Overlay($('#fg')[0]);
     setBackgroundLinearVerticalGradient();
-    setOverlayWhiteVerticalGradient();
+    overlay.whiteVerticalGradient();
     setMessage("Welcome to the JSRPG map editor!");
     
     // Intialize input manager
@@ -70,7 +72,7 @@ function init()
     // Initialize animation manager and register animations
     animationManager = new AnimationManager(false);
     animationManager.registerAnimation("ticker",
-        function() {setRandomTickerMessage();}, 1000 * tickerChangeRate);
+        function() {setRandomTickerMessage();}, 1000 * gameState.tickerChangeRate);
     animationManager.registerAnimation("sprites", animate,
         1000 / constants.fps);
     animationManager.registerAnimation("scroll", draw, 1000 / constants.fps);
@@ -110,6 +112,7 @@ function init()
     
     // Start accepting input
     inputManager.enableAllInput();
+    inputManager.bindWindowFocusHandlers();
     
     // Initialize the interface
     ui = new Interface(document.getElementById('interface'));
@@ -127,7 +130,24 @@ function init()
 
 function pause()
 {
+    if (gameState.paused == true) return false;
     
+    gameState.paused = true;
+    animationManager.suspendAll();
+    overlay.clear();
+    overlay.greyTranslucent();
+    return true;
+}
+
+function unpause()
+{
+    if (gameState.paused == false) return false;
+    
+    gameState.paused = false;
+    animationManager.resumeAll();
+    overlay.clear();
+    overlay.whiteVerticalGradient();
+    return true;
 }
 
 function setSelection(object, keepInViewport)
@@ -526,20 +546,4 @@ function draw()
         // mark everything as drawn
         redrawFlags = 255;
     }
-    
-    // TODO: Make this report some sort of reasonable "FPS"
-    /*
-    if (fpsCounter && mouseInside == true)
-    {
-        var nt = new Date();
-        canvasContext.fillStyle = "black";
-        canvasContext.fillRect(5, viewHeight - 20, 60, 50);
-        canvasContext.fillStyle = "white";
-        //fpsVal = Math.ceil(fpsVal * 0.9 + previousFrameTime*0.1);
-        canvasContext.fillText("FPS: " + (nt - previousFrameTime), 10, viewHeight - 4);
-        previousFrameTime = nt;
-    } else {
-        previousFrameTime = new Date();
-    }
-    */
 }

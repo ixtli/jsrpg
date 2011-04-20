@@ -14,13 +14,18 @@ function InputManager()
     // List of all html elements that are not canvases
     this.htmlElements = ['#ebmode', '#clk', '#allow-scroll', '#b-scrolling'];
     
-    return this.init();
+    return true;
 }
 
 InputManager.prototype = {
     
-    init: function ()
+    bindWindowFocusHandlers: function ()
     {
+        // Pause when the window loses focus
+        $(window).blur(pause);
+        
+        // Unpause when the window gains focus
+        $(window).focus(unpause);
         
         return true;
     },
@@ -351,7 +356,11 @@ InputManager.prototype = {
         case "optimize":
             map.optimize();
             break;
-            
+        
+        case "pause":
+            pause();
+            break;
+        
         default:
             log("Unhandled keycode: " + code);
             return true;
