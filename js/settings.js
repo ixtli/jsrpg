@@ -17,25 +17,6 @@ var constants = {
     shadowStep: .1,
 };
 
-// * using arrays for attributes to allow multiple bindings to one action
-// * TODO user editable eventually? otherwise go back to const
-var keys = {
-    'move_left':       [37],    // left arrow 
-    'move_up':         [38],    // up arrow
-    'move_right':      [39],    // right arrow
-    'move_down':       [40],    // down arrow
-    'scroll_left':     [65],    // a
-    'scroll_right':    [68],    // d
-    'scroll_down':     [83],    // s
-    'scroll_up':       [87],    // w
-    'subtract': [109, 189, 46], // subtract, -, delete
-    'add':      [107, 187, 32], // add, = (nothing to denote shift state for = ?,
-                                // space
-    'refresh':  [82],           // r
-    'optimize': [79],           // o
-    'pause': [80],              // p
-};
-
 // These can (and will be) changed on the fly.
 var inputSettings = {
     allowScrolling: true,

@@ -205,8 +205,7 @@ Interface.prototype = {
         
         if (this.canvasCtx == null || this.bufferCtx == null) return false;
         
-        // Do this so we can avoid clearing the canvas every time we draw
-        // to the buffer.
+        // This avoids worrying about transparency when copying from buffer
         this.canvasCtx.globalCompositeOperation = "copy";
         
         // Register animation
@@ -344,9 +343,8 @@ Interface.prototype = {
         {
             // We have not yet begun to animate.
             list.push(w);
-            var q = animq.quantum;
-            this.quantum = q;
-            animationManager.setQuantum("interface", q);
+            this.quantum = animq;
+            animationManager.setQuantum("interface", animq);
             animationManager.startAnimation("interface");
             return true;
         }

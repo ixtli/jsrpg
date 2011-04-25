@@ -88,11 +88,11 @@ AnimationManager.prototype = {
         else
             anim.quantum = quantum;
         
-        if (anim.interval != null)
+        if (anim.interval != null && this.suspended == false)
         {
             // restart animation
-            this.stopAnimation(name);
-            this.startAnimation(name);
+            clearInterval(anim.interval);
+            anim.interval = setInterval(anim.fxn, anim.quantum);
         }
         
         return true;
@@ -423,6 +423,7 @@ SpriteSheet.prototype = {
         this.count = -1;
         this.name = null;
     },
+    
 };
 
 function pixelProjection(x, y, z)

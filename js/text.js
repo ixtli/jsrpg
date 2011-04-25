@@ -64,7 +64,6 @@ Ticker.prototype = {
         return true;
     },
     
-    
 };
 
 // Generic function for drawing an escaped string to a canvas
