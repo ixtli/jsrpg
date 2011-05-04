@@ -149,6 +149,64 @@ function generateTestMap()
     bufferY = viewY;
 }
 
+function reachableTiles(s, maxDistance, maxHeight)
+{
+    // Return an array of reachable tiles (could be empty).  Basically this is
+    // uniform cost search, but it returns the explored set instead of a goal.
+    // This is useful if you want to, say, highlight all the tiles around a unit
+    // to which that unit can possibly move.
+    var explored = [];
+    
+    if (maxDistance < 1) return explored;
+    
+    var startx = s.x, starty = s.y, startz = s.z;
+    var frontier = [s];
+    var expansion = new Array(4);
+    var node = null, temp = null, found = false;
+    
+    do {
+        // Get the current node
+        node = frontier.pop();
+        
+        // Expand current node up
+        expansion[0] = map.snap(node.x, node.y, node.z - 1, true);
+        expansion[1] = map.snap(node.x, node.y, node.z + 1, true);
+        expansion[2] = map.snap(node.x - 1, node.y, node.z, true);
+        expansion[3] = map.snap(node.x + 1, node.y, node.z, true);
+        
+        for (var i = 0; i < 4; i++)
+        {
+            // Decide if the expanded nodes are within maxDistance and are
+            // less than maxHeight relative to the current node.
+            temp = expansion[i];
+            
+            if (temp == null) continue;
+            if (Math.abs(temp.y - starty) > maxHeight) continue;
+            if (Math.abs(temp.x - startx) + Math.abs(temp.z - startz) > 
+                maxDistance) continue;
+            
+            // Have we already explored this node?  If so don't re-add it.
+            found = false;
+            for (var j = explored.length - 1; j >= 0; j--)
+            {
+                if (explored[j] === temp)
+                {
+                    found = true;
+                    break;
+                }
+            }
+            
+            if (found == true) continue;
+            
+            frontier.push(temp);
+            explored.push(temp);
+        }
+        
+    } while (frontier.length > 0);
+    
+    return explored;
+}
+
 function optimalPath(s, g, maxDistance, maxHeight)
 {
     if (maxDistance < 1) return {r: null, e: null};

@@ -39,6 +39,9 @@ function init()
     halfViewHeight = viewHeight >> 1;
     halfViewWidth = viewWidth >> 1;
     
+    // Init user data
+    udata = new UserData();
+    
     // Init ticker
     gameState.ticker = new Ticker($('#msg')[0]);
     gameState.ticker.setMessage("Welcome to the JSRPG map editor!");
@@ -129,6 +132,8 @@ function init()
     kirby = new GameObject("kirby", kirbyAnimations);
     kirby.setTile(map.data[205]);
     kirby.moveForward(true);
+    
+    return true;
 }
 
 function bootstrapKirbyAnimations()

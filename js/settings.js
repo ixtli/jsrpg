@@ -30,10 +30,27 @@ var inputSettings = {
 }
 
 // debugging
-function log(msg)
+var webkitConsole = false;
+function setLogFxn()
 {
     if (constants.debugMessages == true && typeof(console) != "undefined")
-        console.log(msg);
+        webkitConsole = true;
+}
+
+setLogFxn();
+
+function log (msg)
+{
+    if (webkitConsole == true) console.log(msg);
+}
+
+// local storage, from diveintohtml5.org
+function localStorageIsSupported() {
+    try {
+        return 'localStorage' in window && window['localstorage'] !== null;
+    } catch (e) {
+        return false;
+    }
 }
 
 // Graphical Constants
