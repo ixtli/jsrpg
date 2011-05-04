@@ -12,7 +12,7 @@ var constants = {
     fpsCounter: false,
     tileBorderDebug: false,
     debugMessages: true,
-    secondarySelectionAlpha: 35,
+    secondarySelectionAlpha: .35,
     alphaSelectionThreshold: 127,
     shadowStep: .1,
 };
