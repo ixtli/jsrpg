@@ -44,6 +44,8 @@ function GameObject(name, anims)
     this.stats = null;
     this.facing = DIR_RIGHT;
     
+    this.reachable = null;
+    
     return this.init();
 }
 
@@ -75,11 +77,15 @@ GameObject.prototype = {
     gotFocus: function ()
     {
         charWin.show({animation: "open_up", step_size: 10});
+        
+        if (this.moving == false && this.path == false)
+            this.showMovementArea();
     },
     
     lostFocus: function ()
     {
         charWin.hide({animation: "fade", step_size: -30});
+        this.hideMovementArea();
     },
     
     face: function (direction)
@@ -281,7 +287,9 @@ GameObject.prototype = {
             return true;
         }
         
-        // Are we at the first tile?
+        this.hideMovementArea();
+        
+        // Are we at the first tile?  If not 'teleport' to the beginning
         if (!(path[this.pathIndex] === this.tile))
             setTile(path[this.pathIndex]);
         
@@ -333,6 +341,73 @@ GameObject.prototype = {
         if (this.path == null) return false;
         
         this.path = null;
+        
+        return true;
+    },
+    
+    showMovementArea: function ()
+    {
+        if (this.reachable != null) return false;
+        
+        this.reachable = reachableTiles(this.tile, 10, 10);
+        var r = this.reachable;
+        
+        if (r.length < 1)
+        {
+            this.reachable = null;
+            return false;
+        }
+        
+        var obj = r[r.length - 1];
+        var minx = obj.px;
+        var miny = obj.py;
+        var maxx = minx + tileGraphicWidth;
+        var maxy = miny + tileGraphicHeight;
+        
+        for (var i = r.length - 2; i >= 0; i--)
+        {
+            obj = r[i];
+            obj.addShader(false, secondarySelection);
+            if (obj.px < minx) minx = obj.px;
+            if (obj.py < miny) miny = obj.py;
+            if (obj.py + tileGraphicHeight > maxy)
+                maxy = obj.py + tileGraphicHeight;
+            if (obj.px + tileGraphicWidth > maxx)
+                maxx = obj.px + tileGraphicWidth;
+        }
+        
+        map.updateBuffer(true, minx, miny, maxx, maxy);
+        
+        return true;
+    },
+    
+    hideMovementArea: function ()
+    {
+        if (this.reachable == null) return true;
+        
+        var r = this.reachable;
+        
+        var obj = r[r.length - 1];
+        var minx = obj.px;
+        var miny = obj.py;
+        var maxx = minx + tileGraphicWidth;
+        var maxy = miny + tileGraphicHeight;
+        
+        for (var i = r.length - 2; i >= 0; i--)
+        {
+            obj = r[i];
+            obj.removeShader(secondarySelection);
+            if (obj.px < minx) minx = obj.px;
+            if (obj.py < miny) miny = obj.py;
+            if (obj.py + tileGraphicHeight > maxy)
+                maxy = obj.py + tileGraphicHeight;
+            if (obj.px + tileGraphicWidth > maxx)
+                maxx = obj.px + tileGraphicWidth;
+        }
+        
+        map.updateBuffer(true, minx, miny, maxx, maxy);
+        
+        this.reachable = null;
         
         return true;
     },

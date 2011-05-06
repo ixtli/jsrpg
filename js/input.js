@@ -9,14 +9,15 @@ var keys = {
     'scroll_right':    [68],    // d
     'scroll_down':     [83],    // s
     'scroll_up':       [87],    // w
-    'subtract': [109, 189, 46], // subtract, -, delete
-    'add':      [107, 187, 32], // add, = (nothing to denote shift state for = ?,
+    'subtract':        [109, 189, 46], // subtract, -, delete
+    'add':             [107, 187, 32], // add, =
                                 // space
     'refresh':         [82],    // r
     'optimize':        [79],    // o
     'pause':           [80],    // p
 };
 
+var reachable = null;
 var inputManager = null;
 
 function InputManager()
@@ -110,8 +111,19 @@ InputManager.prototype = {
         
         // Click-to-select mode
         $('#clk').bind('click', function () {
+            
             inputSettings.clickToSelect = inputSettings.clickToSelect ?
                 false : true;
+            
+            if (inputSettings.clickToSelect == true)
+            {
+                
+            } else {
+                
+            }
+            
+            return true;
+            
         });
         
         // enable/disable scrolling
