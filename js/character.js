@@ -78,7 +78,7 @@ GameObject.prototype = {
     {
         charWin.show({animation: "open_up", step_size: 10});
         
-        if (this.moving == false && this.path == false)
+        if (this.moving == false && this.path == null)
             this.showMovementArea();
     },
     

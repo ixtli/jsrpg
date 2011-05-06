@@ -113,9 +113,9 @@ DSAZGeometryObject.prototype = {
     
     updatePixelProjection: function ()
     {
-        var i = 0, r = null
+        var i = 0, r = null,
         minx = this.minx, maxx = this.maxx,
-        miny = this.miny, maxy = this.maxy
+        miny = this.miny, maxy = this.maxy,
         z = this.z,
         p = this.points;
         
