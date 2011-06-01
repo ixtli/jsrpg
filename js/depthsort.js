@@ -607,7 +607,6 @@ DepthSortedArray.prototype = {
     {
         // If update == true, redraw any portion of the visible canvas effected
         // by this call.  If noCheck == false, do all intersection testing.
-        // Otherwise, simply trust the already given values of insideClippingArea.
         
         var maxx = minx + width;
         var maxy = miny + height;
@@ -648,11 +647,18 @@ DepthSortedArray.prototype = {
         // Clear the area we're about to draw
         b.clearRect(minx - bufferX, miny - bufferY, width, height);
         
+        // Draw zplanes between the highest and lowest possibly visible zplanes
+        // These are precalculated when the buffer changes.
         for (var z = this.lowest_z; z <= hz; z++)
         {
             p = zgeom[z];
             
+            // If there are not tiles here, skip.
             if (p == null) continue;
+            
+            // This is a hook that allows an ouside function the ability to
+            // do to use other inference to speed up drawing by forcing us to
+            // skip zplanes
             if (p.insideClippingArea == false) continue;
             
             if (noCheck == false)
@@ -663,7 +669,7 @@ DepthSortedArray.prototype = {
                 point3 = p.points[3];
                 
                 p1x = point1.x; // minx of zplane
-                p3x = point3.x; // maxx of zplane 
+                p3x = point3.x; // maxx of zplane
                 
                 // Broad phase clipping by treating the plane as a box
                 if (point3.y > maxy || point1.y < miny ||
@@ -685,10 +691,13 @@ DepthSortedArray.prototype = {
             min = 0;
             
             // TODO: This division assumed a tile graphic width of 64
+            // Find the minimum x value that is within the redraw rectangle
             if (p3x < minx) min = ((minx - p3x) >> 5 ) - 1;
             
             min_rect = rects[min];
             
+            // If there are no tiles at that xvalue, find the first non-empty
+            // xvalue after it.
             if (min_rect != null)
             {
                 if (min_rect.minx + tileGraphicWidth <= minx)
@@ -699,6 +708,7 @@ DepthSortedArray.prototype = {
             }
             
             // TODO: this division also assumes tile width of 64
+            // Do the same, but for the max x value so we know where to stop
             max = rects.length - 1;
             if (p1x > maxx) max -= ((p1x - maxx) >> 5 ) - 1;
             
@@ -715,11 +725,14 @@ DepthSortedArray.prototype = {
                     }
                 }
                 
+                // If the entire zplane is somehow empty, skip drawing it
                 if (min_rect == null) continue;
             }
             
             max_rect = rects[max];
             
+            // If there are no tiles resident at max, find the largest
+            // non-empty rect
             if (max_rect == null)
             {
                 for (var i = max - 1; i >= min; i--)
@@ -732,6 +745,8 @@ DepthSortedArray.prototype = {
                     }
                 }
                 
+                // If we still cant find anything, set max and min to the same
+                // thing.
                 if (max_rect == null)
                     max_rect = rects[min];
             }
@@ -754,7 +769,6 @@ DepthSortedArray.prototype = {
                 
                 // Draw tile and effects.  We can avoid drawing the tile if
                 // it couldn't possible encroach into the clipping area
-                
                 if (py + obj.h + bufferY >= miny)
                 {
                     sList = obj.shaderList;
@@ -805,6 +819,7 @@ DepthSortedArray.prototype = {
                             tx = 0;
                         }
                         
+                        // Draw the object's graphic in the calculated position
                         b.drawImage(tileObj.img, tx, 0, tw, tileObj.h,
                             tileObj.px - bufferX + tx, tileObj.py - bufferY,
                             tw, tileObj.h);
@@ -816,8 +831,11 @@ DepthSortedArray.prototype = {
             // this.drawZPlaneBounds(z);
         }
         
+        // Restore canvas context
         b.restore();
         
+        // If the viewport is currently scrolling or we've been explicitly
+        // instructed not to update, we're done.
         if (update == false) return;
         if (horizontalScrollSpeed | verticalScrollSpeed > 0) return;
         
@@ -835,6 +853,9 @@ DepthSortedArray.prototype = {
         
         var ty = 0, th = 0;
         
+        // Do a simple triangle intersection test to see if there is any reason
+        // to draw to the screen.  This is always the slowest operation so
+        // avoid it at all costs.
         tx = minx > viewX ? minx : viewX;
         ty = miny > viewY ? miny : viewY;
         tw = tx + width;
