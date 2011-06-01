@@ -147,6 +147,8 @@ function generateTestMap()
     viewY = 0;
     bufferX = viewX;
     bufferY = viewY;
+    map.optimize();
+    map.markBufferCollision();
 }
 
 function reachableTiles(s, maxDistance, maxHeight)

@@ -93,17 +93,9 @@ function init()
     generateTestMap();
     
     //Initialize the buffer
-    map.optimize();
-    t0 = new Date();
-    map.markBufferCollision();
     map.updateBuffer(false, bufferX, bufferY, bufferWidth, bufferHeight);
-    t1 = new Date();
     redrawFlags = 0xFFFFFFFF;
     viewportDirty = true;
-    
-    msg = "Buffer initial draw time: "+ (t1-t0) +"ms";
-    msg += " (" + bufferWidth + " by " + bufferHeight + " pixels)";
-    log(msg);
     
     // set up editor
     tileEditorInit();

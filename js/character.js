@@ -51,6 +51,13 @@ function GameObject(name, anims)
 
 GameObject.prototype = {
     
+    serialize: function()
+    {
+        // return a dictionary of values required to restore the object
+        // for now, sinply return ourself as objects should be relatively sparse
+        return this;
+    },
+    
     init: function ()
     {
         this.setAnimation('idle');

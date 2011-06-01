@@ -357,6 +357,96 @@ function DepthSortedArray()
 
 DepthSortedArray.prototype = {
     
+    save: function ()
+    {
+        // Save the map in a dictionary containing only the data necessary to
+        // reconstruct it
+        if (this.optimized == false)
+            this.optimize();
+        
+        var d = this.data;
+        var tileArray = new Array(d.length);
+        var terrainDict = {};
+        var objArray = [];
+        var temp, dt, terrainCount = 0;
+        
+        // Make a mapping of terrain objects to numbers
+        for (var t in terrain)
+        {
+            terrainDict[t] = terrainCount;
+            terrainCount++;
+        }
+        
+        // save tiles
+        for (var i = d.length - 1; i >= 0; i--)
+        {
+            temp = new Array(3);
+            dt = d[i];
+            temp[0] = terrainDict[dt.terrain.name];
+            temp[1] = dt.x;
+            temp[2] = dt.y;
+            temp[3] = dt.z;
+            
+            if (dt.obj != null)
+            {
+                var oa = dt.obj, olist = [];
+                var l = oa.length;
+                for (var j = 0; j < l; j++)
+                {
+                    olist.push(j);
+                    objArray.push(oa[j].serialize());
+                }
+                
+                temp.push(olist);
+            }
+            
+            if (dt.shaderList != null)
+            {
+                // TODO: implement
+            }
+            
+            tileArray[i] = temp;
+        }
+        
+        var ret = {};
+        
+        // invert the terrain dictionary
+        var terrainArray = new Array(terrainCount);
+        for (var t in terrainDict)
+            terrainArray[terrainDict[t]] = t;
+        
+        ret['terrain'] = terrainArray;
+        ret['tiles'] = tileArray;
+        //ret['objects'] = objArray;
+        
+        return ret;
+    },
+    
+    restore: function (mapStorage)
+    {
+        if (mapStorage == null) return false;
+        
+        log(mapStorage);
+        
+        // Construct terrain dictionary
+        var t = mapStorage['terrain'];
+        //var o = mapStorage['objects'];
+        var d = mapStorage['tiles'];
+        var l = d.length, temp;
+        
+        for (var i = 0; i < l; i++)
+        {
+            temp = d[i];
+            this.insert(terrain[t[temp[0]]], temp[1], temp[2], temp[3]);
+            
+            // if (temp[4] != null) o[temp[4]].setTile(i);
+        }
+        
+        this.optimize();
+        
+        return true;
+    },
+    
     insert: function (terrain, x, y, z)
     {
         var d = this.data;

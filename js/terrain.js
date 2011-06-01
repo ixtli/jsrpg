@@ -1,4 +1,4 @@
-var terrain = [];
+var terrain = {};
 
 function initTerrain(name_array, sheet)
 {
@@ -14,12 +14,12 @@ function TerrainObject(name, sprite)
     this.name = name;
     this.sprite = sprite;
     
-    this.init = function () {
-        terrain[this.name] = this;
-    }
+    terrain[name] = this;
     
-    this.init();
+    return true;
 }
 
-
+TerrainObject.prototype = {
+    
+};
 
