@@ -1,35 +1,33 @@
-<!doctype html>
-<html>
-<head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta http-equiv="Content-Script-Type" content="application/javascript charset=UTF-8" />
-    <link rel="stylesheet" href="css/stylesheet.css" media="screen">
-    <link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
-
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="css/stylesheet.css" media="screen" />
+    <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" type="text/css"/>
     <title>Canvas Test!</title>
-</head>
-<body>
-    <div id="game" class="gameview" width="800" height="400">
-        <canvas id="bg" width="800" height= "400"></canvas>
-        <canvas id="display" width="800" height= "400">
-            <p>Your browser does not support HTML5 canvas. Get Chrome.</p>
-        </canvas>
-        <canvas id="fg" width="800" height="400"></canvas>
-        <canvas id="interface" width="800" height="400"></canvas>
-        <canvas id="msg" width="800" height="26"></canvas>
+  </head>
+  <body>
+    <div id="game" class="viewport">
+      <canvas id="bg" class="viewport" width="800" height= "400"></canvas>
+      <canvas id="display" class="viewport" width="800" height="400">
+	<p>Your browser does not support HTML5 canvas. Get Chrome.</p>
+      </canvas>
+      <canvas id="fg" class="viewport" width="800" height="400"></canvas>
+      <canvas id="interface" class="viewport" width="800" height="400"></canvas>
+      <canvas id="msg" width="800" height="26"></canvas>
     </div>
     <div class="editorview">
-        <div class="checks">
-            <input type=checkbox id="ebmode"> EricB Mode <br>
-            <input type=checkbox id="tebg"> Red background in tile editor <br>
-            <input type=checkbox id="clk"> Click-to-select <br>
-            <input type=checkbox id="allow-scroll" checked> Allow Scrolling<br>
-            <input type=checkbox id="b-scrolling" checked> Border Scrolling<br>
-        </div>
-        <div class="editcontrols">
-              Sprite Index:<div id="tindex"></div>
-        </div>
-        <canvas id="editor" width="200" height="200">
+      <div class="checks">
+	<input type="checkbox" id="ebmode"/><label for="ebmode">EricB Mode</label><br/>
+	<input type="checkbox" id="tebg" /><label for="tebg">Red background in tile editor</label><br/>
+	<input type="checkbox" id="clk"/><label for="clk">Click-to-select</label><br/>
+	<input type="checkbox" id="allow-scroll" checked="checked" /><label for="allow-scroll">Allow Scrolling</label><br/>
+	<input type="checkbox" id="b-scrolling" checked="checked"/><label for="b-scrolling">Border Scrolling</label><br/>
+      </div>
+      <div class="editcontrols">
+	Sprite Index:<div id="tindex"/>
+      </div>
+      <canvas id="editor" width="200" height="200"></canvas>
     </div>
     <script type="application/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.0/jquery.min.js"></script>
     <script type="application/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.7/jquery-ui.min.js"></script>
@@ -47,5 +45,5 @@
     <script type="application/javascript" src="js/input.js"></script>
     <script type="application/javascript" src="js/interface.js"></script>
     <script type="application/javascript" src="js/init.js"></script>
-</body>
+  </body>
 </html>
